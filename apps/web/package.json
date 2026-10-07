@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@coachloop/domain": "workspace:*",
+    "@coachloop/theme": "workspace:*",
     "next": "~15.5.27",
     "react": "19.2.3",
     "react-dom": "19.2.3"

@@ -2,7 +2,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "CoachLoop",
+  name: "Cleat",
   slug: "coachloop",
   version: "0.0.1",
   orientation: "portrait",
@@ -17,7 +17,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "com.coachloop.app",
     adaptiveIcon: {
-      backgroundColor: "#0B1220",
+      backgroundColor: "#1C1917",
       foregroundImage: "./assets/adaptive-icon.png",
     },
     predictiveBackGestureEnabled: false,
@@ -27,7 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#0B1220",
+        backgroundColor: "#1C1917",
         image: "./assets/splash-icon.png",
         imageWidth: 160,
       },

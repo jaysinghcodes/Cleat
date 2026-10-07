@@ -1,4 +1,4 @@
-export const APP_NAME = "CoachLoop" as const;
+export const APP_NAME = "Cleat" as const;
 
 export { programSchema } from "./program";
 export type { Program } from "./program";
