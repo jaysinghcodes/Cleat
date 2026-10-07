@@ -1,4 +1,6 @@
-# CoachLoop Architecture
+# Cleat Architecture
+
+Formerly CoachLoop.
 
 **Date:** 2026-10-06 (America/Chicago)  
 **Audience:** Speedy → Forge (after Mission Control ticket 10)  
@@ -18,7 +20,7 @@
 | Layer | Choice | Why |
 | --- | --- | --- |
 | **Trainer web** | Next.js 15 (App Router) on **Vercel** | Free hobby tier; SSR/API routes for OAuth callbacks, RAG orchestration, webhooks |
-| **Client mobile** | **Expo (React Native)** — **iOS and Android both first-class from day one** | One codebase; Expo Go / EAS dev builds for demo; shared CoachLoop-branded apps (no white-label store listings in v1) |
+| **Client mobile** | **Expo (React Native)** — **iOS and Android both first-class from day one** | One codebase; Expo Go / EAS dev builds for demo; shared Cleat-branded apps (no white-label store listings in v1) |
 | **Shared UI/types** | `packages/*` in monorepo (Zod schemas, API client, design tokens) | Keep web + mobile in sync without duplicating domain types |
 | **DB** | **Supabase Postgres** (free) | Single project for data + auth + realtime + storage |
 | **Auth** | **Supabase Auth** | Same project; email/magic-link + invite tokens; RLS-friendly `auth.uid()` |
@@ -39,7 +41,7 @@ If Jay later wants to leave Supabase: **Neon Postgres + Clerk Auth + Vercel Blob
 ## 3. Repo layout (monorepo)
 
 ```
-coachloop/
+Cleat/
 ├── apps/
 │   ├── web/                 # Next.js — trainer desk (+ thin marketing/landing)
 │   └── mobile/              # Expo — client app (iOS + Android equal)
@@ -181,14 +183,14 @@ Approximate free-tier reality for a **recruiting showcase / few demo orgs** (ver
 | Google Cloud OAuth | Free API quota | Unusual at showcase scale |
 | ICS feeds on Vercel/Supabase | Free | Caching/CDN if abused |
 
-**Store submit:** later. Demo with Expo Go and/or EAS **dev builds on both iOS and Android**. Shared CoachLoop branding only (white-label App Store listings = cut).
+**Store submit:** later. Demo with Expo Go and/or EAS **dev builds on both iOS and Android**. Shared Cleat branding only (white-label App Store listings = cut).
 
 ---
 
 ## 9. App Store / Play notes
 
 - **v1 demo:** Expo Go + EAS development builds for **iOS and Android**.
-- **Later submit:** single CoachLoop-branded apps (not per-trainer white-label).
+- **Later submit:** single Cleat-branded apps (not per-trainer white-label).
 - Category framing: **general wellness / coaching ops** — programming, logging, messaging, scheduling.
 - Declare **not** a regulated medical device (Apple 2026 health/fitness declaration → **No** if wellness-only).
 - In-app + AI: hard-refuse injury/medication/emergency clinical advice; escalate to trainer.
@@ -233,7 +235,7 @@ flowchart LR
 - `GOOGLE_CLIENT_ID` / `SECRET` (optional calendar path)
 - `ICS_FEED_SIGNING_SECRET` (tokenized subscribe URLs)
 - `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- Vercel project ↔ GitHub `jaysinghcodes/coachloop` (name flexible)
+- Vercel project ↔ GitHub [jaysinghcodes/Cleat](https://github.com/jaysinghcodes/Cleat)
 
 ---
 

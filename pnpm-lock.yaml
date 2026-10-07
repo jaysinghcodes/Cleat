@@ -23,10 +23,10 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@coachloop/domain':
+      '@cleat/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@coachloop/theme':
+      '@cleat/theme':
         specifier: workspace:*
         version: link:../../packages/theme
       '@react-native-async-storage/async-storage':
@@ -90,10 +90,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@coachloop/domain':
+      '@cleat/domain':
         specifier: workspace:*
         version: link:../../packages/domain
-      '@coachloop/theme':
+      '@cleat/theme':
         specifier: workspace:*
         version: link:../../packages/theme
       next:

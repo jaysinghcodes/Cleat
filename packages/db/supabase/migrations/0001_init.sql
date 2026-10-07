@@ -1,4 +1,4 @@
--- CoachLoop 0001_init
+-- Cleat 0001_init
 -- Ticket 0 stub. No product tables yet.
 -- Later tickets add orgs, memberships, programs, logs, messages, chunks, and audit rows.
 -- Every product table enables row level security in the same migration that creates it.

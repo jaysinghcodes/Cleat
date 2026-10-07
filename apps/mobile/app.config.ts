@@ -3,19 +3,19 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Cleat",
-  slug: "coachloop",
+  slug: "cleat",
   version: "0.0.1",
   orientation: "portrait",
   icon: "./assets/icon.png",
-  scheme: "coachloop",
+  scheme: "cleat",
   userInterfaceStyle: "automatic",
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.coachloop.app",
+    bundleIdentifier: "com.jaysinghcodes.cleat",
     icon: "./assets/icon.png",
   },
   android: {
-    package: "com.coachloop.app",
+    package: "com.jaysinghcodes.cleat",
     adaptiveIcon: {
       backgroundColor: "#1C1917",
       foregroundImage: "./assets/adaptive-icon.png",

@@ -1,4 +1,4 @@
-import { APP_NAME } from "@coachloop/domain";
+import { APP_NAME } from "@cleat/domain";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../theme";

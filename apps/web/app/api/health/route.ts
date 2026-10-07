@@ -6,7 +6,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: "ok",
-      service: "coachloop-web",
+      service: "cleat-web",
     },
     { status: 200 },
   );
