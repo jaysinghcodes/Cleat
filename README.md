@@ -1,4 +1,6 @@
-# CoachLoop
+# Cleat
+
+Formerly CoachLoop.
 
 Expo (iOS and Android) + Next.js trainer web on Vercel, Supabase (Auth, Postgres, Realtime, Storage, pgvector) as the backend, OpenAI for the LLM, and calendar via ICS subscribe/export with optional Google Calendar OAuth.
 
@@ -13,6 +15,7 @@ packages/api    Typed Supabase helpers (stub)
 packages/db     SQL migrations and RLS notes
 packages/domain Zod schemas (stubs)
 packages/ai     Retrieval, confidence, refusals (stubs)
+packages/theme  @cleat/theme tokens
 ```
 
 ## Prerequisites
@@ -37,14 +40,14 @@ pnpm dev:web
 Open [http://localhost:3000](http://localhost:3000). The health route is [http://localhost:3000/api/health](http://localhost:3000/api/health) and returns HTTP 200:
 
 ```json
-{ "status": "ok", "service": "coachloop-web" }
+{ "status": "ok", "service": "cleat-web" }
 ```
 
 Production build from the repo root:
 
 ```sh
 pnpm build
-pnpm --filter @coachloop/web start
+pnpm --filter @cleat/web start
 ```
 
 ## Client app (iOS and Android)
@@ -59,12 +62,12 @@ Metro prints a QR code and the Expo dev tools.
 
 | Target | How |
 | --- | --- |
-| iOS Simulator | On a Mac with Xcode: in the Metro terminal, press `i`. Or `pnpm --filter @coachloop/mobile ios`. |
-| Android Emulator | With an Android Studio emulator running: press `a`. Or `pnpm --filter @coachloop/mobile android`. |
+| iOS Simulator | On a Mac with Xcode: in the Metro terminal, press `i`. Or `pnpm --filter @cleat/mobile ios`. |
+| Android Emulator | With an Android Studio emulator running: press `a`. Or `pnpm --filter @cleat/mobile android`. |
 | iPhone (Expo Go) | Install Expo Go from the App Store, then scan the QR code. |
 | Android phone (Expo Go) | Install Expo Go from the Play Store, then scan the QR code. |
 
-The native splash is the CoachLoop mark on a dark background. The first screen is the client shell and shows whether you are on iOS or Android. An Apple Developer account is not required for Expo Go. Store submission is later.
+The native splash is the Cleat mark on a dark background. The first screen is the client shell and shows whether you are on iOS or Android. An Apple Developer account is not required for Expo Go. Store submission is later.
 
 ### EAS dev builds (optional)
 
@@ -109,7 +112,7 @@ Not required to run the scaffold.
 
 Not required to run locally. To deploy the trainer web app:
 
-1. Import `jaysinghcodes/coachloop` in the Vercel dashboard.
+1. Import [jaysinghcodes/Cleat](https://github.com/jaysinghcodes/Cleat) in the Vercel dashboard.
 2. Framework preset: Next.js.
 3. Root Directory: `apps/web`.
 4. Install command: leave the default (`pnpm install` from the workspace root). Vercel uses the root lockfile.

@@ -1,5 +1,5 @@
 {
-  "name": "coachloop",
+  "name": "cleat",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@10.33.3",
@@ -8,9 +8,9 @@
   },
   "scripts": {
     "dev": "turbo run dev",
-    "dev:web": "pnpm --filter @coachloop/web dev",
-    "dev:mobile": "pnpm --filter @coachloop/mobile start",
-    "build": "pnpm --filter @coachloop/web build",
+    "dev:web": "pnpm --filter @cleat/web dev",
+    "dev:mobile": "pnpm --filter @cleat/mobile start",
+    "build": "pnpm --filter @cleat/web build",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck"
   },

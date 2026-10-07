@@ -6,7 +6,7 @@ import {
   themes,
   type ThemePreference,
   type ThemeTokens,
-} from "@coachloop/theme";
+} from "@cleat/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,

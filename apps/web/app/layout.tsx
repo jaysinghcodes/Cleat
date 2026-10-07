@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { APP_NAME } from "@coachloop/domain";
-import { themeStylesheet } from "@coachloop/theme";
+import { APP_NAME } from "@cleat/domain";
+import { themeStylesheet } from "@cleat/theme";
 import "./globals.css";
 import { themeBootScript } from "./theme-boot";
 import { ThemeProvider } from "./theme";

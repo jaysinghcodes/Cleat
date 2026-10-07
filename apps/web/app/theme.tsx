@@ -8,7 +8,7 @@ import {
   themes,
   type ThemePreference,
   type ThemeTokens,
-} from "@coachloop/theme";
+} from "@cleat/theme";
 import {
   createContext,
   useCallback,

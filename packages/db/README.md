@@ -1,4 +1,4 @@
-# @coachloop/db
+# @cleat/db
 
 SQL migrations and the row-level security notes for Supabase Postgres.
 

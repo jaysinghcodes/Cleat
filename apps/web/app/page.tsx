@@ -1,4 +1,4 @@
-import { APP_NAME } from "@coachloop/domain";
+import { APP_NAME } from "@cleat/domain";
 import { ThemeCycle } from "./theme";
 
 export default function HomePage() {
