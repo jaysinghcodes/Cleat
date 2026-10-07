@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     "@coachloop/api",
     "@coachloop/db",
     "@coachloop/domain",
+    "@coachloop/theme",
   ],
   // Root `pnpm lint` is the lint step. Next's build lint expects eslint-config-next.
   eslint: {

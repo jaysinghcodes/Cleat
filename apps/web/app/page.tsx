@@ -1,4 +1,5 @@
 import { APP_NAME } from "@coachloop/domain";
+import { ThemeCycle } from "./theme";
 
 export default function HomePage() {
   return (
@@ -12,6 +13,7 @@ export default function HomePage() {
       <p>
         Health check: <a href="/api/health">/api/health</a>
       </p>
+      <ThemeCycle />
     </main>
   );
 }
