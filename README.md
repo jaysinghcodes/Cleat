@@ -112,11 +112,11 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
 3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
 4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security.
-5. In the Supabase Auth settings, allow these redirect URLs:
-   - `http://localhost:3000/auth/callback`
-   - `http://localhost:8081/auth/callback`
-   - `exp://**` so a magic link can reopen Expo Go
-   - `cleat://**` for a later dev build (Expo Go does not open this scheme)
+5. Add these redirect URLs to the Supabase auth redirect allow list:
+   - `http://localhost:3000/auth/callback` (trainer desk)
+   - `http://localhost:8081/auth/callback` (Expo web)
+   - `exp://**` (Expo Go). A magic link opened from the phone uses `exp://<metro-host>/--/auth/callback`.
+   - `cleat://**` (the `cleat` scheme in `app.config.ts`). A later dev build uses `cleat://auth/callback`. Expo Go does not open `cleat://`.
 6. Read [packages/db/supabase/RLS.md](packages/db/supabase/RLS.md) before adding tables. Every table turns on row level security in the same migration.
 
 `NEXT_PUBLIC_CLIENT_APP_URL` is the origin a trainer copies into an invite link. It defaults to `http://localhost:8081` (Expo web).
@@ -130,7 +130,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - iPhone or Android in Expo Go: follow [Try it in Expo Go](#try-it-in-expo-go). Paste the copied link on Join. The phone does not need to open `localhost`.
    - iOS Simulator (Mac with Xcode): press `i`. Android emulator: press `a`.
 4. On the invite screen, enter a name and email, then the email code. You can also open the sign-in link from that same device. The app opens on the Today tab.
-5. Sign in again from Log in with the same email. The session is stored in the browser and, on a device, in app storage, so a reload or cold start keeps you signed in.
+5. Sign in again from Log in with the same email. The session is stored in the browser. On a phone it is stored in AsyncStorage, which ships with Expo Go, so a reload or cold start keeps you signed in.
 6. Display name and timezone: trainer desk Org / Billing, or the client Me tab, Edit.
 
 An invite older than 7 days is rejected with "This invite has expired. Ask your coach for a new link."
@@ -161,10 +161,11 @@ Not required to run locally. To deploy the trainer web app:
 
 The client stays compatible with Expo Go. It does not use a custom native module or a dev build, and it does not register for push notifications.
 
-1. Create a free Supabase project. Enable the email provider. In Authentication URL configuration add:
+1. Create a free Supabase project. Enable the email provider. In the Magic Link email template, keep `{{ .Token }}` so the message includes the code, and `{{ .ConfirmationURL }}` if you also want the link. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback`
    - `http://localhost:8081/auth/callback`
-   - `exp://**`
+   - `exp://**` (Expo Go)
+   - `cleat://**` (app scheme; Expo Go does not open this)
 2. Run `packages/db/supabase/migrations/0001_init.sql` and `0002_tenancy.sql` in the SQL editor.
 3. Put the anon key in the app env files. Do not put the service role key in either file.
 
