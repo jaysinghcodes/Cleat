@@ -31,6 +31,104 @@ No Supabase project, Vercel project, Expo account, or API keys are required to c
 pnpm install
 ```
 
+## Run locally
+
+Use option A when Docker is installed. Use option B when it is not. Both send real sign-in email. Neither one stubs the code.
+
+`0001_init.sql` runs `create extension vector`. The Supabase database image already includes pgvector. On plain Postgres 16, install `postgresql-16-pgvector` before `pnpm --filter @cleat/db test:rls`.
+
+### Option A. Supabase CLI
+
+Install Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started). From `packages/db`:
+
+```sh
+supabase start
+```
+
+That starts Postgres, GoTrue, the API on port 54321, and Mailpit. The Mailpit UI is [http://127.0.0.1:54324](http://127.0.0.1:54324). It applies `supabase/migrations`, then `supabase/seed.sql`. The Magic Link template in `packages/db/supabase/templates/magic_link.html` includes `{{ .Token }}`, so the message shows the 6-digit code.
+
+```sh
+supabase status
+```
+
+Copy `API_URL` and `ANON_KEY` into the app env files below. Leave the service role key out of both apps.
+
+### Option B. Mailpit binary, GoTrue, and PostgREST
+
+Use this when Docker cannot run `supabase start`. Mail is still real SMTP. There is no mocked inbox and no auth stub SQL.
+
+Download the single Mailpit binary from the [Mailpit releases](https://github.com/axllent/mailpit/releases) and start it before GoTrue. SMTP listens on port 1025. The UI listens on port 54324:
+
+```sh
+curl -sL https://github.com/axllent/mailpit/releases/download/v1.31.4/mailpit-linux-amd64.tar.gz | tar -xz
+./mailpit --smtp 127.0.0.1:1025 --listen 127.0.0.1:54324
+```
+
+Open [http://127.0.0.1:54324](http://127.0.0.1:54324).
+
+Apply `packages/db/supabase/migrations/0001_init.sql` and `0002_tenancy.sql` to Postgres. Do not apply `packages/db/supabase/tests/plain_postgres_auth_stub.sql`. That file is only for `test:rls`.
+
+Start GoTrue (`gotrue serve`, v2.197.0 or newer) against that database. Point its SMTP server at Mailpit:
+
+```sh
+export GOTRUE_SMTP_HOST=localhost
+export GOTRUE_SMTP_PORT=1025
+export GOTRUE_SMTP_ADMIN_EMAIL=noreply@cleat.local
+export GOTRUE_SMTP_SENDER_NAME=Cleat
+export GOTRUE_MAILER_AUTOCONFIRM=false
+export GOTRUE_MAILER_OTP_LENGTH=6
+export GOTRUE_SITE_URL=http://localhost:3000
+export GOTRUE_URI_ALLOW_LIST='http://localhost:3000/**,http://127.0.0.1:3000/**,http://localhost:8081/**,http://127.0.0.1:8081/**,exp://**,cleat://**'
+```
+
+Also set `GOTRUE_DB_DATABASE_URL`, `GOTRUE_JWT_SECRET`, and `API_EXTERNAL_URL` for your Postgres and API port. The Magic Link template must include `{{ .Token }}`.
+
+Start PostgREST on port 54321 with the same JWT secret, `db-anon-role = "anon"`, and `db-schemas = "public"`. Put that API URL and the anon key in the app env files below. Leave the service role key out of both apps.
+
+### App env and allow list
+
+`apps/web/.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
+NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
+```
+
+`apps/mobile/.env`:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
+```
+
+The auth redirect allow list is `additional_redirect_urls` in `packages/db/supabase/config.toml` (option A). Option B uses `GOTRUE_URI_ALLOW_LIST` above. A hosted project needs the same entries:
+
+- `http://localhost:3000/auth/callback`
+- `http://127.0.0.1:3000/auth/callback`
+- `http://localhost:8081/auth/callback`
+- `http://127.0.0.1:8081/auth/callback`
+- `exp://**` for Expo Go (`exp://<metro-host>/--/auth/callback`)
+- `cleat://**` for the `cleat` scheme (`cleat://auth/callback`). Expo Go does not open `cleat://`.
+
+A hosted project also needs `{{ .Token }}` in the Magic Link email template.
+
+Trainer desk, from the repo root:
+
+```sh
+pnpm dev:web
+```
+
+Open [http://localhost:3000/signup](http://localhost:3000/signup).
+
+Expo web, from `apps/mobile`:
+
+```sh
+npx expo start --web --port 8081
+```
+
+Open [http://localhost:8081](http://localhost:8081).
+
 ## Trainer web
 
 ```sh
@@ -101,7 +199,7 @@ Do not commit `.env` or any real key. ICS subscribe/export is the calendar path;
 
 ## Supabase auth
 
-Not required to boot the empty screens. Sign-up, sign-in, and invites need a Supabase project (hosted free tier, or the local CLI when Docker is available).
+Not required to boot the empty screens. Sign-up, sign-in, and invites need a Supabase project (hosted free tier, or [Run locally](#run-locally)).
 
 There are no passwords. Both roles sign in with an email code or a magic link.
 
@@ -143,7 +241,7 @@ pnpm --filter @cleat/db test:rls
 
 `test:rls` needs the pgvector extension. `0001_init.sql` runs `create extension vector`. On Postgres 16 install `postgresql-16-pgvector`. Supabase and the Supabase CLI image already include it.
 
-This applies the migrations and asserts that a trainer cannot read another org and a client cannot read another client's profile. If Docker is not available, the script uses plain Postgres and stubs `auth.uid()`. The Supabase CLI path is `supabase start` from `packages/db` when Docker is installed.
+This applies the migrations with psql and asserts that a trainer cannot read another org and a client cannot read another client's profile. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps use option A or option B above, both of which run real GoTrue.
 
 ## Vercel (hobby)
 

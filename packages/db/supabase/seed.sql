@@ -1,0 +1,3 @@
+-- Local seed applied by `supabase db reset` after the migrations.
+-- Ticket 1 creates the trainer, the invite, and the client through the apps.
+-- There are no product rows to load here.
