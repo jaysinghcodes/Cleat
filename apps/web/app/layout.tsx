@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { APP_NAME } from "@cleat/domain";
 import { themeStylesheet } from "@cleat/theme";
 import "./globals.css";
+import { SessionProvider } from "./session";
 import { themeBootScript } from "./theme-boot";
 import { ThemeProvider } from "./theme";
 
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

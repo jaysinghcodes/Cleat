@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cleat/api": "workspace:*",
     "@cleat/domain": "workspace:*",
     "@cleat/theme": "workspace:*",
     "next": "~15.5.27",

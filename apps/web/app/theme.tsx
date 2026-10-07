@@ -100,10 +100,11 @@ const preferenceLabel: Record<ThemePreference, string> = {
   light: "Light",
 };
 
-export function ThemeCycle() {
+export function ThemeCycle({ className }: { className?: string }) {
   const { preference, cycle, synced } = useTheme();
+  const classes = className ? `theme-cycle ${className}` : "theme-cycle";
   return (
-    <button type="button" className="theme-cycle" onClick={cycle}>
+    <button type="button" className={classes} onClick={cycle}>
       {synced ? `Theme: ${preferenceLabel[preference]}` : "Theme"}
     </button>
   );

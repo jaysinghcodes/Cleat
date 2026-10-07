@@ -4,16 +4,16 @@ Formerly CoachLoop.
 
 Expo (iOS and Android) + Next.js trainer web on Vercel, Supabase (Auth, Postgres, Realtime, Storage, pgvector) as the backend, OpenAI for the LLM, and calendar via ICS subscribe/export with optional Google Calendar OAuth.
 
-This repo is the Ticket 0 scaffold: an empty app you can install and run. Auth, programs, chat, AI, the inbox, and calendar are the next tickets. Full stack notes are in [docs/architecture.md](docs/architecture.md).
+Trainers sign in on the web desk. Clients accept an invite and sign in on the Expo app. Programs, chat, AI, the inbox, and calendar are later tickets. Full stack notes are in [docs/architecture.md](docs/architecture.md).
 
 ## Layout
 
 ```
 apps/web        Next.js trainer desk (Vercel)
 apps/mobile     Expo client (iOS and Android, one project)
-packages/api    Typed Supabase helpers (stub)
+packages/api    Typed Supabase helpers
 packages/db     SQL migrations and RLS notes
-packages/domain Zod schemas (stubs)
+packages/domain Zod schemas
 packages/ai     Retrieval, confidence, refusals (stubs)
 packages/theme  @cleat/theme tokens
 ```
@@ -67,7 +67,7 @@ Metro prints a QR code and the Expo dev tools.
 | iPhone (Expo Go) | Install Expo Go from the App Store, then scan the QR code. |
 | Android phone (Expo Go) | Install Expo Go from the Play Store, then scan the QR code. |
 
-The native splash is the Cleat mark on a dark background. The first screen is the client shell and shows whether you are on iOS or Android. An Apple Developer account is not required for Expo Go. Store submission is later.
+The native splash is the Cleat mark on a dark background. After sign-in, the client lands on tabs: Today, Program, Chat, Book, and Me. An Apple Developer account is not required for Expo Go. Store submission is later. The iOS bundle id and Android package are `com.jaysinghcodes.cleat`.
 
 ### EAS dev builds (optional)
 
@@ -99,14 +99,48 @@ Leave the values blank until a later ticket needs them. `.env.example` lists:
 
 Do not commit `.env` or any real key. ICS subscribe/export is the calendar path; Google OAuth is optional and can stay empty.
 
-## Supabase (when you create a project)
+## Supabase auth
 
-Not required to run the scaffold.
+Not required to boot the empty screens. Sign-up, sign-in, and invites need a Supabase project (hosted free tier, or the local CLI when Docker is available).
 
-1. Create a free project at [supabase.com](https://supabase.com).
-2. Copy the project URL, anon key, and service role into `.env` using the names in `.env.example`.
-3. When product migrations exist, apply `packages/db/supabase/migrations` with the Supabase CLI or the SQL editor. Ticket 0 only enables `pgcrypto` and `pgvector`.
-4. Read [packages/db/supabase/RLS.md](packages/db/supabase/RLS.md) before adding tables. Every later table turns on row level security in the same migration.
+There are no passwords. Both roles sign in with an email code or a magic link.
+
+1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `supabase start` when Docker is available. Local mail is captured by Inbucket (the CLI prints the URL, usually port 54324).
+2. Copy the project URL and anon key into `.env`:
+   - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the trainer desk
+   - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
+   - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
+3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
+4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security.
+5. In the Supabase Auth settings, allow these redirect URLs:
+   - `http://localhost:3000/auth/callback`
+   - `http://localhost:8081/auth/callback`
+   - `cleat://auth/callback`
+6. Read [packages/db/supabase/RLS.md](packages/db/supabase/RLS.md) before adding tables. Every table turns on row level security in the same migration.
+
+`NEXT_PUBLIC_CLIENT_APP_URL` is the origin a trainer copies into an invite link. It defaults to `http://localhost:8081` (Expo web).
+
+### Invite flow
+
+1. Trainer web: `pnpm dev:web`, open [http://localhost:3000/signup](http://localhost:3000/signup), and create a desk with a name, work email, and gym name. Enter the email code, or open the magic link on the same browser. You land on the desk.
+2. Open Clients and choose Create invite link. Copy the link. It expires in 7 days and works once.
+3. Client app: `pnpm dev:mobile`.
+   - Web: press `w`, then open the invite link (or paste the token path under the Expo origin).
+   - iOS Simulator (Mac with Xcode): press `i`, then open the link. A device build can also open `cleat://invite/<token>`.
+   - Android emulator: start an emulator, press `a`, then open the link.
+4. On the invite screen, enter a name and email, then the email code (or the magic link on that device). The app opens on the Today tab.
+5. Sign in again from Log in with the same email. The session is stored in the browser and, on a device, in app storage, so a reload or cold start keeps you signed in.
+6. Display name and timezone: trainer desk Org / Billing, or the client Me tab, Edit.
+
+An invite older than 7 days is rejected with "This invite has expired. Ask your coach for a new link."
+
+### Cross tenant check
+
+```sh
+pnpm --filter @cleat/db test:rls
+```
+
+This applies the migrations and asserts that a trainer cannot read another org and a client cannot read another client's profile. If Docker is not available, the script uses plain Postgres and stubs `auth.uid()`. The Supabase CLI path is `supabase start` from `packages/db` when Docker is installed.
 
 ## Vercel (hobby)
 
@@ -131,4 +165,4 @@ GitHub Actions runs both on pull requests (`.github/workflows/ci.yml`).
 
 ## What comes next
 
-Ticket 1 is auth, orgs, and the trainer web and client mobile shells. Product screens are not in this repo yet.
+Programs, chat, the priority inbox, AI, and calendar booking are later tickets. Those desk links and client tabs are placeholders. Design decisions and the final wireframe screenshots are in [docs/design](docs/design).

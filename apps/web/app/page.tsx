@@ -1,19 +1,21 @@
-import { APP_NAME } from "@cleat/domain";
-import { ThemeCycle } from "./theme";
+"use client";
+
+import { copy } from "@cleat/domain";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useSession } from "./session";
+import { FullPageStatus, Unconfigured } from "./ui";
 
 export default function HomePage() {
-  return (
-    <main>
-      <p className="kicker">Trainer desk</p>
-      <h1>{APP_NAME}</h1>
-      <p>
-        Empty scaffold for the trainer web app. Clients, programs, accountability,
-        inbox, audit, and calendar arrive in later tickets.
-      </p>
-      <p>
-        Health check: <a href="/api/health">/api/health</a>
-      </p>
-      <ThemeCycle />
-    </main>
-  );
+  const { ready, configured, membership } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!ready || !configured) return;
+    if (membership?.role === "trainer") router.replace("/accountability");
+    else router.replace("/login");
+  }, [ready, configured, membership, router]);
+
+  if (ready && !configured) return <Unconfigured />;
+  return <FullPageStatus body={copy.checkingSession} />;
 }

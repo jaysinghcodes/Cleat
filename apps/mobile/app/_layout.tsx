@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SessionProvider } from "../lib/session";
 import { ThemeProvider, useTheme } from "../theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -38,7 +39,9 @@ function AppShell() {
 export default function RootLayout() {
   return (
     <ThemeProvider>
-      <AppShell />
+      <SessionProvider>
+        <AppShell />
+      </SessionProvider>
     </ThemeProvider>
   );
 }

@@ -1,26 +1,72 @@
-# Row level security (placeholder)
+# Row level security
 
-Ticket 0 does not create product tables, so this migration has no policies. Ticket 1 adds the first tables and turns RLS on in that migration.
+Ticket 1 enables RLS in `migrations/0002_tenancy.sql`. Later tables follow the same rules.
 
 ## Model (v1)
 
-One org is one trainer. There is no franchise or team RBAC. Every product row carries `org_id`. A client belongs to exactly one org.
+One org is one trainer. There is no franchise or team RBAC. A user belongs to exactly one org. Clients do not see other clients.
 
 | Role | What they can see |
 | --- | --- |
 | `trainer` | Rows in their own org, from the web desk |
-| `client` | Their profile, assigned program, own logs, own chat thread, and own bookings, from the mobile app |
+| `client` | Their own profile, their own membership, their org, and the trainer profile in that org. Not another client's profile, membership, logs, chat, program, or bookings |
+| `anon` | No table access. `invite_preview(invite_id)` returns the coach name, org name, expiry, and status for one token |
 | `system` | Background jobs. Uses the service role on the server, never the anon key |
+
+`SUPABASE_SERVICE_ROLE` bypasses RLS. Keep it in server env only. Never put it in `NEXT_PUBLIC_*` or `EXPO_PUBLIC_*`. The web and mobile apps do not read it.
+
+## Tables
+
+| Table | RLS | Policies |
+| --- | --- | --- |
+| `profiles` | on, forced | `profiles_select` (`can_read_profile`), `profiles_update_own` (`id = auth.uid()`) |
+| `orgs` | on, forced | `orgs_select_member` (`is_member_of`), `orgs_update_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
+| `memberships` | on, forced | `memberships_select_own` (`user_id = auth.uid()`), `memberships_select_trainer` (`is_trainer_of`) |
+| `invites` | on, forced | `invites_select_trainer`, `invites_insert_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
+
+There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
+
+`can_read_profile` allows:
+
+- the signed in user to read their own profile
+- a trainer to read profiles of members in their org
+- a client to read the trainer profile in their org
+
+A client cannot read another client's profile. Helper functions are `security definer` so policy checks do not recurse through membership RLS. They only answer questions about `auth.uid()`.
+
+## Functions
+
+| Function | Who can execute | Purpose |
+| --- | --- | --- |
+| `create_trainer_org(display_name, org_name, timezone)` | `authenticated` | Creates the profile, org, and `role = trainer` membership. Returns the existing org if the user already belongs to one |
+| `accept_invite(invite_id, display_name, timezone)` | `authenticated` | Rejects missing, expired, and used links. Creates `role = client` in that org only |
+| `invite_preview(invite_id)` | `anon`, `authenticated` | Invite screen data for one token |
+| `current_membership()` | `authenticated` | The caller's org, role, display name, and timezone |
+| `my_coach()` | `authenticated` | The trainer name and org name for a client |
+| `is_trainer_of`, `is_member_of`, `can_read_profile` | `authenticated` | Policy helpers |
+
+User facing exceptions from these functions:
+
+- `Sign in before creating a desk.`
+- `Sign in before accepting an invite.`
+- `Enter your name.`
+- `Enter your gym or brand name.`
+- `Enter a timezone.`
+- `This invite link is not valid.`
+- `This invite has expired. Ask your coach for a new link.`
+- `This invite has already been used.`
+- `Trainer accounts cannot join a roster as a client.`
+- `This account already belongs to another org.`
 
 ## Rules for later migrations
 
 1. Enable RLS on every table in the migration that creates it. Do not add a table and leave policies for a follow-up.
-2. Trainer policies match `org_id` to the signed-in trainer's membership (`auth.uid()`).
-3. Client policies match the signed-in user to their own rows only. A client cannot read another client's logs, chat, program, or bookings.
-4. RAG chunk queries filter `org_id` to the current org. Program chunks also filter `client_id` to the asking client. No cross-tenant vector search.
+2. Trainer policies match `org_id` to the signed in trainer's membership (`auth.uid()`).
+3. Client policies match the signed in user to their own rows only. A client cannot read another client's logs, chat, program, or bookings.
+4. RAG chunk queries filter `org_id` to the current org. Program chunks also filter `client_id` to the asking client. No cross tenant vector search.
 5. Storage paths stay under `org/{org_id}/kb/...` and `org/{org_id}/clients/{client_id}/...`.
-6. `SUPABASE_SERVICE_ROLE` bypasses RLS. Keep it in server env only. Never put it in `NEXT_PUBLIC_*` or `EXPO_PUBLIC_*`.
+6. Prefer `security definer` helpers when a policy would otherwise read a table that also has RLS.
 
-## Not in `0001_init.sql`
+## Proof
 
-No `create table` and no `create policy` until Ticket 1. The init migration only enables `pgcrypto` and `pgvector` so later tickets have a starting point.
+`scripts/cross-tenant-rls.sh` applies `0001_init.sql` and `0002_tenancy.sql`, then `tests/cross_tenant_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies.
