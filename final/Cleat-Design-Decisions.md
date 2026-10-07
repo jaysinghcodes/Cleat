@@ -1,10 +1,10 @@
-# Cleat — Design Decisions
+# Cleat Design Decisions
 
-*Draft · Oct 7 2026 · Owner: Jay Singh · Status: theme locked, pending final confirmation*
+*Final · Oct 7 2026 · Owner: Jay Singh · Status: approved by Jay Oct 7 2026; wireframes are the build spec*
 
 ## 1. Product
 
-**Cleat** is trainer–client fitness accountability with **confidence-gated AI** and a **priority inbox**. Clients log workouts and chat on an **Expo iOS/Android** app. Trainers run their roster from a **Next.js web desk**. The AI answers only when it's confident and sources match. Anything injury/medical, ambiguous or low-confidence is escalated to the trainer, and every action is audited.
+**Cleat** is trainer and client fitness accountability with **confidence-gated AI** and a **priority inbox**. Clients log workouts and chat on an **Expo iOS/Android** app. Trainers run their roster from a **Next.js web desk**. The AI answers only when it's confident and sources match. Anything injury/medical, ambiguous or low-confidence is escalated to the trainer, and every action is audited.
 
 ## 2. Name
 
@@ -23,7 +23,7 @@
 
 **Brand accent: Soft Apricot `#E8A87C`.** It's the single accent, used only for the primary button, active nav, AI dots and the confidence fill. Cream chip fill `#FFEDD5` is for rare small chips only.
 
-### Dark — Warm mist (default)
+### Dark · Warm mist (default)
 
 | Token | Hex | Use |
 |---|---|---|
@@ -35,9 +35,9 @@
 | Text 1 / 2 / 3 | `#F3F0EC` / `#B5AFA9` / `#9D9791` | Primary / secondary / tertiary |
 | Accent | `#E8A87C` | Fill + accent text |
 | CTA label | `#1C1917` | Text on apricot |
-| Success / Warn / Error | `#7CC79F` / `#DCBC72` / `#EE9088` | Dots and tinted text; 14–15% tint fills |
+| Success / Warn / Error | `#7CC79F` / `#DCBC72` / `#EE9088` | Dots and tinted text; 14 to 15% tint fills |
 
-### Light — Grey + white cards
+### Light · Grey + white cards
 
 | Token | Hex | Use |
 |---|---|---|
@@ -48,7 +48,7 @@
 | Text 1 / 2 / 3 | `#1C1917` / `#57534E` / `#6B6B74` | Primary / secondary / tertiary |
 | Accent fill | `#E8A87C` | Buttons, active nav, AI dots |
 | Accent text | `#9A5B2F` | Apricot-family text on light |
-| Success / Warn / Error | `#15803D` / `#9E6007` / `#B91C1C` | Dots and tinted text; 7–9% tint fills |
+| Success / Warn / Error | `#15803D` / `#9E6007` / `#B91C1C` | Dots and tinted text; 7 to 9% tint fills |
 
 > Warn was nudged from `#A16207` to `#9E6007` (visually identical) so it passes AA on the grey page too, not just on white cards.
 
@@ -77,9 +77,10 @@
 3. **Rails:** a 3px colored left rail **only on urgent/injury** items. No apricot, yellow or green rails. "Current" items get a soft apricot ring instead.
 4. **Confidence bar:** thin neutral track, **apricot fill** for the review band, muted red for low and muted green for high. The number is in primary text. No bright yellow.
 5. **Borders:** hairline. White 8% on dark, `#D4D4D8` on light. No heavy stone lines.
-6. **Elevation by lightness:** sidebar < page < card < raised, roughly 4–5 OKLCH lightness points per step. Shadows are minimal in dark mode.
+6. **Elevation by lightness:** sidebar < page < card < raised, roughly 4 to 5 OKLCH lightness points per step. Shadows are minimal in dark mode.
 7. **Avatars** are neutral. Only urgent/needs-nudge avatars take the error tint.
 8. **Stats** use neutral numbers with a status dot in the label, not big colored numerals.
+9. **Copy rules:** No dash punctuation in product copy (no em dash, en dash, or spaced hyphen used as punctuation). Hyphenated words like check-in or sign-up are fine. The marketing tagline is TBD and a placeholder for now.
 
 ## 7. Theme behavior
 
@@ -99,6 +100,7 @@
 | Oct 7 | Pass 3: soft charcoal `#1C1917` (logo bg) + a grey/light-cards variant. Still dark, flat and murky: brown-stone surfaces too close in lightness, heavy borders, too many colored rails and chips. |
 | Oct 7 | Compare: **3 darks** (Graphite, Slate dusk, Warm mist) + **2 lights** (Grey, Paper) on the trainer inbox, with hierarchy fixes. |
 | Oct 7 | **Locked: Dark = Warm mist, Light = Grey + white cards; charcoal-background logo is primary.** Rolled across all wireframes. |
+| Oct 7 | **Copy rule:** no dash punctuation in product text. Marketing tagline TBD / placeholder. |
 
 ## 9. Screen inventory (23)
 
@@ -132,7 +134,7 @@ Screenshots: `final/dark/<screen>.png`, `final/light/<screen>.png`, overviews `f
 
 ## 10. Next steps
 
-1. Jay confirms this doc + final screenshots.
+1. Done: Jay confirmed this doc and the final screenshots on Oct 7 2026.
 2. **Forge builds the UI from these wireframes** (Expo client app + Next.js trainer desk), implementing these tokens as the theme source of truth.
 3. **Rename the repo `coachloop` → `cleat`** (packages, bundle IDs, app display name).
 4. Trademark clearance for "Cleat" by counsel before public launch.
