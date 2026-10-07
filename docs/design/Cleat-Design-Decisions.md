@@ -80,7 +80,7 @@
 6. **Elevation by lightness:** sidebar < page < card < raised, roughly 4 to 5 OKLCH lightness points per step. Shadows are minimal in dark mode.
 7. **Avatars** are neutral. Only urgent/needs-nudge avatars take the error tint.
 8. **Stats** use neutral numbers with a status dot in the label, not big colored numerals.
-9. **Copy rules:** No dash punctuation in product copy (no em dash, en dash, or spaced hyphen used as punctuation). Hyphenated words like check-in or sign-up are fine. The marketing tagline is TBD and a placeholder for now.
+9. **Copy rules:** No dash punctuation in product copy (no em dash, en dash, or spaced hyphen used as punctuation). Hyphenated words like check-in or sign-up are fine. Locked marketing copy: hero "Your coaching. Never a guess."; hero subline "Cleat keeps clients logging on iOS and Android, shows you who skipped and who needs a nudge, and answers routine questions from your own programs only when it's sure. Everything else comes to you."; AI section "It answers when it's sure. You answer the rest."; accountability section "Every rep logged. Every skip seen."
 
 ## 7. Theme behavior
 
@@ -101,6 +101,7 @@
 | Oct 7 | Compare: **3 darks** (Graphite, Slate dusk, Warm mist) + **2 lights** (Grey, Paper) on the trainer inbox, with hierarchy fixes. |
 | Oct 7 | **Locked: Dark = Warm mist, Light = Grey + white cards; charcoal-background logo is primary.** Rolled across all wireframes. |
 | Oct 7 | **Copy rule:** no dash punctuation in product text. Marketing tagline TBD / placeholder. |
+| Oct 7 | **Tagline locked:** hero "Your coaching. Never a guess."; AI section "It answers when it's sure. You answer the rest."; accountability "Every rep logged. Every skip seen." |
 
 ## 9. Screen inventory (23)
 

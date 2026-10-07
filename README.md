@@ -141,6 +141,8 @@ An invite older than 7 days is rejected with "This invite has expired. Ask your 
 pnpm --filter @cleat/db test:rls
 ```
 
+`test:rls` needs the pgvector extension. `0001_init.sql` runs `create extension vector`. On Postgres 16 install `postgresql-16-pgvector`. Supabase and the Supabase CLI image already include it.
+
 This applies the migrations and asserts that a trainer cannot read another org and a client cannot read another client's profile. If Docker is not available, the script uses plain Postgres and stubs `auth.uid()`. The Supabase CLI path is `supabase start` from `packages/db` when Docker is installed.
 
 ## Vercel (hobby)
