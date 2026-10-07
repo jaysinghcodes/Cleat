@@ -1,10 +1,10 @@
 import { CleatRequestError, requestEmailCode, verifyEmailCode } from "@cleat/api";
 import { copy, emailCodeSchema, emailSchema, validationMessage } from "@cleat/domain";
-import * as Linking from "expo-linking";
 import { Link, Redirect } from "expo-router";
 import { useState } from "react";
 import { Text } from "react-native";
 import { AuthScreen, Banner, Button, Field } from "../components/ui";
+import { emailRedirectTarget } from "../lib/auth-link";
 import { useSession } from "../lib/session";
 import { useTheme } from "../theme";
 
@@ -46,7 +46,7 @@ export default function LoginScreen() {
     try {
       await requestEmailCode(client!, parsed.data, {
         shouldCreateUser: false,
-        emailRedirectTo: Linking.createURL("/auth/callback"),
+        emailRedirectTo: emailRedirectTarget(),
         missingAccountMessage: copy.noClientAccount,
       });
       setEmail(parsed.data);

@@ -175,7 +175,7 @@ export const copy = {
   noClients: "No clients yet. Create a link and send it to them.",
   arrivesLater: "Arrives in a later ticket",
   billingLater: "Billing arrives in a later ticket.",
-  openInvite: "Open the invite link from your coach.",
+  openInvite: "Paste the invite link from your coach.",
 } as const;
 
 export const knownProductErrors = [
@@ -195,6 +195,14 @@ export function productError(message: string | undefined, fallback: string): str
   if (!message) return fallback;
   const known = knownProductErrors.find((item) => message.includes(item));
   return known ?? fallback;
+}
+
+const INVITE_ID_PATTERN =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+export function inviteIdFromText(value: string): string | null {
+  const match = value.trim().match(INVITE_ID_PATTERN);
+  return match ? match[0].toLowerCase() : null;
 }
 
 export function deviceTimezone(): string {

@@ -13,6 +13,7 @@ import {
   type Membership,
 } from "@cleat/domain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Linking from "expo-linking";
 import {
   createContext,
   useCallback,
@@ -23,6 +24,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Platform } from "react-native";
+import { completeAuthFromUrl, urlHasAuthParams } from "./auth-link";
 import { getMobileSupabase, mobileSupabaseConfig } from "./supabase";
 
 export type SessionUser = {
@@ -64,6 +67,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<CleatClient | null>(null);
   const alive = useRef(true);
+  const seenAuthUrl = useRef<string | null>(null);
 
   const hydrate = useCallback(async (supabase: CleatClient) => {
     const { data } = await supabase.auth.getSession();
@@ -118,9 +122,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       void hydrate(supabase);
     });
     void hydrate(supabase);
+
+    let linkSub: { remove: () => void } | null = null;
+    if (Platform.OS !== "web") {
+      const apply = (url: string | null) => {
+        if (!url || !alive.current || url === seenAuthUrl.current || !urlHasAuthParams(url)) return;
+        seenAuthUrl.current = url;
+        void completeAuthFromUrl(supabase, url)
+          .then((ok) => {
+            if (!alive.current) return;
+            setError(ok ? null : copy.codeFailed);
+          })
+          .catch(() => {
+            if (alive.current) setError(copy.codeFailed);
+          });
+      };
+      void Linking.getInitialURL().then(apply);
+      linkSub = Linking.addEventListener("url", (event) => apply(event.url));
+    }
+
     return () => {
       alive.current = false;
       data.subscription.unsubscribe();
+      linkSub?.remove();
     };
   }, [hydrate]);
 

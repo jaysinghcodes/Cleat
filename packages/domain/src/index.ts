@@ -14,6 +14,7 @@ export {
   firstName,
   initials,
   inviteExpiryLabel,
+  inviteIdFromText,
   knownProductErrors,
   orgNameSchema,
   parseCoach,

@@ -10,10 +10,10 @@ import {
   validationMessage,
 } from "@cleat/domain";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Linking from "expo-linking";
 import { Link, Redirect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+import { emailRedirectTarget } from "../../lib/auth-link";
 import { AuthScreen, Banner, Button, Field } from "../../components/ui";
 import { useSession } from "../../lib/session";
 import { useTheme } from "../../theme";
@@ -106,7 +106,7 @@ export default function InviteScreen() {
       }
       await requestEmailCode(client!, parsed.data.email, {
         shouldCreateUser: true,
-        emailRedirectTo: Linking.createURL("/auth/callback"),
+        emailRedirectTo: emailRedirectTarget(),
         missingAccountMessage: copy.emailFailed,
       });
       setEmail(parsed.data.email);

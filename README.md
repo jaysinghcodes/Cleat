@@ -115,7 +115,8 @@ There are no passwords. Both roles sign in with an email code or a magic link.
 5. In the Supabase Auth settings, allow these redirect URLs:
    - `http://localhost:3000/auth/callback`
    - `http://localhost:8081/auth/callback`
-   - `cleat://auth/callback`
+   - `exp://**` so a magic link can reopen Expo Go
+   - `cleat://**` for a later dev build (Expo Go does not open this scheme)
 6. Read [packages/db/supabase/RLS.md](packages/db/supabase/RLS.md) before adding tables. Every table turns on row level security in the same migration.
 
 `NEXT_PUBLIC_CLIENT_APP_URL` is the origin a trainer copies into an invite link. It defaults to `http://localhost:8081` (Expo web).
@@ -125,10 +126,10 @@ There are no passwords. Both roles sign in with an email code or a magic link.
 1. Trainer web: `pnpm dev:web`, open [http://localhost:3000/signup](http://localhost:3000/signup), and create a desk with a name, work email, and gym name. Enter the email code, or open the magic link on the same browser. You land on the desk.
 2. Open Clients and choose Create invite link. Copy the link. It expires in 7 days and works once.
 3. Client app: `pnpm dev:mobile`.
-   - Web: press `w`, then open the invite link (or paste the token path under the Expo origin).
-   - iOS Simulator (Mac with Xcode): press `i`, then open the link. A device build can also open `cleat://invite/<token>`.
-   - Android emulator: start an emulator, press `a`, then open the link.
-4. On the invite screen, enter a name and email, then the email code (or the magic link on that device). The app opens on the Today tab.
+   - Web: press `w`, then open the invite link (or paste it on Join).
+   - iPhone or Android in Expo Go: follow [Try it in Expo Go](#try-it-in-expo-go). Paste the copied link on Join. The phone does not need to open `localhost`.
+   - iOS Simulator (Mac with Xcode): press `i`. Android emulator: press `a`.
+4. On the invite screen, enter a name and email, then the email code. You can also open the sign-in link from that same device. The app opens on the Today tab.
 5. Sign in again from Log in with the same email. The session is stored in the browser and, on a device, in app storage, so a reload or cold start keeps you signed in.
 6. Display name and timezone: trainer desk Org / Billing, or the client Me tab, Edit.
 
@@ -153,6 +154,47 @@ Not required to run locally. To deploy the trainer web app:
 5. Node.js 22 or newer.
 6. Add environment variables from `.env.example` when later tickets need them. The health route does not read secrets.
 7. After deploy, `GET /api/health` returns 200.
+
+## Try it in Expo Go
+
+The client stays compatible with Expo Go. It does not use a custom native module or a dev build, and it does not register for push notifications.
+
+1. Create a free Supabase project. Enable the email provider. In Authentication URL configuration add:
+   - `http://localhost:3000/auth/callback`
+   - `http://localhost:8081/auth/callback`
+   - `exp://**`
+2. Run `packages/db/supabase/migrations/0001_init.sql` and `0002_tenancy.sql` in the SQL editor.
+3. Put the anon key in the app env files. Do not put the service role key in either file.
+
+`apps/web/.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
+```
+
+`apps/mobile/.env`:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+```
+
+4. Start the trainer desk from the repo root: `pnpm dev:web`. Open http://localhost:3000/signup. Enter a name, email, and gym name. Choose Email me a code. Type the code from the email. You land on the desk.
+5. Open Clients, choose Create invite link, and copy the link.
+6. Install Expo Go from the App Store or Play Store.
+7. Start Metro from `apps/mobile`:
+
+```sh
+npx expo start --tunnel
+```
+
+Use `--tunnel` when the phone is not on the same Wi-Fi as the computer. On the same Wi-Fi, `npx expo start` is enough.
+
+8. Scan the QR code with the iPhone camera, or with Expo Go on Android. The project opens inside Expo Go.
+9. On the phone, choose Join instead. Paste the invite link from step 5. Choose Continue. Enter a name and email, then Accept and open app. Type the code from the email. You land on Today. Opening the sign-in link in that email also returns to Expo Go when `exp://**` is allowed.
+10. Close Expo Go and open the project again. The session is still there. Later sign-in is Log in, the same email, and a new code.
 
 ## Checks
 
