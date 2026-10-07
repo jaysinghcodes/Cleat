@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wireframe Index — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Cleat v1 · Full wireframe suite</span>
+    <span>
+      <span class="tag">Locked theme · Warm mist / Grey</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="hub">
+    <div class="lockup lg"><img src="assets/cleat-mark-charcoal.png" alt="" /><span>Cleat</span></div>
+    <h1>Cleat v1 wireframes</h1>
+    <p class="lede">
+      Trainer accountability OS with confidence-gated AI escalate.
+      <strong>Dark:</strong> Warm mist (default) · <strong>Light:</strong> Grey + white cards · follows your OS, toggle top-right.
+      Preview any screen with <code>?theme=dark</code> or <code>?theme=light</code>. Desktop ~1280 · client phone ~390×844.
+    </p>
+    <div class="hub-grid">
+      <div class="hub-section">
+        <h2>Marketing / Auth</h2>
+        <a class="hub-link" href="landing.html"><strong>Landing</strong><span>Marketing home · lockup</span></a>
+        <a class="hub-link" href="auth-trainer-signup.html"><strong>Trainer signup</strong><span>Create org account</span></a>
+        <a class="hub-link" href="auth-trainer-login.html"><strong>Trainer login</strong><span>Email + password</span></a>
+        <a class="hub-link" href="auth-client-invite.html"><strong>Client invite accept</strong><span>Join via invite link</span></a>
+        <a class="hub-link" href="auth-client-login.html"><strong>Client login</strong><span>Mobile-first auth</span></a>
+      </div>
+      <div class="hub-section">
+        <h2>Trainer desk</h2>
+        <a class="hub-link" href="trainer-inbox.html"><strong>Priority inbox</strong><span>Escalations · missed · unanswered</span></a>
+        <a class="hub-link" href="trainer-accountability.html"><strong>Accountability board</strong><span>Done / skipped / nudge</span></a>
+        <a class="hub-link" href="trainer-clients.html"><strong>Clients list + detail</strong><span>Roster · profile pane</span></a>
+        <a class="hub-link" href="trainer-programs.html"><strong>Program builder</strong><span>Templates · assign</span></a>
+        <a class="hub-link" href="trainer-chat.html"><strong>Chat + AI draft</strong><span>Confidence · escalate cues</span></a>
+        <a class="hub-link" href="trainer-kb.html"><strong>Knowledge / FAQ</strong><span>RAG knowledge base</span></a>
+        <a class="hub-link" href="trainer-calendar.html"><strong>Calendar / bookings</strong><span>ICS · availability</span></a>
+        <a class="hub-link" href="trainer-ai-settings.html"><strong>AI settings</strong><span>Confidence threshold</span></a>
+        <a class="hub-link" href="trainer-audit.html"><strong>Audit log</strong><span>Reconstructible AI actions</span></a>
+        <a class="hub-link" href="trainer-org.html"><strong>Org / settings / billing</strong><span>Stub</span></a>
+      </div>
+      <div class="hub-section">
+        <h2>Client mobile</h2>
+        <a class="hub-link" href="client-today.html"><strong>Today / workout</strong><span>Log sets &amp; weights</span></a>
+        <a class="hub-link" href="client-log.html"><strong>Log sets detail</strong><span>Focused logging</span></a>
+        <a class="hub-link" href="client-program.html"><strong>Program week</strong><span>Week overview</span></a>
+        <a class="hub-link" href="client-chat.html"><strong>Chat · AI auto</strong><span>High-confidence reply</span></a>
+        <a class="hub-link" href="client-chat-escalated.html"><strong>Chat · escalated</strong><span>Trainer will reply</span></a>
+        <a class="hub-link" href="client-book.html"><strong>Book / cancel</strong><span>ICS calendar sync</span></a>
+        <a class="hub-link" href="client-profile.html"><strong>Profile / settings</strong><span>Theme · account</span></a>
+      </div>
+    </div>
+    <div class="notes">
+      <h3>Locked theme (Oct 7 2026)</h3>
+      <ul>
+        <li><strong>Dark · Warm mist:</strong> sidebar <code>#211F1E</code> · page <code>#262423</code> · card <code>#312E2C</code> · raised <code>#3C3936</code> · text <code>#F3F0EC</code></li>
+        <li><strong>Light · Grey:</strong> sidebar <code>#FAFAFA</code> · page <code>#F4F4F5</code> · card <code>#FFFFFF</code> · border <code>#D4D4D8</code> · text <code>#1C1917</code></li>
+        <li><strong>Accent:</strong> Soft Apricot <code>#E8A87C</code> only: primary CTA, active nav, AI dots / confidence fill (accent text <code>#9A5B2F</code> on light)</li>
+        <li><strong>Hierarchy:</strong> faint borders · neutral chips with a status dot · colored rail only on urgent/injury · never white text on apricot</li>
+        <li><strong>Logo:</strong> charcoal-background cleat mark + “Cleat” wordmark</li>
+      </ul>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

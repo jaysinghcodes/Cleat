@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Knowledge — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Knowledge / FAQ (RAG)</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a class="active" href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Knowledge base</h1>
+          <p>FAQ &amp; policies the AI retrieves · keep sources short and accurate</p>
+        </div>
+        <button class="btn btn-primary btn-sm">+ Add article</button>
+      </div>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card card-sm" style="background:var(--bg);box-shadow:none">
+            <input style="width:100%;padding:10px 12px;border:none;background:transparent;font-size:14px;outline:none" placeholder="Search articles…" />
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="list-row is-selected" style="background:var(--bg-soft)">
+              <div class="spacer"><div class="name">Injury / pain policy</div><div class="meta">Safety · updated Oct 1</div></div>
+              <span class="pill pill-accent">Active</span>
+            </div>
+            <div class="list-row">
+              <div class="spacer"><div class="name">What’s on my program today?</div><div class="meta">FAQ · high retrieval</div></div>
+              <span class="pill pill-done">FAQ</span>
+            </div>
+            <div class="list-row">
+              <div class="spacer"><div class="name">How do I book / cancel a session?</div><div class="meta">FAQ · calendar</div></div>
+              <span class="pill pill-done">FAQ</span>
+            </div>
+            <div class="list-row">
+              <div class="spacer"><div class="name">Deload week guidance</div><div class="meta">Programming · Alex voice</div></div>
+              <span class="pill pill-muted">Custom</span>
+            </div>
+            <div class="list-row">
+              <div class="spacer"><div class="name">Hard refusal · clinical advice</div><div class="meta">Rules · never auto-send</div></div>
+              <span class="pill pill-nudge">Rule</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row" style="margin-bottom:14px">
+            <div class="name">Injury / pain policy</div>
+            <div class="spacer"></div>
+            <button class="btn btn-ghost btn-sm">Edit</button>
+          </div>
+          <div class="field"><label>Title</label><input value="Injury / pain policy" /></div>
+          <div class="field"><label>Category</label><select><option>Safety</option><option>FAQ</option><option>Rules</option></select></div>
+          <div class="field"><label>Body (retrieved by RAG)</label>
+            <textarea>If a client reports sharp pain, numbness, dizziness, or asks for medical advice: tell them to stop the painful movement, do not prescribe treatment, and escalate to the trainer immediately. Never auto-send clinical guidance.</textarea>
+          </div>
+          <div class="row">
+            <span class="pill pill-muted">Used in 14 audits · 30d</span>
+            <div class="spacer"></div>
+            <button class="btn btn-primary btn-sm">Save</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Calendar / availability + bookings</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a class="active" href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Calendar</h1>
+          <p>Availability · bookings · ICS sync (Google primary)</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm">Week ▾</button>
+          <button class="btn btn-soft btn-sm">Edit availability</button>
+          <button class="btn btn-primary btn-sm">Sync ICS</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:20px">
+        <div class="card stat-card"><div class="label">This week</div><div class="value">7</div><div class="hint">Booked sessions</div></div>
+        <div class="card stat-card"><div class="label">Open slots</div><div class="value">11</div><div class="hint">Visible to clients</div></div>
+        <div class="card stat-card"><div class="label">Cancels · 7d</div><div class="value">1</div><div class="hint">Casey · Tue</div></div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:16px">
+          <div class="name">Week of Oct 6 – 12</div>
+          <div class="spacer"></div>
+          <span class="meta">America/Chicago · ICS linked</span>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-cell"><div class="day">Mon 6</div><div class="cal-event">5:00 Sam</div></div>
+          <div class="cal-cell"><div class="day">Tue 7</div><div class="meta" style="color:var(--faint)">Open 5–8</div></div>
+          <div class="cal-cell"><div class="day">Wed 8</div><div class="cal-event">6:30 Jordan</div></div>
+          <div class="cal-cell"><div class="day">Thu 9</div><div class="cal-event">6:00 Sam</div><div class="cal-event">7:00 Morgan</div></div>
+          <div class="cal-cell"><div class="day">Fri 10</div><div class="meta" style="color:var(--faint)">Open 4–7</div></div>
+          <div class="cal-cell"><div class="day">Sat 11</div><div class="meta" style="color:var(--faint)">Off</div></div>
+          <div class="cal-cell"><div class="day">Sun 12</div><div class="meta" style="color:var(--faint)">Off</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="name" style="margin-bottom:12px">Availability defaults</div>
+        <div class="stack" style="gap:8px">
+          <div class="row"><span class="meta" style="width:80px">Mon–Fri</span><span class="name" style="font-size:13px">5:00 – 8:00 PM</span><div class="spacer"></div><span class="pill pill-accent">45 min slots</span></div>
+          <div class="row"><span class="meta" style="width:80px">Sat–Sun</span><span class="name" style="font-size:13px">Unavailable</span><div class="spacer"></div><button class="btn btn-ghost btn-sm">Override</button></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

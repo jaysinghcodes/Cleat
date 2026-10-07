@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Client · Profile / settings</span>
+    <span>
+      <span class="tag">Phone 390×844</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="phone-stage">
+    <div>
+      
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:41</span><span>●●● 5G ▮</span></div>
+        <div class="phone-body">
+        <div class="m-title">You</div>
+        <div class="m-sub">Sam Lee · Rivera Strength</div>
+        <div class="card" style="padding:16px;margin-bottom:14px">
+          <div class="row">
+            <div class="avatar lg">SL</div>
+            <div class="spacer">
+              <div class="name">Sam Lee</div>
+              <div class="meta">sam@email.com</div>
+            </div>
+            <button class="btn btn-ghost btn-sm">Edit</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+          <div class="list-row"><div class="spacer"><div class="name" style="font-size:14px">Coach</div><div class="meta">Alex Rivera</div></div></div>
+          <div class="list-row"><div class="spacer"><div class="name" style="font-size:14px">Program</div><div class="meta">Foundation 3-day</div></div><a class="meta" href="client-program.html">View</a></div>
+          <div class="list-row"><div class="spacer"><div class="name" style="font-size:14px">Streak</div><div class="meta">6 days</div></div><span class="pill pill-done">On track</span></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+          <div class="list-row">
+            <div class="spacer"><div class="name" style="font-size:14px">Appearance</div><div class="meta">Light / Dark / System</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleCleatTheme()">Toggle</button>
+          </div>
+          <div class="list-row"><div class="spacer"><div class="name" style="font-size:14px">Notifications</div><div class="meta">Workouts · chat · bookings</div></div><div class="switch on"></div></div>
+          <div class="list-row"><div class="spacer"><div class="name" style="font-size:14px">Calendar</div><div class="meta">ICS downloads enabled</div></div><div class="switch on"></div></div>
+        </div>
+        <button class="btn btn-ghost btn-lg">Log out</button>
+</div>
+      <div class="phone-tabs">
+        <a  href="client-today.html"><div class="ico">●</div>Today</a>
+        <a  href="client-program.html"><div class="ico">▦</div>Program</a>
+        <a  href="client-chat.html"><div class="ico">◎</div>Chat</a>
+        <a  href="client-book.html"><div class="ico">◌</div>Book</a>
+        <a class="active" href="client-profile.html"><div class="ico">○</div>Me</a>
+      </div>
+      </div>
+    </div>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

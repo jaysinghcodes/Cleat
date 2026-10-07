@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Audit log — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Audit log</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a class="active" href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Audit log</h1>
+          <p>Row detail · every AI action is reconstructible</p>
+        </div>
+        <button class="btn btn-ghost btn-sm">Export CSV</button>
+      </div>
+      <div class="audit-detail">
+        <div class="stack">
+          <div class="card">
+            <div class="row" style="margin-bottom:16px">
+              <span class="pill pill-nudge">Escalated · hard refuse</span>
+              <span class="pill pill-muted">aud_7f2a91</span>
+              <div class="spacer"></div>
+              <span class="meta">Oct 6, 2026 · 3:42 PM CT</span>
+            </div>
+            <dl class="kv">
+              <dt>Client</dt><dd>Sam Lee (cli_sam)</dd>
+              <dt>Trainer</dt><dd>Alex Rivera (pending human reply)</dd>
+              <dt>Trigger</dt><dd>Client message in thread thr_88</dd>
+              <dt>Decision</dt><dd>Do not auto-send · escalate to priority inbox</dd>
+              <dt>Confidence</dt><dd><strong style="color:var(--nudge)">0.12</strong> · threshold 0.70</dd>
+              <dt>Classifier</dt><dd>medical_injury = true · FAQ retrieval weak</dd>
+            </dl>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Client input</div>
+            <div class="draft-box">Sharp pain in my knee on lunges, what should I do?</div>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Retrieved sources</div>
+            <div class="stack" style="gap:8px">
+              <div class="exercise"><span class="pill pill-accent">FAQ</span><div class="spacer"><div class="name" style="font-size:13px">Injury / pain policy</div><div class="meta">score 0.81</div></div></div>
+              <div class="exercise"><span class="pill pill-muted">Rules</span><div class="spacer"><div class="name" style="font-size:13px">Hard refusal · clinical advice</div><div class="meta">Forced block</div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Model draft (held)</div>
+            <div class="draft-box">I can’t advise on pain or injury. Please stop the movement that hurts and check in with your trainer or a clinician if it continues. Alex has been notified.</div>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Trainer action</div>
+            <div class="meta">Pending — opened from inbox · no edit yet</div>
+            <div class="row" style="margin-top:12px">
+              <a class="btn btn-primary btn-sm" href="trainer-chat.html">Continue in chat</a>
+              <button class="btn btn-ghost btn-sm">Mark reviewed</button>
+            </div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Event timeline</div>
+            <div class="stack" style="gap:14px">
+              <div class="row"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div><div><div class="name" style="font-size:13px">Message received</div><div class="meta">3:42:01 PM</div></div></div>
+              <div class="row"><div style="width:8px;height:8px;border-radius:50%;background:var(--ai)"></div><div><div class="name" style="font-size:13px">RAG + classifiers run</div><div class="meta">3:42:02 PM · 412ms</div></div></div>
+              <div class="row"><div style="width:8px;height:8px;border-radius:50%;background:var(--nudge)"></div><div><div class="name" style="font-size:13px">Hard refuse · escalated</div><div class="meta">3:42:03 PM</div></div></div>
+              <div class="row"><div style="width:8px;height:8px;border-radius:50%;background:var(--faint)"></div><div><div class="name" style="font-size:13px">Trainer open (you)</div><div class="meta">Now</div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Raw (demo)</div>
+            <div class="code">{
+  "id": "aud_7f2a91",
+  "decision": "escalate",
+  "confidence": 0.12,
+  "auto_sent": false,
+  "refusal": "medical_injury",
+  "sources": ["faq_injury_policy"],
+  "trainer_edit": null
+}</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

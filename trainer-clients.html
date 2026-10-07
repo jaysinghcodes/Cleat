@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clients — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Clients list + detail</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a class="active" href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Clients</h1>
+          <p>12 active · 1 invite pending</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm">Filter ▾</button>
+          <button class="btn btn-primary btn-sm">Invite client</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="list-row" style="background:var(--bg-soft)">
+            <input style="width:16px" type="search" placeholder="" disabled />
+            <div class="spacer"><input style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:13px" placeholder="Search clients…" /></div>
+          </div>
+          <div class="list-row is-selected" style="background:var(--bg-soft)">
+            <div class="avatar done">SL</div>
+            <div class="spacer"><div class="name">Sam Lee</div><div class="meta">Foundation 3-day · active</div></div>
+            <span class="pill pill-done">Today</span>
+          </div>
+          <div class="list-row">
+            <div class="avatar done">JK</div>
+            <div class="spacer"><div class="name">Jordan Kim</div><div class="meta">Hypertrophy 4-day</div></div>
+            <span class="pill pill-done">Today</span>
+          </div>
+          <div class="list-row">
+            <div class="avatar skip">MP</div>
+            <div class="spacer"><div class="name">Morgan Patel</div><div class="meta">Foundation 3-day</div></div>
+            <span class="pill pill-skip">Skipped</span>
+          </div>
+          <div class="list-row">
+            <div class="avatar nudge">CT</div>
+            <div class="spacer"><div class="name">Casey Torres</div><div class="meta">No program · at risk</div></div>
+            <span class="pill pill-nudge">Nudge</span>
+          </div>
+          <div class="list-row">
+            <div class="avatar">RW</div>
+            <div class="spacer"><div class="name">Riley Wong</div><div class="meta">Invite accepted · week 1</div></div>
+            <span class="pill pill-muted">New</span>
+          </div>
+          <div class="list-row" style="opacity:0.7">
+            <div class="avatar">??</div>
+            <div class="spacer"><div class="name">taylor@email.com</div><div class="meta">Invite sent · 2 days ago</div></div>
+            <span class="pill pill-warn">Pending</span>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="row" style="margin-bottom:16px">
+              <div class="avatar lg done">SL</div>
+              <div class="spacer">
+                <div class="name" style="font-size:18px">Sam Lee</div>
+                <div class="meta">sam@email.com · joined Sep 12</div>
+              </div>
+              <a class="btn btn-soft btn-sm" href="trainer-chat.html">Message</a>
+            </div>
+            <dl class="kv">
+              <dt>Program</dt><dd>Foundation 3-day</dd>
+              <dt>Streak</dt><dd>6 days</dd>
+              <dt>Last workout</dt><dd>Today · Lower A · 3×5 squat @ 135</dd>
+              <dt>Next booking</dt><dd>Thu Oct 9 · 6:00 PM</dd>
+              <dt>Goals</dt><dd>Strength · knee-friendly progressions</dd>
+            </dl>
+            <div class="row" style="margin-top:18px;gap:8px;flex-wrap:wrap">
+              <a class="btn btn-primary btn-sm" href="trainer-programs.html">Assign program</a>
+              <button class="btn btn-ghost btn-sm">Edit profile</button>
+              <button class="btn btn-danger btn-sm">Remove</button>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:10px">RECENT ACTIVITY</div>
+            <div class="stack" style="gap:10px">
+              <div class="meta"><strong style="color:var(--text)">Today 8:14 AM</strong> — Logged Lower A</div>
+              <div class="meta"><strong style="color:var(--text)">Yesterday</strong> — Asked about Tuesday workout (AI auto 0.92)</div>
+              <div class="meta"><strong style="color:var(--text)">Mon</strong> — Booked Thu 6pm session</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accountability — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Accountability board</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a class="active" href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Accountability</h1>
+          <p>Who finished today · who skipped · who needs a nudge</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm">Today ▾</button>
+          <button class="btn btn-primary btn-sm">Nudge selected</button>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:20px">
+        <div class="card stat-card">
+          <div class="label"><span class="status-dot done"></span>Done</div>
+          <div class="value">8</div>
+          <div class="hint">Logged today’s session</div>
+        </div>
+        <div class="card stat-card">
+          <div class="label"><span class="status-dot skip"></span>Skipped</div>
+          <div class="value">3</div>
+          <div class="hint">Marked skip or no log by 6pm</div>
+        </div>
+        <div class="card stat-card">
+          <div class="label"><span class="status-dot nudge"></span>Needs nudge</div>
+          <div class="value">2</div>
+          <div class="hint">Missed 2+ days or injury flag</div>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="list-row" style="background:var(--bg-soft)">
+          <div style="width:36px"></div>
+          <div class="spacer"><strong style="font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:0.04em">Client</strong></div>
+          <div style="width:100px;font-size:12px;color:var(--faint);font-weight:600">TODAY</div>
+          <div style="width:120px;font-size:12px;color:var(--faint);font-weight:600">STREAK</div>
+          <div style="width:140px;font-size:12px;color:var(--faint);font-weight:600">ACTION</div>
+        </div>
+        <div class="list-row">
+          <div class="avatar done">SL</div>
+          <div class="spacer"><div class="name">Sam Lee</div><div class="meta">Lower A · logged 3×5 squat @ 135</div></div>
+          <div style="width:100px"><span class="pill pill-done">Done</span></div>
+          <div style="width:120px;font-size:13px;color:var(--sub)">6 days</div>
+          <div style="width:140px"><a class="btn btn-ghost btn-sm" href="trainer-chat.html">Message</a></div>
+        </div>
+        <div class="list-row">
+          <div class="avatar done">JK</div>
+          <div class="spacer"><div class="name">Jordan Kim</div><div class="meta">Upper push · all sets logged</div></div>
+          <div style="width:100px"><span class="pill pill-done">Done</span></div>
+          <div style="width:120px;font-size:13px;color:var(--sub)">4 days</div>
+          <div style="width:140px"><button class="btn btn-ghost btn-sm">Message</button></div>
+        </div>
+        <div class="list-row">
+          <div class="avatar skip">MP</div>
+          <div class="spacer"><div class="name">Morgan Patel</div><div class="meta">Rest day marked · optional mobility skipped</div></div>
+          <div style="width:100px"><span class="pill pill-skip">Skipped</span></div>
+          <div style="width:120px;font-size:13px;color:var(--sub)">2 days</div>
+          <div style="width:140px"><button class="btn btn-soft btn-sm">Soft nudge</button></div>
+        </div>
+        <div class="list-row">
+          <div class="avatar nudge">CT</div>
+          <div class="spacer"><div class="name">Casey Torres</div><div class="meta">No log · 3 days · last: Thu Upper</div></div>
+          <div style="width:100px"><span class="pill pill-nudge">Nudge</span></div>
+          <div style="width:120px;font-size:13px;color:var(--nudge);font-weight:600">Broken</div>
+          <div style="width:140px"><button class="btn btn-danger btn-sm">Send nudge</button></div>
+        </div>
+        <div class="list-row">
+          <div class="avatar nudge">RW</div>
+          <div class="spacer"><div class="name">Riley Wong</div><div class="meta">Missed Mon + Tue · inbox has injury keyword</div></div>
+          <div style="width:100px"><span class="pill pill-nudge">Nudge</span></div>
+          <div style="width:120px;font-size:13px;color:var(--nudge);font-weight:600">Broken</div>
+          <div style="width:140px"><a class="btn btn-danger btn-sm" href="trainer-inbox.html">Open inbox</a></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

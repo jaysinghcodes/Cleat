@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programs — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Program builder / assign</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a class="active" href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Programs</h1>
+          <p>Build days · assign to a client — not a 20k library</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm">New blank</button>
+          <button class="btn btn-primary">Assign to Sam Lee</button>
+        </div>
+      </div>
+      <div class="program-cols">
+        <div class="stack">
+          <div class="card">
+            <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">CLIENT</div>
+            <div class="row">
+              <div class="avatar lg done">SL</div>
+              <div>
+                <div class="name">Sam Lee</div>
+                <div class="meta">Currently · Foundation 3-day</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:12px">TEMPLATES</div>
+            <div class="stack" style="gap:8px">
+              <div class="exercise is-selected">
+                <div class="spacer">
+                  <div class="name" style="font-size:13px">Foundation 3-day</div>
+                  <div class="meta">Lower A · Upper · Full</div>
+                </div>
+                <span class="pill pill-accent">Selected</span>
+              </div>
+              <div class="exercise">
+                <div class="spacer">
+                  <div class="name" style="font-size:13px">Hypertrophy 4-day</div>
+                  <div class="meta">Push · Pull · Legs · Upper</div>
+                </div>
+              </div>
+              <div class="exercise">
+                <div class="spacer">
+                  <div class="name" style="font-size:13px">Blank program</div>
+                  <div class="meta">Start from empty days</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">START DATE</div>
+            <div class="row">
+              <button class="btn btn-ghost btn-sm">Mon Oct 7</button>
+              <span class="meta">Client sees “Today” from this date</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row" style="margin-bottom:16px">
+            <div>
+              <div class="name">Day 1 · Lower A</div>
+              <div class="meta">Edit exercises · sets · notes</div>
+            </div>
+            <div class="spacer"></div>
+            <button class="btn btn-ghost btn-sm">Day 2</button>
+            <button class="btn btn-ghost btn-sm">Day 3</button>
+          </div>
+          <div class="stack" style="gap:8px">
+            <div class="exercise"><div class="ord">1</div><div class="spacer"><div class="name" style="font-size:13px">Back squat</div><div class="meta">3 × 5 · RPE 7 · rest 2–3 min</div></div></div>
+            <div class="exercise"><div class="ord">2</div><div class="spacer"><div class="name" style="font-size:13px">Romanian deadlift</div><div class="meta">3 × 8 · video optional</div></div></div>
+            <div class="exercise"><div class="ord">3</div><div class="spacer"><div class="name" style="font-size:13px">Walking lunge</div><div class="meta">3 × 10/leg · stop if sharp pain</div></div></div>
+            <div class="exercise"><div class="ord">4</div><div class="spacer"><div class="name" style="font-size:13px">Calf raise</div><div class="meta">3 × 12</div></div></div>
+          </div>
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border-soft)" class="row">
+            <button class="btn btn-ghost btn-sm">+ Exercise</button>
+            <div class="spacer"></div>
+            <span class="meta">Assign replaces Sam’s current week</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

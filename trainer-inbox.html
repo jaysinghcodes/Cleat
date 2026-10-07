@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Priority inbox — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Priority inbox</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a class="active" href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Priority inbox</h1>
+          <p>Escalated AI · injury / medical · missed workouts — needs you</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm">All ▾</button>
+          <button class="btn btn-ghost btn-sm">Sort: urgency</button>
+        </div>
+      </div>
+      <div class="row" style="gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <span class="pill pill-nudge">Injury · 1</span>
+        <span class="pill pill-ai">AI escalate · 2</span>
+        <span class="pill pill-skip">Missed · 1</span>
+        <span class="pill pill-muted">Unanswered &gt;4h · 0</span>
+      </div>
+      <div class="stack">
+        <div class="card rail-urgent" style="padding:18px 20px">
+          <div class="row">
+            <div class="avatar nudge">SL</div>
+            <div class="spacer">
+              <div class="row" style="gap:8px;margin-bottom:4px">
+                <span class="name">Sam Lee</span>
+                <span class="pill pill-urgent">Needs you — possible injury</span>
+              </div>
+              <div class="meta">“Sharp pain in my knee on lunges, what should I do?”</div>
+            </div>
+            <div style="text-align:right">
+              <div class="meta">2m ago</div>
+              <a class="btn btn-primary btn-sm" href="trainer-chat.html" style="margin-top:8px">Review</a>
+            </div>
+          </div>
+          <div class="row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)">
+            <span class="pill pill-ai">AI hard refuse</span>
+            <span class="meta">No auto-send · draft held · reason: medical/injury keyword</span>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <div class="row">
+            <div class="avatar ai">MP</div>
+            <div class="spacer">
+              <div class="row" style="gap:8px;margin-bottom:4px">
+                <span class="name">Morgan Patel</span>
+                <span class="pill pill-ai">Low confidence · escalate</span>
+              </div>
+              <div class="meta">“Can I swap deadlifts for something if my gym is packed?”</div>
+            </div>
+            <div style="text-align:right">
+              <div class="meta">18m ago</div>
+              <a class="btn btn-soft btn-sm" href="trainer-chat.html" style="margin-top:8px">Edit draft</a>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="conf">
+              <span style="font-size:12px;font-weight:500;color:var(--faint)">AI confidence</span>
+              <div class="conf-bar"><div class="conf-fill mid" style="width:48%"></div></div>
+              <span class="conf-val">0.48</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <div class="row">
+            <div class="avatar skip">CT</div>
+            <div class="spacer">
+              <div class="row" style="gap:8px;margin-bottom:4px">
+                <span class="name">Casey Torres</span>
+                <span class="pill pill-skip">Missed workouts</span>
+              </div>
+              <div class="meta">No log · Mon, Tue, today · streak broken</div>
+            </div>
+            <div style="text-align:right">
+              <div class="meta">1h ago</div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:8px">Nudge</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding:18px 20px">
+          <div class="row">
+            <div class="avatar ai">JK</div>
+            <div class="spacer">
+              <div class="row" style="gap:8px;margin-bottom:4px">
+                <span class="name">Jordan Kim</span>
+                <span class="pill pill-ai">Ambiguous FAQ</span>
+              </div>
+              <div class="meta">“Do you still want me on the deload or push through?”</div>
+            </div>
+            <div style="text-align:right">
+              <div class="meta">3h ago</div>
+              <button class="btn btn-soft btn-sm" style="margin-top:8px">Edit draft</button>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="conf">
+              <span style="font-size:12px;font-weight:500;color:var(--faint)">AI confidence</span>
+              <div class="conf-bar"><div class="conf-fill mid" style="width:55%"></div></div>
+              <span class="conf-val">0.55</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

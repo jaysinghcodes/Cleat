@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Chat + AI draft</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a class="active" href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main" style="padding-bottom:20px">
+      <div class="page-head" style="margin-bottom:16px">
+        <div>
+          <h1>Chat</h1>
+          <p>Escalated draft held — edit, send, or dismiss. Audit captures your action.</p>
+        </div>
+      </div>
+      <div class="chat-wrap">
+        <div class="chat-list">
+          <div class="panel-head">Threads</div>
+          <div class="list-row active">
+            <div class="avatar nudge">SL</div>
+            <div class="spacer"><div class="name">Sam Lee</div><div class="meta">Knee pain · escalate</div></div>
+            <span class="pill pill-nudge" style="font-size:10px">!</span>
+          </div>
+          <div class="list-row">
+            <div class="avatar ai">MP</div>
+            <div class="spacer"><div class="name">Morgan Patel</div><div class="meta">Swap deadlifts?</div></div>
+          </div>
+          <div class="list-row">
+            <div class="avatar done">JK</div>
+            <div class="spacer"><div class="name">Jordan Kim</div><div class="meta">All clear</div></div>
+          </div>
+        </div>
+        <div class="chat-thread">
+          <div class="thread-head">
+            <div class="avatar nudge">SL</div>
+            <div><div class="name">Sam Lee</div><div class="meta">Lower A · active program</div></div>
+            <div class="spacer"></div>
+            <span class="pill pill-nudge">Injury flag</span>
+          </div>
+          <div class="thread-body">
+            <div class="bubble them">Just finished warm-up. Starting lunges now.</div>
+            <div class="bubble me">Nice — keep the torso tall. Text if anything feels off.</div>
+            <div class="bubble them">Sharp pain in my knee on lunges, what should I do?</div>
+            <div style="align-self:center;font-size:11px;color:var(--faint);font-weight:600;letter-spacing:0.04em;text-transform:uppercase;margin:4px 0">AI held · awaiting you</div>
+          </div>
+          <div class="thread-compose">
+            <input type="text" placeholder="Reply as Alex…" />
+            <button class="btn btn-primary">Send</button>
+          </div>
+        </div>
+        <div class="chat-ai">
+          <div class="panel-head">AI draft · held</div>
+          <div class="panel-body">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">CONFIDENCE</div>
+              <div class="conf">
+                <div class="conf-bar"><div class="conf-fill low" style="width:12%"></div></div>
+                <span class="conf-val" style="color:var(--nudge)">0.12</span>
+              </div>
+              <div class="meta" style="margin-top:8px">Below threshold (0.70) · hard refuse: medical/injury</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">DRAFT (not sent)</div>
+              <div class="draft-box">I can’t advise on pain or injury. Please stop the movement that hurts and check in with your trainer or a clinician if it continues. Alex has been notified.</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">SOURCES</div>
+              <span class="source-chip">FAQ · Injury / pain policy</span>
+              <span class="source-chip">Safety · Hard refusal rules</span>
+              <span class="source-chip" style="opacity:0.6">Program · no match</span>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;color:var(--sub);margin-bottom:8px">WHY ESCALATED</div>
+              <div class="meta">Keyword: “sharp pain” · “knee” · clinical advice request. Never auto-send medical guidance.</div>
+            </div>
+            <div class="stack" style="margin-top:8px">
+              <button class="btn btn-primary">Edit &amp; send as me</button>
+              <button class="btn btn-ghost">Use draft as-is</button>
+              <button class="btn btn-danger">Dismiss</button>
+              <a href="trainer-audit.html" style="font-size:12px;text-align:center;color:var(--sub)">View audit entry →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

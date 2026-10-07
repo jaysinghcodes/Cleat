@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Org / Billing — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · Org / settings / billing stub</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a  href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a class="active" href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Org &amp; billing</h1>
+          <p>Rivera Strength · stub for v1</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card">
+            <div class="name" style="margin-bottom:14px">Organization</div>
+            <div class="field"><label>Name</label><input value="Rivera Strength" /></div>
+            <div class="field"><label>Timezone</label><select><option>America/Chicago</option><option>America/New_York</option></select></div>
+            <div class="field"><label>Primary calendar</label><input value="alex@riverastrength.com (Google)" /></div>
+            <button class="btn btn-primary btn-sm">Save</button>
+          </div>
+          <div class="card">
+            <div class="name" style="margin-bottom:14px">Team</div>
+            <div class="list-row" style="padding-left:0;padding-right:0">
+              <div class="avatar">AR</div>
+              <div class="spacer"><div class="name">Alex Rivera</div><div class="meta">Owner · alex@…</div></div>
+              <span class="pill pill-accent">You</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px">Invite coach (soon)</button>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="row" style="margin-bottom:12px">
+              <div class="name">Plan</div>
+              <div class="spacer"></div>
+              <span class="pill pill-accent">Starter</span>
+            </div>
+            <div class="value" style="font-size:28px;font-weight:700;letter-spacing:-0.03em">$0<span style="font-size:14px;color:var(--sub);font-weight:500"> / mo</span></div>
+            <div class="meta" style="margin:8px 0 16px">Up to 10 clients · AI escalate included</div>
+            <div class="stack" style="gap:8px">
+              <div class="row"><span class="meta">Clients</span><div class="spacer"></div><span class="name" style="font-size:13px">12 / 10</span></div>
+              <div class="row"><span class="meta">AI auto-sends · 30d</span><div class="spacer"></div><span class="name" style="font-size:13px">162</span></div>
+            </div>
+            <button class="btn btn-soft btn-sm" style="margin-top:16px">Upgrade to Pro (stub)</button>
+          </div>
+          <div class="card">
+            <div class="name" style="margin-bottom:8px">Appearance</div>
+            <div class="row" style="margin-top:12px">
+              <div class="spacer"><div class="name" style="font-size:13px">Theme</div><div class="meta">Follows system · override anytime</div></div>
+              <button class="btn btn-ghost btn-sm" onclick="toggleCleatTheme()">Toggle</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>

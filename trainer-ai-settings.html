@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI settings — Cleat</title>
+  <link rel="stylesheet" href="shared.css" />
+  
+</head>
+<body>
+  <div class="wf-label">
+    <span>Trainer · AI settings (confidence threshold)</span>
+    <span>
+      <span class="tag">Desktop ~1280</span>
+      &nbsp;<button class="theme-toggle" data-theme-label onclick="toggleCleatTheme()">Dark</button>
+      &nbsp;<a href="index.html">Index</a>
+    </span>
+  </div>
+  <div class="desk">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark"><img src="assets/cleat-mark-charcoal.png" alt="" /></div> Cleat</div>
+      <nav class="nav">
+        <a  href="trainer-accountability.html">Accountability</a>
+        <a  href="trainer-inbox.html">Priority inbox <span class="dot"></span></a>
+        <a  href="trainer-clients.html">Clients</a>
+        <a  href="trainer-programs.html">Programs</a>
+        <a  href="trainer-chat.html">Chat</a>
+        <a  href="trainer-kb.html">Knowledge</a>
+        <a  href="trainer-calendar.html">Calendar</a>
+        <a class="active" href="trainer-ai-settings.html">AI settings</a>
+        <a  href="trainer-audit.html">Audit log</a>
+        <a  href="trainer-org.html">Org / Billing</a>
+      </nav>
+      <div class="side-foot">Alex Rivera · Coach<br/>Org: Rivera Strength</div>
+    </aside>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>AI settings</h1>
+          <p>Confidence gate · hard refuses · tone</p>
+        </div>
+        <button class="btn btn-primary btn-sm">Save</button>
+      </div>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card">
+            <div class="name" style="margin-bottom:8px">Auto-send threshold</div>
+            <div class="meta" style="margin-bottom:16px;line-height:1.5">Drafts at or above this confidence may auto-send when sources match. Below → escalate to you.</div>
+            <div class="slider-row">
+              <span class="meta">0.50</span>
+              <div class="slider-track"><div class="slider-thumb"></div></div>
+              <span class="meta">0.95</span>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <span class="pill pill-accent">Current · 0.70</span>
+              <div class="spacer"></div>
+              <span class="meta">Recommended for coaching FAQ</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="name" style="margin-bottom:14px">Hard refuses (always escalate)</div>
+            <div class="stack" style="gap:12px">
+              <div class="row"><div class="switch on"></div><div class="spacer"><div class="name" style="font-size:13px">Injury / medical / clinical advice</div><div class="meta">Keywords + classifier</div></div></div>
+              <div class="row"><div class="switch on"></div><div class="spacer"><div class="name" style="font-size:13px">Nutrition prescriptions</div><div class="meta">Macros, meal plans as medical</div></div></div>
+              <div class="row"><div class="switch on"></div><div class="spacer"><div class="name" style="font-size:13px">Client asks for “you” specifically</div><div class="meta">“Can you look at my form video?”</div></div></div>
+              <div class="row"><div class="switch"></div><div class="spacer"><div class="name" style="font-size:13px">Program swaps without FAQ match</div><div class="meta">Optional · currently escalate via low conf</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="card">
+            <div class="name" style="margin-bottom:8px">Voice</div>
+            <div class="field"><label>Sign-off</label><input value="— Alex" /></div>
+            <div class="field"><label>Tone notes for model</label><textarea>Warm, concise, coach voice. No emoji spam. Prefer program facts over pep talks.</textarea></div>
+          </div>
+          <div class="card">
+            <div class="name" style="margin-bottom:8px">Last 7 days</div>
+            <dl class="kv">
+              <dt>Auto-sent</dt><dd>41</dd>
+              <dt>Escalated</dt><dd>9</dd>
+              <dt>Hard refuse</dt><dd>2</dd>
+              <dt>Trainer edited</dt><dd>6</dd>
+            </dl>
+            <a href="trainer-audit.html" class="meta" style="display:inline-block;margin-top:12px">Open audit log →</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="shared.js"></script>
+</body>
+</html>
