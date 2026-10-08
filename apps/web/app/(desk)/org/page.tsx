@@ -1,8 +1,23 @@
 "use client";
 
-import { CleatRequestError, updateProfile } from "@cleat/api";
-import { copy, profileUpdateSchema, validationMessage } from "@cleat/domain";
-import { useState, type FormEvent } from "react";
+import {
+  CleatRequestError,
+  accessToken,
+  disconnectGoogle,
+  googleStatus,
+  loadTrainerCalendar,
+  saveOrgCalendarSettings,
+  startGoogleConnect,
+  updateProfile,
+} from "@cleat/api";
+import {
+  bookingCopy,
+  copy,
+  profileUpdateSchema,
+  validationMessage,
+  type PrimaryCalendar,
+} from "@cleat/domain";
+import { useEffect, useState, type FormEvent } from "react";
 import { useSession } from "../../session";
 import { Banner, TextField } from "../../ui";
 
@@ -13,6 +28,42 @@ export default function OrgPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
+  const [cutoff, setCutoff] = useState("12");
+  const [primary, setPrimary] = useState<PrimaryCalendar>("ics");
+  const [google, setGoogle] = useState({ configured: false, connected: false, email: null as string | null });
+  const [googleNotice, setGoogleNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const flag = new URLSearchParams(window.location.search).get("google");
+    if (flag === "connected") setGoogleNotice("Google Calendar connected.");
+    else if (flag === "denied") setGoogleNotice("Google Calendar was not connected.");
+    else if (flag === "storage") setGoogleNotice("Google Calendar could not be saved.");
+  }, []);
+
+  useEffect(() => {
+    if (!client || !session || !membership) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const calendar = await loadTrainerCalendar(client, membership.orgId);
+        if (!alive) return;
+        setCutoff(String(calendar.settings.cancelCutoffHours));
+        setPrimary(calendar.settings.primaryCalendar);
+      } catch (err) {
+        if (alive) setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      }
+      try {
+        const token = await accessToken(client);
+        const status = await googleStatus("", token);
+        if (alive) setGoogle(status);
+      } catch {
+        if (alive) setGoogle({ configured: false, connected: false, email: null });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [client, session, membership]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -26,8 +77,18 @@ export default function OrgPage() {
     setPending(true);
     setError(null);
     setSaved(false);
+    const hours = Number(cutoff);
+    if (!Number.isInteger(hours)) {
+      setSaved(false);
+      setError("Enter a cutoff between 0 and 168 hours.");
+      return;
+    }
     try {
       await updateProfile(client, session.userId, parsed.data);
+      await saveOrgCalendarSettings(client, membership?.orgId ?? "", {
+        cancelCutoffHours: hours,
+        primaryCalendar: google.connected ? primary : "ics",
+      });
       await refresh();
       setSaved(true);
     } catch (err) {
@@ -62,6 +123,85 @@ export default function OrgPage() {
             value={timezone}
             onChange={(event) => setTimezone(event.target.value)}
           />
+          <fieldset id="primary-calendar" style={{ border: 0, padding: 0, margin: "0 0 14px" }}>
+            <legend className="name" style={{ marginBottom: 8 }}>Primary calendar</legend>
+            <label className="choice">
+              <input
+                type="radio"
+                name="primary-calendar"
+                checked={primary === "ics" || !google.connected}
+                onChange={() => setPrimary("ics")}
+              />
+              {bookingCopy.primaryIcs}
+            </label>
+            {google.connected ? (
+              <label className="choice">
+                <input
+                  type="radio"
+                  name="primary-calendar"
+                  checked={primary === "google"}
+                  onChange={() => setPrimary("google")}
+                />
+                {bookingCopy.primaryGoogle}
+              </label>
+            ) : null}
+          </fieldset>
+          <TextField
+            id="cancel-cutoff"
+            label={bookingCopy.cutoffLabel}
+            inputMode="numeric"
+            value={cutoff}
+            onChange={(event) => setCutoff(event.target.value)}
+          />
+          {googleNotice ? (
+            <Banner tone={googleNotice.startsWith("Google Calendar connected") || googleNotice.startsWith("ICS") ? "ok" : "error"}>
+              {googleNotice}
+            </Banner>
+          ) : null}
+          {google.configured && !google.connected ? (
+            <button
+              className="btn btn-soft"
+              type="button"
+              style={{ marginBottom: 12 }}
+              onClick={() => {
+                if (!client) return;
+                void accessToken(client)
+                  .then((token) => startGoogleConnect("", token))
+                  .then((url) => {
+                    window.location.href = url;
+                  })
+                  .catch((err: unknown) => {
+                    setError(err instanceof CleatRequestError ? err.message : copy.generic);
+                  });
+              }}
+            >
+              {bookingCopy.googleConnect}
+            </button>
+          ) : null}
+          {google.connected ? (
+            <div className="row" style={{ marginBottom: 12 }}>
+              <span className="meta">{bookingCopy.googleConnected}</span>
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                onClick={() => {
+                  if (!client) return;
+                  void accessToken(client)
+                    .then((token) => disconnectGoogle("", token))
+                    .then(() => {
+                      setGoogle({ configured: google.configured, connected: false, email: null });
+                      setPrimary("ics");
+                      setGoogleNotice("ICS feed is ready.");
+                    })
+                    .catch((err: unknown) => {
+                      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+                    });
+                }}
+              >
+                {bookingCopy.googleDisconnect}
+              </button>
+            </div>
+          ) : null}
           <button className="btn btn-primary" type="submit" disabled={pending}>
             Save
           </button>

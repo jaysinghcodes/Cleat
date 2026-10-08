@@ -448,6 +448,7 @@ p {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  margin-bottom: 20px;
 }
 
 .stat-card .label {
@@ -468,6 +469,42 @@ p {
   font-size: 12px;
   color: var(--faint);
   margin-top: 6px;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.cal-cell {
+  min-height: 88px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  font-size: 12px;
+}
+
+.cal-cell .day {
+  font-weight: 700;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+.cal-event {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border: 1px solid rgba(232, 168, 124, 0.35);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  cursor: pointer;
 }
 
 .status-dot {
@@ -503,11 +540,14 @@ p {
 .pill-partial { color: var(--warn); }
 .pill-missed,
 .pill-nudge { color: var(--nudge); }
+
 .pill-accent {
   background: var(--accent-soft);
   color: var(--accent-text);
-  border: 1px solid var(--accent-ring);
+  border: 1px solid rgba(232, 168, 124, 0.35);
+  padding: 4px 8px;
 }
+
 .pill-muted {
   background: transparent;
   color: var(--faint);
@@ -552,6 +592,19 @@ p {
   background: transparent;
   color: var(--nudge);
   border: 1px solid var(--nudge-bg);
+}
+
+.card:has(.cal-grid) .btn-danger {
+  border: 1px solid var(--border);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 14px;
 }
 
 .board-today { width: 110px; flex-shrink: 0; }
@@ -609,10 +662,20 @@ p {
   font-size: 14px;
 }
 
+.field select {
+  padding: 12px 14px;
+  font-size: 15px;
+}
+
 .compact-field textarea,
 .field textarea {
   min-height: 72px;
   resize: vertical;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 12px;
 }
 
 .chat-page .page-head {
@@ -766,6 +829,14 @@ p {
 .thread-compose input::placeholder {
   color: var(--faint);
 }
+
+@media (max-width: 900px) {
+  .grid-3,
+  .cal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 @media (max-width: 800px) {
   .desk {

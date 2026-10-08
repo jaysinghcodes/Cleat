@@ -105,6 +105,9 @@ importers:
       '@cleat/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@supabase/supabase-js':
+        specifier: ^2.75.0
+        version: 2.117.3
       next:
         specifier: ~15.5.27
         version: 15.5.27(@types/node@22.20.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -171,6 +174,9 @@ importers:
       '@types/node':
         specifier: ^22.15.3
         version: 22.20.5
+      ical.js:
+        specifier: ^2.2.1
+        version: 2.2.1
       tsx:
         specifier: ^4.20.3
         version: 4.23.15
@@ -2472,6 +2478,9 @@ packages:
 
   hyphenate-style-name@1.1.0:
     resolution: {integrity: sha512-WDC/ui2VVRrz3jOVi+XtjqkDjiVjTtFaAGiW37k6b+ohyQ5wYDOGkvCZa8+H0nx3gyvv0+BST9xuOgIyGQ00gw==}
+
+  ical.js@2.2.1:
+    resolution: {integrity: sha512-yK/UlPbEs316igb/tjRgbFA8ZV75rCsBJp/hWOatpyaPNlgw0dGDmU+FoicOcwX4xXkeXOkYiOmCqNPFpNPkQg==}
 
   iceberg-js@0.8.1:
     resolution: {integrity: sha512-1dhVQZXhcHje7798IVM+xoo/1ZdVfzOMIc8/rgVSijRK38EDqOJoGula9N/8ZI5RD8QTxNQtK/Gozpr+qUqRRA==}
@@ -6311,6 +6320,8 @@ snapshots:
       - supports-color
 
   hyphenate-style-name@1.1.0: {}
+
+  ical.js@2.2.1: {}
 
   iceberg-js@0.8.1: {}
 

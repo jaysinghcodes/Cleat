@@ -34,6 +34,11 @@ One org is one trainer. There is no franchise or team RBAC. A user belongs to ex
 | `threads` | on, forced | `threads_select` (trainer of `org_id`, or `client_id = auth.uid()` in that org) |
 | `messages` | on, forced | `messages_select` (`can_read_thread`). No insert grant. `post_message` writes |
 | `push_tokens` | on, forced | `push_tokens_select_own`, `push_tokens_insert_own`, `push_tokens_update_own`, `push_tokens_delete_own` (`user_id = auth.uid()`). A trainer cannot read a client's token |
+| `trainer_settings` | on, forced | `trainer_settings_select` (`is_member_of`), `trainer_settings_update` (the trainer's own row) |
+| `availability_blocks` | on, forced | `availability_select_member` (`is_member_of`), `availability_write_trainer` (the trainer's own blocks) |
+| `sessions` | on, forced | `sessions_select_own` (`client_id = auth.uid()` or `is_trainer_of`). No insert, update, or delete grant. Book and cancel go through functions |
+| `calendar_tokens` | on, forced | No policies and no grants. `issue_calendar_token` and `calendar_feed` are security definer |
+| `google_credentials` | on, forced | No policies and no grants. The refresh token is service role only. `google_connection` returns connected and a null email |
 
 There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
 
@@ -63,6 +68,13 @@ A client cannot read another client's profile. Helper functions are `security de
 | `ensure_thread(target_client)` | `authenticated` | Opens the one thread for a roster client. A client can only open their own |
 | `post_message(target_client, message_body)` | `authenticated` | Stores one plain text message in that thread. Rejects an empty body and a body over 4000 characters |
 | `thread_previews()` | `authenticated` | Latest message per visible thread. Runs as the caller so RLS applies |
+| `book_session(slot_start)` | `authenticated` | Client books one open slot. Overlap and a taken slot raise a real error |
+| `cancel_session(session_id)` | `authenticated` | Client cancel respects the org cutoff. Trainers can cancel any session |
+| `issue_calendar_token(regenerate)` | `authenticated` | Returns the active feed nonce, or revokes it and issues a new one |
+| `calendar_feed(feed_nonce)` | `anon`, `authenticated` | Sessions for that nonce only. Missing and revoked nonces raise and return no rows |
+| `booked_ranges()` | `authenticated` | Booked start and end times in the caller's org, with no client names |
+| `google_connection()` | `authenticated` | Whether Google is connected. The email column stays null. Not the refresh token |
+| `save_google_credentials`, `disconnect_google`, `attach_google_event`, `clear_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics`. Credential rows stay unreadable |
 
 User facing exceptions from these functions:
 
@@ -93,4 +105,4 @@ User facing exceptions from these functions:
 
 ## Proof
 
-`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`), then `tests/cross_tenant_rls.sql` and `tests/chat_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. This migration does not send push notifications.
+`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`), then `tests/cross_tenant_rls.sql`, `tests/booking_rls.sql`, and `tests/chat_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. This migration does not send push notifications. Booking rows stay inside the org.

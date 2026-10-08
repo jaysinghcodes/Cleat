@@ -13,6 +13,31 @@ export {
   verifyEmailCode,
 } from "./auth";
 export {
+  accessToken,
+  bookSession,
+  cancelSession,
+  clearAvailabilityOverride,
+  disconnectGoogle,
+  downloadIcs,
+  googleStatus,
+  loadClientCalendar,
+  loadTrainerCalendar,
+  saveAvailabilityOverride,
+  saveOrgCalendarSettings,
+  saveSlotMinutes,
+  saveWeeklyAvailability,
+  startGoogleConnect,
+  subscribeLink,
+} from "./calendar";
+export type {
+  BookResult,
+  ClientCalendarData,
+  GoogleStatus,
+  OrgCalendarSettings,
+  SubscribeLink,
+  TrainerCalendarData,
+} from "./calendar";
+export {
   applyClientLog,
   assignProgram,
   dismissNudge,
