@@ -382,13 +382,15 @@ function escapeIcsText(value: string): string {
 
 /** RFC 5545 folds at 75 octets. A continuation line starts with one space. */
 function foldIcsLine(line: string): string {
-  if (Buffer.byteLength(line, "utf8") <= 75) return line;
+  const utf8 = new TextEncoder();
+  const width = (value: string) => utf8.encode(value).length;
+  if (width(line) <= 75) return line;
   const parts: string[] = [];
   let current = "";
   let budget = 75;
   for (const character of line) {
-    const next = Buffer.byteLength(character, "utf8");
-    if (current && Buffer.byteLength(current, "utf8") + next > budget) {
+    const next = width(character);
+    if (current && width(current) + next > budget) {
       parts.push(current);
       current = character;
       budget = 74;

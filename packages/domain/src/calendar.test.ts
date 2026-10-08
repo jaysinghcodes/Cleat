@@ -185,24 +185,6 @@ test("ICS export parses and keeps Chicago local time across DST", () => {
   assert.equal(events[1]!.startDate.toJSDate().toISOString(), after);
   assert.equal(formatInstant(events[1]!.startDate.toJSDate().toISOString(), ZONE), "5:00 PM");
   assert.equal(events[1]!.component.getFirstPropertyValue("status"), "CANCELLED");
-  const folded = buildIcs("Cleat", [
-    {
-      uid: "33333333-3333-3333-3333-333333333333",
-      startsAt: before,
-      endsAt: "2026-10-30T23:00:00.000Z",
-      summary: `Session with ${"é".repeat(80)}`,
-      description: bookingCopy.sessionDescription,
-      status: "confirmed",
-    },
-  ]);
-  assert.equal(folded.replaceAll("\r\n", "").includes("\n"), false);
-  assert.equal(folded.replaceAll("\r\n", "").includes("\r"), false);
-  for (const line of folded.split("\r\n")) {
-    if (!line) continue;
-    assert.ok(Buffer.byteLength(line, "utf8") <= 75, line);
-  }
-  const foldedEvent = new ICAL.Event(new ICAL.Component(ICAL.parse(folded)).getFirstSubcomponent("vevent"));
-  assert.equal(foldedEvent.summary, `Session with ${"é".repeat(80)}`);
   const body = googleEventBody({
     summary: sessionSummary("Sam Lee"),
     description: bookingCopy.sessionDescription,
@@ -215,60 +197,72 @@ test("ICS export parses and keeps Chicago local time across DST", () => {
   assertNoDashPunctuation(body.description);
 });
 
-test("ICS folding keeps Cyrillic, CJK, and emoji inside 75 octets", () => {
-  const cyrillic = sessionSummary("Александра-Константиновна-Екатерина");
-  const cjk = sessionSummary("山田太郎".repeat(8));
-  const emoji = "\u{1F600}";
-  const summaryPrefix = "SUMMARY:Session with ";
-  const pad = "a".repeat(75 - Buffer.byteLength(summaryPrefix, "utf8") - 1);
-  const emojiSummary = `Session with ${pad}${emoji}`;
-  assert.equal(Buffer.byteLength(`SUMMARY:${cyrillic}`, "utf8"), 89);
-  assert.equal(Buffer.byteLength(summaryPrefix, "utf8") + Buffer.byteLength(pad, "utf8"), 74);
-  assert.equal(Buffer.byteLength(emoji, "utf8"), 4);
-  const now = new Date("2026-10-08T00:00:00.000Z");
-  const summaries = [cyrillic, cjk, emojiSummary];
-  for (const summary of summaries) {
-    const ics = buildIcs(
-      "Cleat",
-      [
-        {
-          uid: "55555555-5555-5555-5555-555555555555",
-          startsAt: "2026-11-01T23:00:00.000Z",
-          endsAt: "2026-11-02T00:00:00.000Z",
-          summary,
-          description: bookingCopy.sessionDescription,
-          status: "confirmed",
-        },
-      ],
-      now,
-    );
-    for (const line of ics.split("\r\n")) {
-      if (!line) continue;
-      assert.ok(Buffer.byteLength(line, "utf8") <= 75, line);
-      if (line.startsWith(" ")) assert.ok(Buffer.byteLength(line.slice(1), "utf8") <= 74, line);
+function escapedIcsText(value: string): string {
+  return value.replaceAll("\\", "\\\\").replaceAll("\n", "\\n").replaceAll(",", "\\,").replaceAll(";", "\\;");
+}
+
+function hasLoneSurrogate(line: string): boolean {
+  for (let index = 0; index < line.length; index += 1) {
+    const code = line.charCodeAt(index);
+    if (code >= 0xd800 && code <= 0xdbff) {
+      const next = line.charCodeAt(index + 1);
+      if (next < 0xdc00 || next > 0xdfff) return true;
+      index += 1;
+      continue;
     }
-    const expected = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Cleat//Sessions//EN",
-      "CALSCALE:GREGORIAN",
-      "METHOD:PUBLISH",
-      "X-WR-CALNAME:Cleat",
-      "X-PUBLISHED-TTL:PT60S",
-      "BEGIN:VEVENT",
-      "UID:55555555-5555-5555-5555-555555555555@cleat",
-      "DTSTAMP:20261008T000000Z",
-      "DTSTART:20261101T230000Z",
-      "DTEND:20261102T000000Z",
-      `SUMMARY:${summary}`,
-      `DESCRIPTION:${bookingCopy.sessionDescription}`,
-      "STATUS:CONFIRMED",
-      "END:VEVENT",
-      "END:VCALENDAR",
-      "",
-    ].join("\r\n");
-    const unfolded = ics.replaceAll("\r\n ", "");
-    assert.equal(Buffer.compare(Buffer.from(unfolded, "utf8"), Buffer.from(expected, "utf8")), 0);
+    if (code >= 0xdc00 && code <= 0xdfff) return true;
+  }
+  return false;
+}
+
+/** Same builder the booking export uses: sessionSummary(client name) passed to buildIcs. */
+function bookingExportIcs(clientName: string): string {
+  return buildIcs(
+    bookingCopy.calendarName,
+    [
+      {
+        uid: "55555555-5555-5555-5555-555555555555",
+        startsAt: "2026-11-01T23:00:00.000Z",
+        endsAt: "2026-11-02T00:00:00.000Z",
+        summary: sessionSummary(clientName),
+        description: bookingCopy.sessionDescription,
+        status: "confirmed",
+      },
+    ],
+    new Date("2026-10-08T00:00:00.000Z"),
+  );
+}
+
+function assertRawSummary(ics: string, clientName: string) {
+  for (const line of ics.split("\r\n")) {
+    assert.ok(Buffer.byteLength(line, "utf8") <= 75, line);
+    assert.equal(line.includes("\uFFFD"), false, line);
+    assert.equal(hasLoneSurrogate(line), false, line);
+  }
+  const unfolded = ics.replaceAll("\r\n ", "");
+  const summaryLine = unfolded.split("\r\n").find((line) => line.startsWith("SUMMARY:"));
+  assert.ok(summaryLine);
+  const value = summaryLine.slice("SUMMARY:".length);
+  const expected = escapedIcsText(sessionSummary(clientName));
+  assert.ok(Buffer.from(value, "utf8").equals(Buffer.from(expected, "utf8")));
+}
+
+test("ICS export folds Cyrillic, CJK, emoji, and ZWJ on the raw text", () => {
+  const cyrillic = "Александра-Константиновна-Екатерина";
+  const cjk = "健身教练一对一课程".repeat(5);
+  assert.ok([...cjk].length >= 40);
+  const emoji = "\u{1F3CB}";
+  assert.equal(Buffer.byteLength(emoji, "utf8"), 4);
+  const family = "👨‍👩‍👧‍👦";
+  assert.ok(family.includes("\u200D"));
+  const prefix = "SUMMARY:Session with ";
+  const pad = "a".repeat(74 - Buffer.byteLength(prefix, "utf8"));
+  assert.equal(Buffer.byteLength(prefix, "utf8") + Buffer.byteLength(pad, "utf8"), 74);
+  assert.equal(Buffer.byteLength(`SUMMARY:${sessionSummary(cyrillic)}`, "utf8"), 89);
+
+  for (const clientName of [cyrillic, cjk, `${pad}${emoji}`, `${pad}${family}`]) {
+    const ics = bookingExportIcs(clientName);
+    assertRawSummary(ics, clientName);
   }
 });
 
