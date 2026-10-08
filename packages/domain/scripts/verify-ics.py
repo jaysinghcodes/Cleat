@@ -29,7 +29,7 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def physical_lines(raw: bytes) -> list[bytes]:
+def physical_lines(raw: bytes) -> list[str]:
     if not raw.endswith(b"\r\n"):
         fail("calendar does not end with CRLF")
     stripped = raw.replace(b"\r\n", b"")
@@ -38,14 +38,14 @@ def physical_lines(raw: bytes) -> list[bytes]:
     lines = raw.split(b"\r\n")
     if lines[-1] != b"":
         fail("calendar does not end with CRLF")
-    return lines[:-1]
+    return [line.decode("utf-8") for line in lines[:-1]]
 
 
 def check_bytes(label: str, raw: bytes) -> Calendar:
     lines = physical_lines(raw)
     longest = 0
     for line in lines:
-        size = len(line)
+        size = len(line.encode("utf-8"))
         longest = max(longest, size)
         if size > 75:
             fail(f"{label} line is {size} octets: {line[:80]!r}")

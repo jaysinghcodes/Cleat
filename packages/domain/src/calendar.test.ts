@@ -215,6 +215,63 @@ test("ICS export parses and keeps Chicago local time across DST", () => {
   assertNoDashPunctuation(body.description);
 });
 
+test("ICS folding keeps Cyrillic, CJK, and emoji inside 75 octets", () => {
+  const cyrillic = sessionSummary("Александра-Константиновна-Екатерина");
+  const cjk = sessionSummary("山田太郎".repeat(8));
+  const emoji = "\u{1F600}";
+  const summaryPrefix = "SUMMARY:Session with ";
+  const pad = "a".repeat(75 - Buffer.byteLength(summaryPrefix, "utf8") - 1);
+  const emojiSummary = `Session with ${pad}${emoji}`;
+  assert.equal(Buffer.byteLength(`SUMMARY:${cyrillic}`, "utf8"), 89);
+  assert.equal(Buffer.byteLength(summaryPrefix, "utf8") + Buffer.byteLength(pad, "utf8"), 74);
+  assert.equal(Buffer.byteLength(emoji, "utf8"), 4);
+  const now = new Date("2026-10-08T00:00:00.000Z");
+  const summaries = [cyrillic, cjk, emojiSummary];
+  for (const summary of summaries) {
+    const ics = buildIcs(
+      "Cleat",
+      [
+        {
+          uid: "55555555-5555-5555-5555-555555555555",
+          startsAt: "2026-11-01T23:00:00.000Z",
+          endsAt: "2026-11-02T00:00:00.000Z",
+          summary,
+          description: bookingCopy.sessionDescription,
+          status: "confirmed",
+        },
+      ],
+      now,
+    );
+    for (const line of ics.split("\r\n")) {
+      if (!line) continue;
+      assert.ok(Buffer.byteLength(line, "utf8") <= 75, line);
+      if (line.startsWith(" ")) assert.ok(Buffer.byteLength(line.slice(1), "utf8") <= 74, line);
+    }
+    const expected = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Cleat//Sessions//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:Cleat",
+      "X-PUBLISHED-TTL:PT60S",
+      "BEGIN:VEVENT",
+      "UID:55555555-5555-5555-5555-555555555555@cleat",
+      "DTSTAMP:20261008T000000Z",
+      "DTSTART:20261101T230000Z",
+      "DTEND:20261102T000000Z",
+      `SUMMARY:${summary}`,
+      `DESCRIPTION:${bookingCopy.sessionDescription}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT",
+      "END:VCALENDAR",
+      "",
+    ].join("\r\n");
+    const unfolded = ics.replaceAll("\r\n ", "");
+    assert.equal(Buffer.compare(Buffer.from(unfolded, "utf8"), Buffer.from(expected, "utf8")), 0);
+  }
+});
+
 test("feed tokens reject tampering and accept a signed value", () => {
   const userId = "11111111-1111-1111-1111-111111111111";
   const nonce = "ab".repeat(32);

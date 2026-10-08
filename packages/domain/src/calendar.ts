@@ -382,23 +382,22 @@ function escapeIcsText(value: string): string {
 
 /** RFC 5545 folds at 75 octets. A continuation line starts with one space. */
 function foldIcsLine(line: string): string {
-  const bytes = Buffer.from(line, "utf8");
-  if (bytes.length <= 75) return line;
-  const chunks: string[] = [];
-  let offset = 0;
+  if (Buffer.byteLength(line, "utf8") <= 75) return line;
+  const parts: string[] = [];
+  let current = "";
   let budget = 75;
-  while (offset < bytes.length) {
-    let end = Math.min(bytes.length, offset + budget);
-    if (end < bytes.length) {
-      while (end > offset && (bytes[end]! & 0xc0) === 0x80) end -= 1;
-      if (end === offset) end = Math.min(bytes.length, offset + budget);
+  for (const character of line) {
+    const next = Buffer.byteLength(character, "utf8");
+    if (current && Buffer.byteLength(current, "utf8") + next > budget) {
+      parts.push(current);
+      current = character;
+      budget = 74;
+    } else {
+      current += character;
     }
-    const piece = bytes.subarray(offset, end).toString("utf8");
-    chunks.push(offset === 0 ? piece : ` ${piece}`);
-    offset = end;
-    budget = 74;
   }
-  return chunks.join("\r\n");
+  if (current) parts.push(current);
+  return parts.map((part, index) => (index === 0 ? part : ` ${part}`)).join("\r\n");
 }
 
 export function buildIcs(calendarName: string, events: IcsEventInput[], now = new Date()): string {
