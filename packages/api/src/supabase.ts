@@ -28,6 +28,21 @@ export function readPublicSupabaseConfig(env: {
   return { url, anonKey };
 }
 
+/**
+ * A server client that acts as one signed in user.
+ * Uses the anon key plus that user's access token. Never a service role key.
+ */
+export function createAuthorizedClient(config: PublicSupabaseConfig, accessToken: string): CleatClient {
+  return createClient(config.url, config.anonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 export function createCleatClient(
   config: PublicSupabaseConfig,
   options?: {

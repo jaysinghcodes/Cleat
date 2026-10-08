@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["components/marketing/landing.test.tsx", "components/marketing/landing.tsx", "app/theme.tsx"]
+}

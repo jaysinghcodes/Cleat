@@ -171,7 +171,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
 3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
-4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit.
+4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage.
 5. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback` (trainer desk)
    - `http://localhost:8081/auth/callback` (Expo web)
@@ -226,7 +226,7 @@ The client stays compatible with Expo Go. It does not use a custom native module
    - `http://localhost:8081/auth/callback`
    - `exp://**` (Expo Go)
    - `cleat://**` (app scheme; Expo Go does not open this)
-2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, and `0003_programs.sql` in the SQL editor.
+2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, and `0004_chat.sql` in the SQL editor.
 3. Put the anon key in the app env files. Do not put the service role key in either file.
 
 `apps/web/.env.local`:
@@ -242,6 +242,7 @@ NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+EXPO_PUBLIC_DESK_URL=http://localhost:3000
 ```
 
 4. Start the trainer desk from the repo root: `pnpm dev:web`. Open http://localhost:3000/signup. Enter a name, email, and gym name. Choose Email me a code. Type the code from the email. You land on the desk.
@@ -270,4 +271,4 @@ GitHub Actions runs both on pull requests (`.github/workflows/ci.yml`).
 
 ## What comes next
 
-Programs, chat, the priority inbox, AI, and calendar booking are later tickets. Those desk links and client tabs are placeholders. Design decisions and the final wireframe screenshots are in [docs/design](docs/design).
+Programs, the priority inbox, AI, and calendar booking are later tickets. Chat is live on the trainer desk and the client Chat tab. The other desk links and client tabs are placeholders. Design decisions and the final wireframe screenshots are in [docs/design](docs/design).

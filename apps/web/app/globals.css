@@ -615,6 +615,158 @@ p {
   resize: vertical;
 }
 
+.chat-page .page-head {
+  margin-bottom: 16px;
+}
+
+.chat-wrap {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  height: calc(100vh - 168px);
+  min-height: 520px;
+}
+
+.chat-list,
+.chat-thread {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-list .thread-scroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.chat-list a.list-row {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chat-list a.list-row:hover,
+.chat-list a.list-row.active {
+  background: var(--bg-soft);
+}
+
+.chat-list a.list-row.active {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.chat-list .spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list .meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.thread-head {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thread-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.chat-empty {
+  color: var(--sub);
+  font-size: 14px;
+  text-align: center;
+  margin: auto;
+}
+
+.chat-earlier {
+  align-self: center;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.bubble.them {
+  background: var(--bg-soft);
+  color: var(--text);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border-soft);
+}
+
+.bubble.me {
+  background: var(--accent);
+  color: var(--cta-text);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.bubble a {
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+
+.bubble.me a {
+  color: var(--cta-text);
+}
+
+.thread-compose {
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
+}
+
+.thread-compose input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  outline: none;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.thread-compose input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.thread-compose input::placeholder {
+  color: var(--faint);
+}
+
 @media (max-width: 800px) {
   .desk {
     grid-template-columns: 1fr;
@@ -644,5 +796,376 @@ p {
   .board-today,
   .board-action {
     width: auto;
+  }
+
+  .chat-wrap {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+
+  .chat-list,
+  .chat-thread {
+    min-height: 420px;
+  }
+}
+
+/* Marketing home. Scoped to .mkt so desk and auth screens stay unchanged. */
+.mkt {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.mkt a {
+  text-decoration: none;
+}
+
+.mkt :focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.mkt-nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  padding: 24px 28px;
+}
+
+.mkt-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.mkt-lockup img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: block;
+}
+
+.mkt-lockup span {
+  font-size: 22px;
+}
+
+.mkt-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px 24px;
+}
+
+.mkt-links a:not(.btn) {
+  color: var(--sub);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mkt-links .btn-primary {
+  color: var(--on-accent);
+}
+
+.mkt .theme-cycle {
+  min-width: 8.75rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.mkt-hero {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 28px 80px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.mkt-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mkt-hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 20px 0 16px;
+}
+
+.mkt-lede {
+  font-size: 18px;
+  color: var(--sub);
+  max-width: 480px;
+  line-height: 1.55;
+  margin-bottom: 28px;
+}
+
+.mkt-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.mkt-cta .btn-lg {
+  width: auto;
+}
+
+.mkt-proof {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--sub);
+  line-height: 1.5;
+}
+
+.mkt-viz {
+  background: var(--card);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.mkt-viz-head {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mkt-viz-head .name {
+  font-size: 14px;
+}
+
+.mkt-viz-pills {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mkt-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mkt-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  min-width: 0;
+}
+
+.mkt-person .name,
+.mkt-person .meta {
+  overflow-wrap: anywhere;
+}
+
+.mkt-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mkt-avatar-nudge {
+  background: var(--nudge-bg);
+  color: var(--text);
+  border-color: transparent;
+}
+
+.mkt-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.mkt-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.mkt-done {
+  color: var(--done);
+}
+
+.mkt-nudge {
+  color: var(--nudge);
+}
+
+.mkt-ai {
+  color: var(--sub);
+}
+
+.mkt-ai::before {
+  background: var(--accent);
+}
+
+.mkt-sections {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 28px 80px;
+  scroll-margin-top: 24px;
+}
+
+.mkt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mkt-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  min-width: 0;
+}
+
+.mkt-card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.mkt-card p {
+  color: var(--sub);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mkt-footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 28px 40px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+
+.mkt-footer-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.mkt-footer-mark img {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: block;
+}
+
+.mkt-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  color: var(--sub);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mkt-footer-links a {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .mkt-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .mkt-hero h1 {
+    font-size: 36px;
+  }
+
+  .mkt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mkt-nav,
+  .mkt-hero,
+  .mkt-sections,
+  .mkt-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .mkt-nav {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mkt-links {
+    justify-content: flex-start;
+  }
+
+  .mkt-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mkt-cta .btn-lg {
+    width: 100%;
+  }
+
+  .mkt-lede {
+    max-width: none;
   }
 }

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "TSX_TSCONFIG_PATH=./tsconfig.test.json node --import tsx --test components/marketing/landing.test.tsx"
   },
   "dependencies": {
     "@cleat/api": "workspace:*",
@@ -17,8 +18,10 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@types/node": "^22.15.3",
     "@types/react": "~19.2.2",
     "@types/react-dom": "~19.2.2",
+    "tsx": "^4.20.3",
     "typescript": "~6.0.3"
   }
 }
