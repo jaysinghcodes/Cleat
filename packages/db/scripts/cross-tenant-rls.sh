@@ -43,4 +43,4 @@ echo "Running cross tenant assertions."
 echo "Running booking assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/booking_rls.sql
 echo "Running chat assertions."
-"${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/chat_rls.sql"
+"${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/chat_rls.sql
