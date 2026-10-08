@@ -8,12 +8,15 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/program.test.ts src/log.test.ts src/push.test.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.20.3",
     "typescript": "~6.0.3"
   }
 }

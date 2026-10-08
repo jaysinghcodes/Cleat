@@ -47,11 +47,69 @@ export type {
   TrainerSignup,
 } from "./auth";
 
-export { programSchema } from "./program";
-export type { Program } from "./program";
+export {
+  NUDGE_GAP_DAYS,
+  adherenceLabel,
+  addDays,
+  buildAccountability,
+  bundlePrograms,
+  calendarDate,
+  dayDraftSchema,
+  dayStatus,
+  daysBetween,
+  exerciseDraftSchema,
+  exerciseIsLogged,
+  lastLoggedLabel,
+  loggedExerciseCount,
+  nudgeBody,
+  nudgeReasons,
+  prescription,
+  programCopy,
+  programDayForDate,
+  programDraftMessage,
+  programDraftSchema,
+  programSchema,
+  progressLabel,
+  progressPercent,
+  shortDate,
+  todayStatusLabel,
+  weekDates,
+  weekdayLabel,
+} from "./program";
+export type {
+  AssignedProgram,
+  BoardAction,
+  BoardClient,
+  BoardCounts,
+  BoardExerciseLog,
+  BoardRow,
+  BoardSet,
+  BoardWorkout,
+  DayDraft,
+  ExerciseDraft,
+  NudgeReason,
+  Program,
+  ProgramDay,
+  ProgramDraft,
+  ProgramExercise,
+  TodayStatus,
+} from "./program";
 
-export { logSchema } from "./log";
-export type { Log } from "./log";
+export {
+  KG_PER_LB,
+  formatWeight,
+  isOfflineError,
+  logOperationSchema,
+  logSchema,
+  parseWeight,
+  roundTo,
+  weightToKg,
+  weightUnitSchema,
+} from "./log";
+export type { Log, LogOperation, SetEntry, WeightUnit } from "./log";
+
+export { deferredPushDelivery } from "./push";
+export type { NudgePush, PushDelivery } from "./push";
 
 export { messageSchema } from "./message";
 export type { Message } from "./message";

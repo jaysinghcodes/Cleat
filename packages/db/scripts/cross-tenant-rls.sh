@@ -31,10 +31,11 @@ fi
 "${PSQL[@]}" -d postgres -c "drop database if exists ${DB_NAME};"
 "${PSQL[@]}" -d postgres -c "create database ${DB_NAME};"
 
-echo "Applying auth stub, 0001_init.sql, and 0002_tenancy.sql to ${DB_NAME}."
+echo "Applying auth stub, 0001_init.sql, 0002_tenancy.sql, and 0003_programs.sql to ${DB_NAME}."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/plain_postgres_auth_stub.sql
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/migrations/0001_init.sql
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/migrations/0002_tenancy.sql
+"${PSQL[@]}" -d "$DB_NAME" -f supabase/migrations/0003_programs.sql
 
 echo "Running cross tenant assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/cross_tenant_rls.sql

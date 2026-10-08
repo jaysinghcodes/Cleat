@@ -30,6 +30,130 @@ insert into public.memberships (org_id, user_id, role) values
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '33333333-3333-3333-3333-333333333333', 'trainer'),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '44444444-4444-4444-4444-444444444444', 'client');
 
+insert into public.programs (id, org_id, client_id, name, start_date, status, created_by) values
+  (
+    '10000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    '22222222-2222-2222-2222-222222222222',
+    'Foundation',
+    current_date,
+    'active',
+    '11111111-1111-1111-1111-111111111111'
+  ),
+  (
+    '10000000-0000-4000-8000-000000000011',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    'Quinn Plan',
+    current_date,
+    'active',
+    '33333333-3333-3333-3333-333333333333'
+  );
+
+insert into public.program_days (id, program_id, org_id, client_id, position, name, is_rest) values
+  (
+    '10000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    '22222222-2222-2222-2222-222222222222',
+    0,
+    'Lower A',
+    false
+  ),
+  (
+    '10000000-0000-4000-8000-000000000012',
+    '10000000-0000-4000-8000-000000000011',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    0,
+    'Upper',
+    false
+  );
+
+insert into public.program_exercises (
+  id, day_id, program_id, org_id, client_id, position, name, sets, reps, notes
+) values
+  (
+    '10000000-0000-4000-8000-000000000003',
+    '10000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    '22222222-2222-2222-2222-222222222222',
+    0,
+    'Back squat',
+    3,
+    '5',
+    'RPE 7'
+  ),
+  (
+    '10000000-0000-4000-8000-000000000013',
+    '10000000-0000-4000-8000-000000000012',
+    '10000000-0000-4000-8000-000000000011',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    0,
+    'Bench press',
+    3,
+    '8',
+    ''
+  );
+
+insert into public.exercise_logs (
+  id, org_id, client_id, program_id, day_id, exercise_id, scheduled_on, status, note
+) values
+  (
+    '10000000-0000-4000-8000-000000000021',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    '22222222-2222-2222-2222-222222222222',
+    '10000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000002',
+    '10000000-0000-4000-8000-000000000003',
+    current_date - 1,
+    'done',
+    ''
+  ),
+  (
+    '10000000-0000-4000-8000-000000000022',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    '10000000-0000-4000-8000-000000000011',
+    '10000000-0000-4000-8000-000000000012',
+    '10000000-0000-4000-8000-000000000013',
+    current_date - 1,
+    'done',
+    ''
+  );
+
+insert into public.set_logs (id, exercise_log_id, org_id, client_id, set_index, weight_kg, reps) values
+  (
+    '10000000-0000-4000-8000-000000000031',
+    '10000000-0000-4000-8000-000000000021',
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    '22222222-2222-2222-2222-222222222222',
+    1,
+    61.235,
+    5
+  ),
+  (
+    '10000000-0000-4000-8000-000000000032',
+    '10000000-0000-4000-8000-000000000022',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    1,
+    40,
+    8
+  );
+
+insert into public.nudge_events (id, org_id, client_id, trainer_id, kind, body) values
+  (
+    '10000000-0000-4000-8000-0000000000b1',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    '44444444-4444-4444-4444-444444444444',
+    '33333333-3333-3333-3333-333333333333',
+    'nudge',
+    'Time to log.'
+  );
+
 insert into public.invites (id, org_id, created_by, created_at, expires_at) values
   (
     'cccccccc-cccc-cccc-cccc-cccccccccccc',
@@ -441,5 +565,232 @@ select public._rls_expect(
     where id = '44444444-4444-4444-4444-444444444444'
   )
 );
+
+-- Ticket 2: programs, logs, and nudges stay inside the org.
+select public._rls_expect(
+  'weight unit defaults to lb',
+  (
+    select weight_unit = 'lb'
+    from public.profiles
+    where id = '22222222-2222-2222-2222-222222222222'
+  )
+);
+
+begin;
+select set_config('request.jwt.claim.sub', '22222222-2222-2222-2222-222222222222', true);
+set local role authenticated;
+select public._rls_expect(
+  'client A sees only their active program',
+  (
+    select count(*) = 1
+      and bool_and(name = 'Foundation')
+    from public.programs
+  )
+);
+select public._rls_expect(
+  'client A cannot read client B program',
+  (select count(*) = 0 from public.programs where name = 'Quinn Plan')
+);
+select public._rls_expect(
+  'client A sees only their exercise',
+  (select count(*) = 1 and bool_and(name = 'Back squat') from public.program_exercises)
+);
+select public._rls_expect(
+  'client A cannot read client B nudges',
+  (select count(*) = 0 from public.nudge_events)
+);
+select public._rls_expect(
+  'client A cannot read client B sets',
+  (select count(*) = 0 from public.set_logs where client_id = '44444444-4444-4444-4444-444444444444')
+);
+select public._rls_expect_error(
+  'client A cannot insert a program directly',
+  $$insert into public.programs (org_id, client_id, name, start_date, created_by) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'Nope', current_date, '22222222-2222-2222-2222-222222222222')$$,
+  'permission denied'
+);
+select public._rls_expect_error(
+  'client A cannot log client B exercise',
+  $$select public.apply_client_log(jsonb_build_object(
+    'clientKey', '10000000-0000-4000-8000-0000000000c1',
+    'kind', 'save_sets',
+    'exerciseId', '10000000-0000-4000-8000-000000000013',
+    'scheduledOn', to_char(current_date, 'YYYY-MM-DD'),
+    'markDone', false,
+    'note', '',
+    'sets', jsonb_build_array(jsonb_build_object('index', 1, 'weightKg', 20, 'reps', 5))
+  ))$$,
+  'not on your program'
+);
+select public.apply_client_log(jsonb_build_object(
+  'clientKey', '10000000-0000-4000-8000-0000000000aa',
+  'kind', 'save_sets',
+  'exerciseId', '10000000-0000-4000-8000-000000000003',
+  'scheduledOn', to_char(current_date, 'YYYY-MM-DD'),
+  'markDone', false,
+  'note', '',
+  'sets', jsonb_build_array(jsonb_build_object('index', 1, 'weightKg', 61.235, 'reps', 5))
+));
+select public.apply_client_log(jsonb_build_object(
+  'clientKey', '10000000-0000-4000-8000-0000000000aa',
+  'kind', 'save_sets',
+  'exerciseId', '10000000-0000-4000-8000-000000000003',
+  'scheduledOn', to_char(current_date, 'YYYY-MM-DD'),
+  'markDone', false,
+  'note', '',
+  'sets', jsonb_build_array(jsonb_build_object('index', 1, 'weightKg', 61.235, 'reps', 5))
+));
+select public._rls_expect(
+  'replaying a log flushes once',
+  (
+    select count(*) = 1
+    from public.set_logs
+    where exercise_log_id in (
+      select id
+      from public.exercise_logs
+      where client_id = '22222222-2222-2222-2222-222222222222'
+        and scheduled_on = current_date
+    )
+  )
+);
+select public._rls_expect(
+  'the same client key is stored once',
+  (
+    select count(*) = 1
+    from public.log_operations
+    where client_key = '10000000-0000-4000-8000-0000000000aa'
+  )
+);
+with updated as (
+  update public.profiles
+  set weight_unit = 'kg'
+  where id = '22222222-2222-2222-2222-222222222222'
+  returning weight_unit
+)
+select public._rls_expect(
+  'client A can set their own unit to kg',
+  (select weight_unit = 'kg' from updated)
+);
+with blocked as (
+  update public.profiles
+  set weight_unit = 'kg'
+  where id = '44444444-4444-4444-4444-444444444444'
+  returning 1
+)
+select public._rls_expect(
+  'client A cannot change client B unit',
+  (select count(*) = 0 from blocked)
+);
+rollback;
+
+begin;
+select set_config('request.jwt.claim.sub', '44444444-4444-4444-4444-444444444444', true);
+set local role authenticated;
+select public._rls_expect(
+  'client B cannot read client A sets',
+  (
+    select count(*) = 1
+      and bool_and(client_id = '44444444-4444-4444-4444-444444444444')
+    from public.set_logs
+  )
+);
+select public._rls_expect(
+  'client B sees their own nudge',
+  (select count(*) = 1 and bool_and(body = 'Time to log.') from public.nudge_events)
+);
+select public._rls_expect(
+  'client B cannot read client A program days',
+  (select count(*) = 0 from public.program_days where name = 'Lower A')
+);
+rollback;
+
+begin;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+set local role authenticated;
+select public._rls_expect(
+  'trainer A sees only org A programs',
+  (
+    select count(*) = 1
+      and bool_and(name = 'Foundation')
+    from public.programs
+  )
+);
+select public._rls_expect(
+  'trainer A cannot read org B exercises',
+  (select count(*) = 0 from public.program_exercises where name = 'Bench press')
+);
+select public._rls_expect_error(
+  'trainer A cannot nudge a client in org B',
+  $$select public.send_nudge('44444444-4444-4444-4444-444444444444', 'nudge', 'Log today.')$$,
+  'not on your roster'
+);
+select public._rls_expect(
+  'trainer A can record a nudge for client A',
+  (
+    select public.send_nudge(
+      '22222222-2222-2222-2222-222222222222',
+      'nudge',
+      'Alex sent a nudge. Open today and log your sets.'
+    ) is not null
+  )
+);
+select public._rls_expect(
+  'trainer A sees the nudge they sent',
+  (select count(*) = 1 from public.nudge_events where client_id = '22222222-2222-2222-2222-222222222222')
+);
+select public._rls_expect(
+  'assign replaces the active program',
+  (
+    select public.assign_program(jsonb_build_object(
+      'clientId', '22222222-2222-2222-2222-222222222222',
+      'name', 'Replacement',
+      'startDate', to_char(current_date, 'YYYY-MM-DD'),
+      'days', jsonb_build_array(jsonb_build_object(
+        'name', 'Day 1',
+        'rest', false,
+        'exercises', jsonb_build_array(jsonb_build_object(
+          'name', 'Row',
+          'sets', 3,
+          'reps', '8',
+          'notes', '',
+          'videoUrl', ''
+        ))
+      ))
+    )) is not null
+  )
+);
+select public._rls_expect(
+  'trainer A sees one active program after assign',
+  (
+    select count(*) filter (where status = 'active') = 1
+      and count(*) filter (where status = 'replaced') = 1
+    from public.programs
+    where client_id = '22222222-2222-2222-2222-222222222222'
+  )
+);
+rollback;
+
+begin;
+select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', true);
+set local role authenticated;
+select public._rls_expect(
+  'trainer B cannot read org A programs',
+  (select count(*) = 0 from public.programs where org_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+);
+rollback;
+
+begin;
+select set_config('request.jwt.claim.sub', '', true);
+set local role anon;
+select public._rls_expect_error(
+  'anon cannot read programs',
+  'select count(*) from public.programs',
+  'permission denied'
+);
+select public._rls_expect_error(
+  'anon cannot read nudges',
+  'select count(*) from public.nudge_events',
+  'permission denied'
+);
+rollback;
 
 \echo ALL CROSS TENANT CHECKS PASSED
