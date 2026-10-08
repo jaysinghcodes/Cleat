@@ -12,7 +12,8 @@
     "dev:mobile": "pnpm --filter @cleat/mobile start",
     "build": "pnpm --filter @cleat/web build",
     "lint": "eslint .",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "test": "pnpm -r --if-present test"
   },
   "devDependencies": {
     "eslint": "^10.12.0",
