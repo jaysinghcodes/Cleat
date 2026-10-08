@@ -1,7 +1,8 @@
 "use client";
 
 import { CleatRequestError, createInvite, listClients, listInvites } from "@cleat/api";
-import { copy, initials, inviteExpiryLabel, type ClientRosterItem, type InviteRecord } from "@cleat/domain";
+import { chatCopy, copy, initials, inviteExpiryLabel, type ClientRosterItem, type InviteRecord } from "@cleat/domain";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "../../session";
 import { clientInviteUrl } from "../../supabase";
@@ -104,9 +105,12 @@ export default function ClientsPage() {
           clients.map((person) => (
             <div className="list-row" key={person.userId}>
               <div className="avatar">{initials(person.displayName)}</div>
-              <div>
+              <div className="spacer" style={{ flex: 1 }}>
                 <div className="name">{person.displayName}</div>
               </div>
+              <Link href={`/chat/${person.userId}`} className="btn btn-ghost btn-sm">
+                {chatCopy.openChat}
+              </Link>
             </div>
           ))
         )}

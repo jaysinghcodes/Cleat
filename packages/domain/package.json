@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/calendar.test.ts"
+    "test": "node --import tsx --test src/calendar.test.ts src/program.test.ts src/log.test.ts src/log-queue.test.ts src/push.test.ts src/message.test.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

@@ -1,21 +1,18 @@
 "use client";
 
-import { copy } from "@cleat/domain";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useSession } from "./session";
-import { FullPageStatus, Unconfigured } from "./ui";
+import { useSession } from "../../app/session";
 
-export default function HomePage() {
+/** Sends a signed-in trainer to the desk after hydration. Logged-out HTML stays static. */
+export function TrainerRedirect() {
   const { ready, configured, membership } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (!ready || !configured) return;
     if (membership?.role === "trainer") router.replace("/accountability");
-    else router.replace("/login");
   }, [ready, configured, membership, router]);
 
-  if (ready && !configured) return <Unconfigured />;
-  return <FullPageStatus body={copy.checkingSession} />;
+  return null;
 }

@@ -1,0 +1,25 @@
+/**
+ * Ticket 4 attaches the AI pipeline here.
+ * The desk calls onClientMessage once after a client message is stored.
+ * The hook must not send a chat reply. This ticket leaves it as a no-op.
+ */
+export type ClientMessageEvent = {
+  id: string;
+  threadId: string;
+  orgId: string;
+  clientId: string;
+  body: string;
+  createdAt: string;
+};
+
+export type ClientMessageHook = (event: ClientMessageEvent) => Promise<void>;
+
+let current: ClientMessageHook = async () => undefined;
+
+export function setClientMessageHook(next: ClientMessageHook): void {
+  current = next;
+}
+
+export async function onClientMessage(event: ClientMessageEvent): Promise<void> {
+  await current(event);
+}

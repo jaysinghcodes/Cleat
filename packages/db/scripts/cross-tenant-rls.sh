@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Applies Ticket 1 migrations and proves a trainer cannot read another org
-# and a client cannot read another client's rows.
+# Applies migrations in order and proves a trainer cannot read another org
+# and a client cannot read another client's rows, including chat and bookings.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -42,3 +42,5 @@ echo "Running cross tenant assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/cross_tenant_rls.sql
 echo "Running booking assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/booking_rls.sql
+echo "Running chat assertions."
+"${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/chat_rls.sql"

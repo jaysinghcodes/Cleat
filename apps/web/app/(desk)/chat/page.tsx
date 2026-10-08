@@ -1,5 +1,7 @@
-import { DeskPlaceholder } from "../placeholder";
+"use client";
+
+import { ChatDesk } from "./chat-desk";
 
 export default function ChatPage() {
-  return <DeskPlaceholder title="Chat" />;
+  return <ChatDesk />;
 }

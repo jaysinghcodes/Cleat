@@ -2,6 +2,7 @@ import type { ThemeTokens } from "@cleat/theme";
 import { Redirect, Tabs } from "expo-router";
 import { Text, View } from "react-native";
 import { useSession } from "../../lib/session";
+import { TrainingProvider } from "../../lib/training";
 import { useTheme } from "../../theme";
 
 const TABS = [
@@ -47,6 +48,7 @@ export default function ClientLayout() {
   if (membership?.role !== "client") return <Redirect href="/login" />;
 
   return (
+    <TrainingProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -73,6 +75,8 @@ export default function ClientLayout() {
           }}
         />
       ))}
+      <Tabs.Screen name="log" options={{ href: null, title: "Log" }} />
     </Tabs>
+    </TrainingProvider>
   );
 }
