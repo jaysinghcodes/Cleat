@@ -171,7 +171,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
 3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
-4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices.
+4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0005_booking.sql` adds availability, sessions, ICS tokens, and optional Google credential storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices.
 5. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback` (trainer desk)
    - `http://localhost:8081/auth/callback` (Expo web)
@@ -203,7 +203,7 @@ pnpm --filter @cleat/db test:rls
 
 `test:rls` needs the pgvector extension. `0001_init.sql` runs `create extension vector`. On Postgres 16 install `postgresql-16-pgvector`. Supabase and the Supabase CLI image already include it.
 
-This applies the migrations with psql and asserts that a trainer cannot read another org and a client cannot read another client's profile. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps use `supabase start` from [Run locally](#run-locally), which runs real GoTrue.
+This applies the migrations with psql and asserts that a trainer cannot read another org, a client cannot read another client's profile, and booking rows stay inside the org. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps use `supabase start` from [Run locally](#run-locally), which runs real GoTrue.
 
 ## Vercel (hobby)
 
@@ -226,7 +226,7 @@ The client stays compatible with Expo Go. It does not use a custom native module
    - `http://localhost:8081/auth/callback`
    - `exp://**` (Expo Go)
    - `cleat://**` (app scheme; Expo Go does not open this)
-2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, and `0006_rag_audit.sql` in the SQL editor.
+2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, and `0006_rag_audit.sql` in the SQL editor.
 3. Put the anon key in the app env files. Do not put the service role key in either file.
 
 `apps/web/.env.local`:
@@ -281,6 +281,58 @@ New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to
 
 Escalations show up in the trainer Priority inbox and on the thread. Push delivery is a later ticket.
 
+## Calendar
+
+ICS subscribe and export work with no Google account. Leave `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` empty. The desk does not show a Google connect button, and booking does not call Google.
+
+Set `ICS_FEED_SIGNING_SECRET` in `apps/web/.env.local` (16 characters or more). It stays on the server. Also set `EXPO_PUBLIC_WEB_URL` in `apps/mobile/.env` when the client app should call the desk (default `http://localhost:3000`).
+
+A trainer copies a subscribe link from Calendar, Sync ICS. The link looks like `https://<desk>/api/cal/<token>.ics` and returns `text/calendar`. Regenerate revokes the old token (HTTP 410). A tampered token is HTTP 400 and returns no sessions.
+
+The feed is built from the database on each request. The response sets `Cache-Control: public, max-age=60` and `X-PUBLISHED-TTL:PT60S`. A book or cancel is in the next uncached fetch. A cache may keep the previous file for up to 60 seconds. Calendar apps also poll on their own schedule.
+
+Add to calendar downloads the signed in user's sessions from `GET /api/cal/export`. One session is `GET /api/cal/export?session=<id>`.
+
+A second parse uses Python `icalendar`, separate from the `ical.js` tests. CI runs the file checks. Against a running desk, `--feed` fetches the subscribe URL twice and compares those UIDs with an export file.
+
+```sh
+python3 -m pip install -r packages/domain/requirements.txt
+python3 packages/domain/scripts/verify-ics.py docs/qa/ticket-6/sample-session.ics docs/qa/ticket-6/downloaded-session.ics
+python3 packages/domain/scripts/verify-ics.py packages/domain/scripts/fixtures/utf8-fold.ics
+python3 packages/domain/scripts/verify-ics.py --feed http://localhost:3000/api/cal/<token>.ics --export docs/qa/ticket-6/sample-session.ics
+```
+
+The script checks `VERSION:2.0`, `PRODID`, a `UID` and `DTSTAMP` on every event, `CRLF` line endings, and lines of at most 75 octets.
+
+Slot length defaults to 60 minutes. Client cancel is blocked inside the org cutoff, which defaults to 12 hours. Trainers can cancel any session. Sessions are stored in UTC and shown in the profile timezone.
+
+Google Calendar OAuth is optional and stays off until the server env in [Google Calendar for deploy (#18)](#google-calendar-for-deploy-18) is set. With those vars empty, booking does not call Google.
+
+Push notifications for a booked or cancelled session are a no-op interface in `@cleat/domain` (`deferredPushNotifier`). They are not sent.
+
+## Google Calendar for deploy (#18)
+
+ICS subscribe and export stay the calendar path with no Google account. Live Google verification needs a Google Cloud OAuth client and a public redirect URL from deploy ticket #18.
+
+Set these on the trainer desk server only:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `SUPABASE_SERVICE_ROLE`
+
+Do not prefix the client secret or the service role with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile bundles do not read them. Leave both Google vars empty and the desk hides Connect Google Calendar.
+
+The OAuth callback route is `GET /api/google/oauth/callback`.
+
+Register that exact path as an authorized redirect URI in the Google Cloud console:
+
+- Local: `http://localhost:3000/api/google/oauth/callback`
+- Deployed: `https://<your-vercel-host>/api/google/oauth/callback`
+
+The only scope is `https://www.googleapis.com/auth/calendar.events`. The consent screen can stay in Testing with Jay as a test user.
+
+Connect stores a refresh token and leaves the Google email column null. Org settings then show "Google Calendar connected". Disconnect posts the refresh token to `https://oauth2.googleapis.com/revoke`, then deletes the stored credentials. The ICS feed keeps working and the primary calendar goes back to ICS. Booking creates one event per session. A later sync updates that event. Cancel deletes it. A missing event (HTTP 404 or 410) still clears `google_event_id`.
+
 ## What comes next
 
-Calendar booking and the held draft review controls are later tickets. Chat, programs, knowledge, AI settings, and the audit log are on the trainer desk. The client Chat tab shows an auto sent answer with sources, or a fixed safety reply. A held draft is invisible to the client. Design decisions and the wireframe screenshots are in [docs/design](docs/design).
+Chat, programs, calendar booking, knowledge, AI settings, and the audit log are in the app. Held draft review controls are a later ticket. The client Chat tab shows an auto sent answer with sources, or a fixed safety reply. A held draft is invisible to the client. Design decisions and the wireframe screenshots are in [docs/design](docs/design).

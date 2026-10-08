@@ -19,9 +19,12 @@ import {
 import type { CleatClient } from "./supabase";
 
 export class CleatRequestError extends Error {
-  constructor(message: string) {
+  readonly status: number | null;
+
+  constructor(message: string, status?: number) {
     super(message);
     this.name = "CleatRequestError";
+    this.status = status ?? null;
   }
 }
 

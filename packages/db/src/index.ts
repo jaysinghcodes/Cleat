@@ -4,6 +4,7 @@ export const MIGRATIONS = [
   "supabase/migrations/0002_tenancy.sql",
   "supabase/migrations/0003_programs.sql",
   "supabase/migrations/0004_chat.sql",
+  "supabase/migrations/0005_booking.sql",
   "supabase/migrations/0006_rag_audit.sql",
 ] as const;
 
