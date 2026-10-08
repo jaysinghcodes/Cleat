@@ -372,7 +372,11 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
             <div className="name">{aiCopy.confidence}</div>
             {latestAudit ? (
               <div className="stack" style={{ marginTop: 12 }}>
-                <ConfidenceBar value={latestAudit.confidence} threshold={latestAudit.threshold} />
+                <ConfidenceBar
+                  value={latestAudit.confidence}
+                  threshold={latestAudit.threshold}
+                  decision={latestAudit.decision}
+                />
                 <div>
                   <div className="meta">{aiCopy.decision}</div>
                   <div className="name">{decisionLabel(latestAudit.decision)}</div>

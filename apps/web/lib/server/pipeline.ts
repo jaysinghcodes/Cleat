@@ -1,5 +1,6 @@
 import {
   chunkArticle,
+  gateClientMessage,
   planClientTurn,
   retrieve,
   toVectorLiteral,
@@ -284,32 +285,12 @@ export async function runClientAi(event: ClientMessageEvent): Promise<void> {
     orgId: event.orgId,
     ...DEFAULT_AI_SETTINGS,
   };
-  await ensureProgramChunks(admin, runtime.embedder, event.orgId, event.clientId);
-  const chunks = await retrieve(
-    { orgId: event.orgId, clientId: event.clientId, message: event.body, k: 5 },
-    {
-      embedder: runtime.embedder,
-      store: {
-        async search(input) {
-          const { data, error } = await admin.rpc("match_chunks", {
-            query_embedding: toVectorLiteral(input.embedding),
-            target_org: input.orgId,
-            target_client: input.clientId,
-            match_count: input.k,
-          });
-          if (error) throw new Error(error.message);
-          return mapMatch(data);
-        },
-      },
-    },
-  );
-  const plan = await planClientTurn({
+  const plan = await gateClientMessage({
     message: event.body,
     messageId: event.id,
     orgId: event.orgId,
     clientId: event.clientId,
     threadId: event.threadId,
-    chunks,
     settings: {
       autoSend: settings.autoSend,
       threshold: settings.threshold,
@@ -318,6 +299,27 @@ export async function runClientAi(event: ClientMessageEvent): Promise<void> {
     },
     chat: runtime.chat,
     now: new Date().toISOString(),
+    loadChunks: async () => {
+      await ensureProgramChunks(admin, runtime.embedder, event.orgId, event.clientId);
+      return retrieve(
+        { orgId: event.orgId, clientId: event.clientId, message: event.body, k: 5 },
+        {
+          embedder: runtime.embedder,
+          store: {
+            async search(input) {
+              const { data, error } = await admin.rpc("match_chunks", {
+                query_embedding: toVectorLiteral(input.embedding),
+                target_org: input.orgId,
+                target_client: input.clientId,
+                match_count: input.k,
+              });
+              if (error) throw new Error(error.message);
+              return mapMatch(data);
+            },
+          },
+        },
+      );
+    },
   });
   await commitPlan(admin, event, plan);
 }

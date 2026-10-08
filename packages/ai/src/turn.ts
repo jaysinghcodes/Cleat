@@ -118,6 +118,80 @@ function noticeBody(title: string): string {
   return "A draft is held. The client has not received it.";
 }
 
+const HELD_WITHOUT_NOTES = "I do not have that in your coach's notes yet.";
+
+function planRetrievalFailure(
+  input: {
+    message: string;
+    messageId: string;
+    orgId: string;
+    clientId: string;
+    settings: TurnSettings;
+    chat: ChatModel;
+    now: string;
+  },
+  extra: ReasonCode[],
+): AiPlan {
+  const retrieval = scoreRetrieval(input.message, []);
+  const reasonCodes = uniqueCodes([...retrieval.reasonCodes, ...extra]);
+  const title = inboxTitle({ emergency: false, templateId: null, reasonCodes });
+  return {
+    audit: {
+      orgId: input.orgId,
+      clientId: input.clientId,
+      messageId: input.messageId,
+      chunks: [],
+      draftText: HELD_WITHOUT_NOTES,
+      confidence: retrieval.confidence,
+      threshold: input.settings.threshold,
+      reasonCodes,
+      decision: "escalate",
+      templateId: null,
+      deliveredAt: null,
+      trainerEdit: null,
+      trainerAction: null,
+      finalText: null,
+      model: input.chat.model,
+      promptVersion: PROMPT_VERSION,
+      createdAt: input.now,
+    },
+    band: "low",
+    clientMessage: null,
+    inbox: { priority: "p1", emergency: false, reasonCodes, title },
+    holdDraft: { draftText: HELD_WITHOUT_NOTES, sources: [] },
+    notice: { title, body: noticeBody(title), emergency: false },
+  };
+}
+
+/**
+ * Refusals are decided on the raw message before any embed or retrieval.
+ * A hard refusal never calls loadChunks. If loading chunks throws, the turn
+ * is still an escalate hold and nothing is posted to the client.
+ */
+export async function gateClientMessage(input: {
+  message: string;
+  messageId: string;
+  orgId: string;
+  clientId: string;
+  threadId: string;
+  settings: TurnSettings;
+  chat: ChatModel;
+  now: string;
+  loadChunks: () => Promise<RetrievedChunk[]>;
+}): Promise<AiPlan> {
+  const { loadChunks, ...turn } = input;
+  const refusal = checkRefusals(input.message);
+  if (refusal.kind === "hard_refuse") {
+    return planClientTurn({ ...turn, chunks: [] });
+  }
+  try {
+    const chunks = await loadChunks();
+    return planClientTurn({ ...turn, chunks });
+  } catch {
+    return planRetrievalFailure(turn, refusal.kind === "hold" ? refusal.reasonCodes : []);
+  }
+}
+
 /**
  * One AI action: retrieve is already done. This scores, refuses, and plans the writes.
  * Hard refusals never call the chat model.
@@ -192,7 +266,7 @@ export async function planClientTurn(input: {
   const confidence = blendConfidence(retrieval.confidence, completion.confidence);
   const band = bandFor(confidence, input.settings.threshold);
   const signOff = input.settings.signOff.trim();
-  const draftBody = completion.text.trim() || "I do not have that in your coach's notes yet.";
+  const draftBody = completion.text.trim() || HELD_WITHOUT_NOTES;
   const draftText = signOff ? `${draftBody}\n${signOff}` : draftBody;
   const reasonCodes = uniqueCodes([
     ...retrieval.reasonCodes,

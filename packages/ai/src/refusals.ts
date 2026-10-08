@@ -39,6 +39,13 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
+  /end it all/,
+  /don'?t want to be here/,
+  /do not want to be here/,
+  /dont want to be here/,
+  /don'?t want to be alive/,
+  /do not want to be alive/,
+  /dont want to be alive/,
 ];
 
 /** Emergency checks run before medical checks. Patterns lean toward over flagging. */
@@ -64,6 +71,12 @@ const EMERGENCY: RegExp[] = [
   /\bstroke\b/,
   /facial droop/,
   /\bnumb\b/,
+  /heart attack/,
+  /\bcardiac\b/,
+  /palpitation/,
+  /\b(?:racing|pounding|irregular)\b[^.]{0,40}\bheart(?:beat)?s?\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:racing|pounding|irregular)\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) (?:slow|settle)/,
 ];
 
 const MEDICAL: RegExp[] = [

@@ -1,10 +1,17 @@
 "use client";
 
-import { bandFor } from "@cleat/ai";
+import { confidenceBarColor, type AiDecision } from "@cleat/ai";
 
-export function ConfidenceBar({ value, threshold }: { value: number; threshold: number }) {
-  const band = bandFor(value, threshold);
-  const color = band === "high" ? "var(--done)" : band === "medium" ? "var(--accent)" : "var(--nudge)";
+export function ConfidenceBar({
+  value,
+  threshold,
+  decision,
+}: {
+  value: number;
+  threshold: number;
+  decision?: AiDecision | null;
+}) {
+  const color = confidenceBarColor({ confidence: value, threshold, decision });
   const width = Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
     <div className="confidence">

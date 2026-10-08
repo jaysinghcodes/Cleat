@@ -60,7 +60,7 @@ export function AuditDetail({ eventId }: { eventId: string }) {
           <div className="card">
             <div className="name">{aiCopy.confidence}</div>
             <div style={{ marginTop: 12 }}>
-              <ConfidenceBar value={event.confidence} threshold={event.threshold} />
+              <ConfidenceBar value={event.confidence} threshold={event.threshold} decision={event.decision} />
             </div>
             <div className="row" style={{ marginTop: 16, alignItems: "flex-start" }}>
               <div className="spacer">

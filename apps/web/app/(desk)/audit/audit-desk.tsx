@@ -117,7 +117,7 @@ export function AuditDesk() {
                   {decisionLabel(event.decision)} · {when(event.createdAt)}
                 </div>
               </div>
-              <ConfidenceBar value={event.confidence} threshold={event.threshold} />
+              <ConfidenceBar value={event.confidence} threshold={event.threshold} decision={event.decision} />
             </Link>
           ))
         )}

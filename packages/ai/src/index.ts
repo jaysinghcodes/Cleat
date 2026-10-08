@@ -8,6 +8,7 @@ export {
   bandFor,
   blendConfidence,
   clampThreshold,
+  confidenceBarColor,
   scoreRetrieval,
 } from "./confidence";
 export type { AiDecision, Band, ConfidenceResult, ReasonCode } from "./confidence";
@@ -39,5 +40,5 @@ export {
 export type { DraftHold, HardRefusal, RefusalCheck, TemplateId } from "./refusals";
 export { chunkInScope, retrieve } from "./retrieve";
 export type { ChunkSource, ChunkStore, RetrieveInput, RetrievedChunk, StoredChunk } from "./retrieve";
-export { planClientTurn, sourcesFromChunks } from "./turn";
+export { gateClientMessage, planClientTurn, sourcesFromChunks } from "./turn";
 export type { AiPlan, AuditChunk, AuditDraft, InboxDraft, TurnSettings, TurnSource } from "./turn";

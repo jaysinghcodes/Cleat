@@ -49,6 +49,25 @@ export function bandFor(confidence: number, threshold: number): Band {
 }
 
 /**
+ * Theme CSS variables. High is muted green, medium is apricot, low or any refusal is muted red.
+ * A hard refusal stays red even when the retrieval score would be High.
+ */
+const CONFIDENCE_FILL = {
+  high: "var(--done)",
+  medium: "var(--accent)",
+  low: "var(--nudge)",
+} as const;
+
+export function confidenceBarColor(input: {
+  confidence: number;
+  threshold: number;
+  decision?: AiDecision | null;
+}): string {
+  if (input.decision === "hard_refuse") return CONFIDENCE_FILL.low;
+  return CONFIDENCE_FILL[bandFor(input.confidence, input.threshold)];
+}
+
+/**
  * Retrieval plus answerability. Token overlap is the answerability signal.
  * The canned scorer uses this directly. A live model can only blend with it.
  */

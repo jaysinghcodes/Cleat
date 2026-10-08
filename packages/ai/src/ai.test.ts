@@ -8,9 +8,10 @@ import {
   MIN_THRESHOLD,
   bandFor,
   clampThreshold,
+  confidenceBarColor,
 } from "./confidence";
 import { applyTrainerDraftAction } from "./drafts";
-import { HASH_EMBEDDING_MODEL, hashEmbedder, hashEmbedding } from "./embeddings";
+import { HASH_EMBEDDING_MODEL, hashEmbedder, hashEmbedding, type Embedder } from "./embeddings";
 import { evaluateMessage } from "./eval";
 import { CANNED_CHAT_MODEL, EMBEDDING_DIMS, cannedChatModel, type ChatModel } from "./models";
 import { PROMPT_VERSION } from "./prompts";
@@ -24,7 +25,7 @@ import {
 } from "./refusals";
 import { chunkInScope, retrieve, type ChunkStore, type RetrievedChunk } from "./retrieve";
 import { cosineSimilarity } from "./text";
-import { planClientTurn } from "./turn";
+import { gateClientMessage, planClientTurn } from "./turn";
 
 const DASH = /[—–]| - /;
 
@@ -426,4 +427,128 @@ test("article chunking keeps the title on each snippet", () => {
   const chunks = chunkArticle("Rest days", "Wednesday is rest.\n\nSunday is rest.");
   assert.ok(chunks.length >= 1);
   assert.ok(chunks.every((item) => item.startsWith("Rest days")));
+});
+
+function throwingEmbedder(): { embedder: Embedder; calls: () => number } {
+  let calls = 0;
+  return {
+    calls: () => calls,
+    embedder: {
+      model: "throwing-embedder",
+      async embed() {
+        calls += 1;
+        throw new Error("Embedding request failed (503)");
+      },
+    },
+  };
+}
+
+const gateSettings = { autoSend: true, threshold: 0.85, signOff: "Alex", toneNotes: "Warm" };
+
+test("throwing embedder still yields the emergency template, P0, audit, and notice", async () => {
+  const failing = throwingEmbedder();
+  const plan = await gateClientMessage({
+    message: "My chest hurts and feels tight after that set",
+    messageId: MESSAGE_ID,
+    orgId: ORG_A,
+    clientId: CLIENT_C,
+    threadId: THREAD_ID,
+    settings: gateSettings,
+    chat: throwingChat,
+    now: NOW,
+    loadChunks: async () => {
+      await failing.embedder.embed(["unused"]);
+      return [];
+    },
+  });
+  assert.equal(failing.calls(), 0);
+  assert.equal(plan.audit.decision, "hard_refuse");
+  assert.equal(plan.audit.templateId, "emergency");
+  assert.equal(plan.clientMessage?.body, EMERGENCY_TEMPLATE);
+  assert.equal(plan.inbox?.priority, "p0");
+  assert.equal(plan.inbox?.emergency, true);
+  assert.equal(plan.holdDraft, null);
+  assert.equal(plan.notice?.emergency, true);
+  assert.ok(plan.notice);
+});
+
+test("throwing embedder holds a normal question with no client message", async () => {
+  const failing = throwingEmbedder();
+  const plan = await gateClientMessage({
+    message: "How many rest days are in the program?",
+    messageId: MESSAGE_ID,
+    orgId: ORG_A,
+    clientId: CLIENT_C,
+    threadId: THREAD_ID,
+    settings: gateSettings,
+    chat: throwingChat,
+    now: NOW,
+    loadChunks: async () => {
+      await failing.embedder.embed(["unused"]);
+      return highChunks("How many rest days are in the program?");
+    },
+  });
+  assert.equal(failing.calls(), 1);
+  assert.equal(plan.audit.decision, "escalate");
+  assert.equal(plan.audit.reasonCodes.includes("retrieval_gap"), true);
+  assert.equal(plan.clientMessage, null);
+  assert.equal(plan.inbox?.priority, "p1");
+  assert.equal(plan.inbox?.emergency, false);
+  assert.ok(plan.holdDraft);
+  assert.ok(plan.notice);
+  assert.equal(plan.notice?.emergency, false);
+});
+
+test("hard refuse confidence bar is muted red at a high score", () => {
+  assert.equal(bandFor(0.955, 0.85), "high");
+  assert.equal(
+    confidenceBarColor({ confidence: 0.955, threshold: 0.85, decision: "hard_refuse" }),
+    "var(--nudge)",
+  );
+  assert.equal(
+    confidenceBarColor({ confidence: 0.955, threshold: 0.85, decision: "auto_send" }),
+    "var(--done)",
+  );
+  assert.equal(confidenceBarColor({ confidence: 0.62, threshold: 0.85, decision: "escalate" }), "var(--accent)");
+  assert.equal(confidenceBarColor({ confidence: 0.2, threshold: 0.85, decision: "escalate" }), "var(--nudge)");
+});
+
+test("heart attack, racing heart, and end it all refusals", () => {
+  const emergency = [
+    "I think I'm having a heart attack",
+    "This feels like a cardiac arrest",
+    "I am having heart attack symptoms",
+    "My heart is racing and won't slow down",
+    "My heart is pounding and won't settle",
+    "My heartbeat is irregular and won't slow down",
+  ];
+  for (const body of emergency) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency", body);
+    assert.equal(hit.text, EMERGENCY_TEMPLATE, body);
+    assert.equal(hit.emergency, true, body);
+  }
+  const selfHarm = [
+    "I want to end it all",
+    "I want to end my life",
+    "I want to kill myself",
+    "I don't want to be here anymore",
+    "I don\u2019t want to be alive anymore",
+    "I have been feeling suicidal",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+  }
+  const deadlifts = checkRefusals("I hurt myself doing deadlifts");
+  assert.equal(deadlifts.kind, "hard_refuse");
+  if (deadlifts.kind === "hard_refuse") assert.equal(deadlifts.templateId, "emergency_self_harm");
+  const heartCondition = checkRefusals("I have a heart condition, is this program safe for me?");
+  assert.equal(heartCondition.kind, "hard_refuse");
+  if (heartCondition.kind === "hard_refuse") assert.equal(heartCondition.templateId, "medical_safety");
 });
