@@ -1,3 +1,4 @@
 -- Local seed applied by `supabase db reset` after the migrations.
 -- Ticket 1 creates the trainer, the invite, and the client through the apps.
--- There are no product rows to load here.
+-- Ticket 2 leaves programs, logs, and nudges empty.
+-- Ticket 7 (#9) seeds demo programs into programs, program_days, and program_exercises.
