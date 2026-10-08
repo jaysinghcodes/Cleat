@@ -12,6 +12,7 @@
     "@cleat/api": "workspace:*",
     "@cleat/domain": "workspace:*",
     "@cleat/theme": "workspace:*",
+    "@supabase/supabase-js": "^2.75.0",
     "next": "~15.5.27",
     "react": "19.2.3",
     "react-dom": "19.2.3"

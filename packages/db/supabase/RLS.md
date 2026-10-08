@@ -23,6 +23,11 @@ One org is one trainer. There is no franchise or team RBAC. A user belongs to ex
 | `orgs` | on, forced | `orgs_select_member` (`is_member_of`), `orgs_update_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
 | `memberships` | on, forced | `memberships_select_own` (`user_id = auth.uid()`), `memberships_select_trainer` (`is_trainer_of`) |
 | `invites` | on, forced | `invites_select_trainer`, `invites_insert_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
+| `trainer_settings` | on, forced | `trainer_settings_select` (`is_member_of`), `trainer_settings_update` (the trainer's own row) |
+| `availability_blocks` | on, forced | `availability_select_member` (`is_member_of`), `availability_write_trainer` (the trainer's own blocks) |
+| `sessions` | on, forced | `sessions_select_own` (`client_id = auth.uid()` or `is_trainer_of`). No insert, update, or delete grant. Book and cancel go through functions |
+| `calendar_tokens` | on, forced | No policies and no grants. `issue_calendar_token` and `calendar_feed` are security definer |
+| `google_credentials` | on, forced | No policies and no grants. The refresh token is not readable by the signed in user. `google_connection` returns only connected and email |
 
 There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
 
@@ -44,6 +49,13 @@ A client cannot read another client's profile. Helper functions are `security de
 | `current_membership()` | `authenticated` | The caller's org, role, display name, and timezone |
 | `my_coach()` | `authenticated` | The trainer name and org name for a client |
 | `is_trainer_of`, `is_member_of`, `can_read_profile` | `authenticated` | Policy helpers |
+| `book_session(slot_start)` | `authenticated` | Client books one open slot. Overlap and a taken slot raise a real error |
+| `cancel_session(session_id)` | `authenticated` | Client cancel respects the org cutoff. Trainers can cancel any session |
+| `issue_calendar_token(regenerate)` | `authenticated` | Returns the active feed nonce, or revokes it and issues a new one |
+| `calendar_feed(feed_nonce)` | `anon`, `authenticated` | Sessions for that nonce only. Missing and revoked nonces raise and return no rows |
+| `booked_ranges()` | `authenticated` | Booked start and end times in the caller's org, with no client names |
+| `google_connection()` | `authenticated` | Whether Google is connected, and the account email. Not the refresh token |
+| `save_google_credentials`, `disconnect_google`, `attach_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics` |
 
 User facing exceptions from these functions:
 
@@ -69,4 +81,4 @@ User facing exceptions from these functions:
 
 ## Proof
 
-`scripts/cross-tenant-rls.sh` applies `0001_init.sql` and `0002_tenancy.sql`, then `tests/cross_tenant_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies.
+`scripts/cross-tenant-rls.sh` applies every file in `migrations/`, then `tests/cross_tenant_rls.sql` and `tests/booking_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies.

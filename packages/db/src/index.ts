@@ -2,6 +2,7 @@
 export const MIGRATIONS = [
   "supabase/migrations/0001_init.sql",
   "supabase/migrations/0002_tenancy.sql",
+  "supabase/migrations/0005_booking.sql",
 ] as const;
 
 export type MigrationPath = (typeof MIGRATIONS)[number];
