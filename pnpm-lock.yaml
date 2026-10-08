@@ -137,6 +137,12 @@ importers:
         specifier: ^2.75.0
         version: 2.117.3
     devDependencies:
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.20.5
+      tsx:
+        specifier: ^4.20.3
+        version: 4.23.15
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
@@ -153,6 +159,12 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.20.5
+      tsx:
+        specifier: ^4.20.3
+        version: 4.23.15
       typescript:
         specifier: ~6.0.3
         version: 6.0.3

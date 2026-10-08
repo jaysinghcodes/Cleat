@@ -8,13 +8,16 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/messages.test.ts"
   },
   "dependencies": {
     "@cleat/domain": "workspace:*",
     "@supabase/supabase-js": "^2.75.0"
   },
   "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.20.3",
     "typescript": "~6.0.3"
   }
 }

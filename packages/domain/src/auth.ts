@@ -176,6 +176,11 @@ export const copy = {
   arrivesLater: "Arrives in a later ticket",
   billingLater: "Billing arrives in a later ticket.",
   openInvite: "Paste the invite link from your coach.",
+  signInSend: "Sign in before sending a message.",
+  emptyBody: "Write a message first.",
+  tooLong: "Keep the message under 4000 characters.",
+  onlyCoach: "You can only message your coach.",
+  notOnRoster: "That client is not on your roster.",
 } as const;
 
 export const knownProductErrors = [
@@ -189,6 +194,11 @@ export const knownProductErrors = [
   copy.enterName,
   copy.enterOrg,
   copy.enterTimezone,
+  copy.signInSend,
+  copy.emptyBody,
+  copy.tooLong,
+  copy.onlyCoach,
+  copy.notOnRoster,
 ] as const;
 
 export function productError(message: string | undefined, fallback: string): string {

@@ -53,8 +53,25 @@ export type { Program } from "./program";
 export { logSchema } from "./log";
 export type { Log } from "./log";
 
-export { messageSchema } from "./message";
-export type { Message } from "./message";
+export {
+  MESSAGE_PAGE_SIZE,
+  chatCopy,
+  isUuid,
+  mergeMessages,
+  messageBodySchema,
+  messagePlaceholder,
+  messagePreview,
+  messageSchema,
+  parseMessageRow,
+  parseMessageRows,
+  parsePostedMessage,
+  parseThreadId,
+  parseThreadPreviews,
+  replyPlaceholder,
+  splitMessageBody,
+  upsertMessage,
+} from "./message";
+export type { Message, MessageSegment, ThreadPreview } from "./message";
 
 export { auditEventSchema } from "./audit";
 export type { AuditEvent } from "./audit";
