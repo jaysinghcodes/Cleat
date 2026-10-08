@@ -23,6 +23,9 @@ One org is one trainer. There is no franchise or team RBAC. A user belongs to ex
 | `orgs` | on, forced | `orgs_select_member` (`is_member_of`), `orgs_update_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
 | `memberships` | on, forced | `memberships_select_own` (`user_id = auth.uid()`), `memberships_select_trainer` (`is_trainer_of`) |
 | `invites` | on, forced | `invites_select_trainer`, `invites_insert_trainer` (`is_trainer_of` and `created_by = auth.uid()`) |
+| `threads` | on, forced | `threads_select` (trainer of `org_id`, or `client_id = auth.uid()` in that org) |
+| `messages` | on, forced | `messages_select` (`can_read_thread`). No insert grant. `post_message` writes |
+| `push_tokens` | on, forced | `push_tokens_select_own`, `push_tokens_insert_own`, `push_tokens_update_own`, `push_tokens_delete_own` (`user_id = auth.uid()`). A trainer cannot read a client's token |
 
 There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
 
@@ -44,6 +47,10 @@ A client cannot read another client's profile. Helper functions are `security de
 | `current_membership()` | `authenticated` | The caller's org, role, display name, and timezone |
 | `my_coach()` | `authenticated` | The trainer name and org name for a client |
 | `is_trainer_of`, `is_member_of`, `can_read_profile` | `authenticated` | Policy helpers |
+| `can_read_thread(thread_id)` | `authenticated` | True for the trainer of that thread's org, or the client who owns it |
+| `ensure_thread(target_client)` | `authenticated` | Opens the one thread for a roster client. A client can only open their own |
+| `post_message(target_client, message_body)` | `authenticated` | Stores one plain text message in that thread. Rejects an empty body and a body over 4000 characters |
+| `thread_previews()` | `authenticated` | Latest message per visible thread. Runs as the caller so RLS applies |
 
 User facing exceptions from these functions:
 
@@ -57,6 +64,11 @@ User facing exceptions from these functions:
 - `This invite has already been used.`
 - `Trainer accounts cannot join a roster as a client.`
 - `This account already belongs to another org.`
+- `Sign in before sending a message.`
+- `Write a message first.`
+- `Keep the message under 4000 characters.`
+- `You can only message your coach.`
+- `That client is not on your roster.`
 
 ## Rules for later migrations
 
@@ -69,4 +81,4 @@ User facing exceptions from these functions:
 
 ## Proof
 
-`scripts/cross-tenant-rls.sh` applies `0001_init.sql` and `0002_tenancy.sql`, then `tests/cross_tenant_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies.
+`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order, then `tests/cross_tenant_rls.sql` and `tests/chat_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. This migration does not send push notifications.

@@ -12,5 +12,18 @@ export {
   updateProfile,
   verifyEmailCode,
 } from "./auth";
-export { createCleatClient, readPublicSupabaseConfig } from "./supabase";
+export { createAuthorizedClient, createCleatClient, readPublicSupabaseConfig } from "./supabase";
 export type { AuthStorage, CleatClient, PublicSupabaseConfig } from "./supabase";
+export { onClientMessage, setClientMessageHook } from "./message-hook";
+export type { ClientMessageEvent, ClientMessageHook } from "./message-hook";
+export { noopPushNotifier } from "./push";
+export type { PushNotice, PushNotifier } from "./push";
+export { subscribeToThread } from "./realtime";
+export {
+  deliverChatMessage,
+  ensureThread,
+  listMessages,
+  listThreadPreviews,
+  sendChatMessage,
+} from "./messages";
+export type { DeliverChatInput } from "./messages";

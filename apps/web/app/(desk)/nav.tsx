@@ -45,7 +45,15 @@ export function DeskShell({
             <Link
               key={item.href}
               href={item.href}
-              className={pathname === item.href ? "active" : undefined}
+              className={
+                item.href === "/chat"
+                  ? pathname === "/chat" || pathname.startsWith("/chat/")
+                    ? "active"
+                    : undefined
+                  : pathname === item.href
+                    ? "active"
+                    : undefined
+              }
             >
               {item.label}
             </Link>
