@@ -7,6 +7,7 @@ import {
 } from "@cleat/api";
 import {
   chatCopy,
+  clientAiPresentation,
   initials,
   mergeMessages,
   messagePlaceholder,
@@ -143,7 +144,9 @@ export default function ChatScreen() {
       const message = await sendChatMessage(client, deskOrigin(), { body: draft });
       setDraft("");
       setThreadId(message.threadId);
-      setMessages((current) => upsertMessage(current, message));
+      const page = await listMessages(client, message.threadId);
+      setMessages(page.messages);
+      setHasMore(page.hasMore);
     } catch (err: unknown) {
       setError(err instanceof CleatRequestError ? err.message : chatCopy.sendFailed);
     } finally {
@@ -219,6 +222,44 @@ export default function ChatScreen() {
               </Text>
             ) : null}
             {messages.map((message) => {
+              const view = clientAiPresentation(message, coachName);
+              if (view) {
+                return (
+                  <View
+                    key={message.id}
+                    style={{
+                      alignSelf: "flex-start",
+                      maxWidth: "86%",
+                      backgroundColor: tokens.bgSoft,
+                      borderColor: tokens.borderSoft,
+                      borderWidth: 1,
+                      borderRadius: 16,
+                      borderBottomLeftRadius: 4,
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <View
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: tokens.accent,
+                        }}
+                      />
+                      <Text style={{ color: tokens.textSecondary, fontSize: 12, fontWeight: "600" }}>{view.label}</Text>
+                    </View>
+                    <MessageBody body={message.body} mine={false} />
+                    {view.sources ? (
+                      <Text style={{ color: tokens.textSecondary, fontSize: 12, marginTop: 8 }}>{view.sources}</Text>
+                    ) : null}
+                    {view.footer ? (
+                      <Text style={{ color: tokens.textSecondary, fontSize: 12, marginTop: 4 }}>{view.footer}</Text>
+                    ) : null}
+                  </View>
+                );
+              }
               const mine = message.senderId === session?.userId;
               return (
                 <View

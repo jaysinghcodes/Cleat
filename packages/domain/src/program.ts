@@ -74,6 +74,31 @@ export type ProgramDay = {
   exercises: ProgramExercise[];
 };
 
+export function programSourceText(program: {
+  name: string;
+  days: ProgramDay[];
+}): string {
+  const lines = [`Program: ${program.name}`];
+  const days = [...program.days].sort((left, right) => left.position - right.position);
+  for (const day of days) {
+    if (day.rest) {
+      lines.push(`${day.name}: rest`);
+      continue;
+    }
+    lines.push(day.name);
+    const exercises = [...day.exercises].sort((left, right) => left.position - right.position);
+    for (const exercise of exercises) {
+      const notes = exercise.notes.trim();
+      lines.push(
+        notes
+          ? `${exercise.name}. ${exercise.sets} sets of ${exercise.reps}. ${notes}`
+          : `${exercise.name}. ${exercise.sets} sets of ${exercise.reps}.`,
+      );
+    }
+  }
+  return lines.join("\n");
+}
+
 export type AssignedProgram = {
   id: string;
   orgId: string;

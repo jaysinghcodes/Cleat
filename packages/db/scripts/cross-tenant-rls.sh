@@ -44,3 +44,5 @@ echo "Running booking assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/booking_rls.sql
 echo "Running chat assertions."
 "${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/chat_rls.sql
+echo "Running RAG and audit assertions."
+"${PSQL[@]}" -d "$DB_NAME" -f supabase/tests/rag_rls.sql

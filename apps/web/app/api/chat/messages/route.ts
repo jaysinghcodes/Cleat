@@ -6,6 +6,7 @@ import {
 } from "@cleat/api";
 import { chatCopy } from "@cleat/domain";
 import { NextResponse } from "next/server";
+import { runClientAi } from "../../../../lib/server/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,16 @@ export async function POST(request: Request) {
         body: typeof payload.body === "string" ? payload.body : "",
         clientId: typeof payload.clientId === "string" ? payload.clientId : undefined,
       },
-      { accessToken: token },
+      {
+        accessToken: token,
+        hook: async (event) => {
+          try {
+            await runClientAi(event);
+          } catch (err) {
+            console.error("AI gate failed", err instanceof Error ? err.message : "unknown");
+          }
+        },
+      },
     );
     return json({ message }, 200);
   } catch (err) {

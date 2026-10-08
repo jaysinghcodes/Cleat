@@ -66,6 +66,7 @@ export {
   prescription,
   programCopy,
   programDayForDate,
+  programSourceText,
   programDraftMessage,
   programDraftSchema,
   programSchema,
@@ -120,6 +121,8 @@ export {
   isUuid,
   mergeMessages,
   messageBodySchema,
+  clientAiPresentation,
+  coachJumpIn,
   messagePlaceholder,
   messagePreview,
   messageSchema,
@@ -132,13 +135,38 @@ export {
   splitMessageBody,
   upsertMessage,
 } from "./message";
-export type { Message, MessageSegment, ThreadPreview } from "./message";
+export type { Message, MessageSegment, MessageSource, ThreadPreview } from "./message";
 
-export { auditEventSchema } from "./audit";
-export type { AuditEvent } from "./audit";
+export {
+  AUDIT_DECISIONS,
+  AUDIT_TEMPLATES,
+  TRAINER_ACTIONS,
+  auditCounts,
+  auditEventSchema,
+  auditTimeline,
+  parseAuditEvent,
+  parseAuditEvents,
+} from "./audit";
+export type { AuditEvent, AuditTimelineItem } from "./audit";
 
-export { inboxItemSchema } from "./inbox";
-export type { InboxItem } from "./inbox";
+export { inboxItemSchema, parseTrainerNotices, trainerNoticeSchema } from "./inbox";
+export type { InboxItem, TrainerNotice } from "./inbox";
+
+export {
+  DEFAULT_AI_SETTINGS,
+  DEMO_ORG_ID,
+  KB_CATEGORIES,
+  aiCopy,
+  aiSettingsSchema,
+  categoryLabel,
+  decisionLabel,
+  kbArticleSchema,
+  kbDraftSchema,
+  parseAiSettings,
+  parseHeldDraft,
+  parseKbArticles,
+} from "./ai";
+export type { AiSettings, HeldDraftMarker, KbArticle, KbCategory, KbDraft } from "./ai";
 
 export {
   DEFAULT_CANCEL_CUTOFF_HOURS,

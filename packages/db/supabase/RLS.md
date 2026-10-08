@@ -39,6 +39,13 @@ One org is one trainer. There is no franchise or team RBAC. A user belongs to ex
 | `sessions` | on, forced | `sessions_select_own` (`client_id = auth.uid()` or `is_trainer_of`). No insert, update, or delete grant. Book and cancel go through functions |
 | `calendar_tokens` | on, forced | No policies and no grants. `issue_calendar_token` and `calendar_feed` are security definer |
 | `google_credentials` | on, forced | No policies and no grants. The refresh token is service role only. `google_connection` returns connected and a null email |
+| `ai_settings` | on, forced | `ai_settings_select`, `ai_settings_update` (trainer of `org_id`). Clients cannot read or change the threshold |
+| `kb_articles` | on, forced | `kb_articles_select` (trainer of `org_id`). Writes go through the service role |
+| `chunks` | on, forced | `chunks_select` (trainer of `org_id`, or a member when `client_id` is null or equals `auth.uid()`). A client sees org knowledge chunks and their own program chunks |
+| `audit_events` | on, forced | `audit_events_select` (trainer of `org_id`) |
+| `inbox_items` | on, forced | `inbox_items_select` (trainer of `org_id`) |
+| `held_drafts` | on, forced | `held_drafts_select` (trainer of `org_id`) |
+| `trainer_notices` | on, forced | `trainer_notices_select`, `trainer_notices_update` (trainer of `org_id`, used to mark a notice read) |
 
 There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
 
@@ -75,6 +82,9 @@ A client cannot read another client's profile. Helper functions are `security de
 | `booked_ranges()` | `authenticated` | Booked start and end times in the caller's org, with no client names |
 | `google_connection()` | `authenticated` | Whether Google is connected. The email column stays null. Not the refresh token |
 | `save_google_credentials`, `disconnect_google`, `attach_google_event`, `clear_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics`. Credential rows stay unreadable |
+| `match_chunks(query_embedding, target_org, target_client, match_count)` | `authenticated` | Cosine search inside one org. Returns org knowledge chunks and that client's program chunks. Security invoker, so RLS still applies |
+| `create_ai_settings_for_org()` | not granted | Trigger on `orgs` insert. New orgs start with auto send off and threshold 0.85 |
+| `enable_demo_auto_send()` | not granted to `authenticated` | Turns auto send on only for the reserved demo org `d1000000-0000-4000-8000-000000000001` |
 
 User facing exceptions from these functions:
 
@@ -105,4 +115,4 @@ User facing exceptions from these functions:
 
 ## Proof
 
-`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`), then `tests/cross_tenant_rls.sql`, `tests/booking_rls.sql`, and `tests/chat_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. This migration does not send push notifications. Booking rows stay inside the org.
+`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, `0006_rag_audit.sql`), then `tests/cross_tenant_rls.sql`, `tests/booking_rls.sql`, `tests/chat_rls.sql`, and `tests/rag_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. That migration does not send push notifications. Booking rows stay inside the org. `0006_rag_audit.sql` proves a trainer cannot read another org's articles, chunks, audits, drafts, or notices, and a client cannot read another client's program chunks or any audit row. `match_chunks` stays inside the caller's org and client.

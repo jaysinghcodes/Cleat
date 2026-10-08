@@ -45,7 +45,7 @@ export async function listMessages(
 ): Promise<{ messages: Message[]; hasMore: boolean }> {
   let query = supabase
     .from("messages")
-    .select("id, thread_id, org_id, sender_id, body, created_at")
+    .select("id, thread_id, org_id, sender_id, body, created_at, kind, sources")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: false })
     .limit(MESSAGE_PAGE_SIZE + 1);

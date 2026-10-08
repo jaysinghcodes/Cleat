@@ -1,7 +1,7 @@
 /**
- * Ticket 4 attaches the AI pipeline here.
  * The desk calls onClientMessage once after a client message is stored.
- * The hook must not send a chat reply. This ticket leaves it as a no-op.
+ * The default hook does nothing. Ticket 4 passes a server hook that may
+ * post an AI message or a fixed safety template.
  */
 export type ClientMessageEvent = {
   id: string;
