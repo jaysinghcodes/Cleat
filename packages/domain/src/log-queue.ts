@@ -13,9 +13,9 @@ export type LogQueue = {
 };
 
 /**
- * Offline log queue. One flush runs at a time. A second trigger joins that
- * run, and a client key is applied at most once per run. The server also
- * ignores a replay of the same client key.
+ * Offline log queue. Storage read-modify-writes share one chain, so enqueue
+ * and flush cannot overwrite each other. A flush removes entries by clientKey
+ * after re-reading storage. One flush runs at a time.
  */
 export function createLogQueue(options: {
   read: () => Promise<unknown>;
@@ -23,6 +23,16 @@ export function createLogQueue(options: {
   online: () => Promise<boolean>;
 }): LogQueue {
   let inflight: Promise<LogFlushResult> | null = null;
+  let storage: Promise<void> = Promise.resolve();
+
+  function exclusive<T>(work: () => Promise<T>): Promise<T> {
+    const run = storage.then(work, work);
+    storage = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
 
   async function read(): Promise<LogOperation[]> {
     try {
@@ -37,47 +47,54 @@ export function createLogQueue(options: {
     }
   }
 
-  async function write(items: LogOperation[]): Promise<void> {
-    await options.write(items);
-  }
-
   async function execute(apply: (operation: LogOperation) => Promise<void>): Promise<LogFlushResult> {
     if (!(await options.online())) {
       const pending = (await read()).length;
       return { flushed: 0, pending, error: null };
     }
-    const queue = await read();
-    let index = 0;
-    let error: string | null = null;
+
     const applied = new Set<string>();
-    for (; index < queue.length; index += 1) {
-      const operation = queue[index];
-      if (!operation) break;
-      if (applied.has(operation.clientKey)) continue;
+    let error: string | null = null;
+    let dropped: string | null = null;
+
+    for (;;) {
+      const next = await exclusive(async () => {
+        const queue = await read();
+        return queue.find((item) => item.clientKey !== dropped && !applied.has(item.clientKey)) ?? null;
+      });
+      if (!next) break;
       try {
-        await apply(operation);
-        applied.add(operation.clientKey);
+        await apply(next);
+        applied.add(next.clientKey);
       } catch (err) {
         if (isOfflineError(err)) {
           error = null;
           break;
         }
         error = err instanceof Error ? err.message : "Could not save the log.";
-        index += 1;
+        dropped = next.clientKey;
         break;
       }
     }
-    const remaining = queue.slice(index);
-    await write(remaining);
-    return { flushed: index - (error ? 1 : 0), pending: remaining.length, error };
+
+    const pending = await exclusive(async () => {
+      const latest = await read();
+      const remaining = latest.filter((item) => item.clientKey !== dropped && !applied.has(item.clientKey));
+      await options.write(remaining);
+      return remaining.length;
+    });
+
+    return { flushed: applied.size, pending, error };
   }
 
   return {
     read,
-    async enqueue(operation) {
-      const current = await read();
-      current.push(operation);
-      await write(current);
+    enqueue(operation) {
+      return exclusive(async () => {
+        const current = await read();
+        current.push(operation);
+        await options.write(current);
+      });
     },
     flush(apply) {
       if (inflight) return inflight;

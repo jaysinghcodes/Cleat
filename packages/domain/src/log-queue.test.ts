@@ -92,3 +92,69 @@ test("a foreground trigger and a network trigger flush once", async () => {
   assert.equal(db.calls(), 1);
   assert.equal(db.rows.length, 1);
 });
+
+const KEY1 = "11111111-1111-4111-8111-111111111111";
+const KEY2 = "22222222-2222-4222-8222-222222222222";
+
+function reproOp(clientKey: string): LogOperation {
+  return {
+    clientKey,
+    kind: "save_sets",
+    exerciseId: EXERCISE_ID,
+    scheduledOn: "2026-10-08",
+    sets: [{ index: 1, weightKg: 40, reps: 8 }],
+    note: "",
+    markDone: false,
+  };
+}
+
+test("sentinel repro: enqueue during a successful flush is not lost", async () => {
+  let raw: unknown = [];
+  const q = createLogQueue({
+    read: async () => raw,
+    write: async (items) => {
+      raw = JSON.parse(JSON.stringify(items)) as unknown;
+    },
+    online: async () => true,
+  });
+  await q.enqueue(reproOp(KEY1));
+  const applied: string[] = [];
+  const flushed = q.flush(async (operation) => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    applied.push(operation.clientKey);
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  await q.enqueue(reproOp(KEY2));
+  await flushed;
+
+  const queued = (await q.read()).map((item) => item.clientKey);
+  const count = (key: string, list: string[]) => list.filter((item) => item === key).length;
+  assert.equal(count(KEY1, applied), 1);
+  assert.equal(count(KEY1, queued), 0);
+  const key2Applied = count(KEY2, applied);
+  const key2Queued = count(KEY2, queued);
+  assert.equal(key2Applied === 1 || key2Queued === 1, true);
+  assert.equal(key2Applied + key2Queued, 1);
+});
+
+test("sentinel repro: enqueue during a network error stays with the failed set", async () => {
+  let raw: unknown = [];
+  const q = createLogQueue({
+    read: async () => raw,
+    write: async (items) => {
+      raw = JSON.parse(JSON.stringify(items)) as unknown;
+    },
+    online: async () => true,
+  });
+  await q.enqueue(reproOp(KEY1));
+  const flushed = q.flush(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    throw new TypeError("Network request failed");
+  });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  await q.enqueue(reproOp(KEY2));
+  await flushed;
+
+  const queued = (await q.read()).map((item) => item.clientKey);
+  assert.deepEqual(queued, [KEY1, KEY2]);
+});
