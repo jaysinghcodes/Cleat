@@ -16,6 +16,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AppState } from "react-native";
 import { useSession } from "./session";
 import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchOnline } from "./log-queue";
 
@@ -117,7 +118,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   }, [client, session]);
 
   const flush = useCallback(async () => {
-    if (!client) return;
+    if (!client || !session) return;
     const result = await flushLogQueue((operation) => applyClientLog(client, operation));
     if (result.error) setError(result.error);
     if (result.flushed > 0) {
@@ -126,23 +127,34 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
       return;
     }
     setQueue(await readLogQueue());
-  }, [client, refresh]);
+  }, [client, session, refresh]);
 
   useEffect(() => {
+    if (!client || !session) return;
     let alive = true;
-    void refresh().catch((err: unknown) => {
+    void (async () => {
+      try {
+        await refresh();
+      } catch (err: unknown) {
+        if (!alive) return;
+        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setReady(true);
+      }
       if (!alive) return;
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
-      setReady(true);
-    });
+      await flush();
+    })();
     const watcher = watchOnline(() => {
       void flush();
+    });
+    const appState = AppState.addEventListener("change", (next) => {
+      if (next === "active") void flush();
     });
     return () => {
       alive = false;
       watcher.remove();
+      appState.remove();
     };
-  }, [refresh, flush]);
+  }, [client, session, refresh, flush]);
 
   const saveOperation = useCallback(
     async (operation: LogOperation) => {
