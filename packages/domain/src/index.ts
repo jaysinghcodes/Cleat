@@ -77,6 +77,7 @@ export {
   cancelCutoffSchema,
   civilToKey,
   clientCanCancel,
+  clientOpenSlots,
   confirmationLine,
   defaultWeeklyDraft,
   draftFromBlocks,

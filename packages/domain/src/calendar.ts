@@ -76,6 +76,7 @@ export const bookingCopy = {
   afterBookTitle: "After you book",
   afterBookBody: "You get an ICS file and a subscribe link. Your coach sees the session on the desk.",
   googleConnect: "Connect Google Calendar",
+  googleConnected: "Google Calendar connected",
   googleDisconnect: "Disconnect Google Calendar",
   googleOff: "ICS feed is the calendar for this desk.",
   sessionDescription: "1:1 session in Cleat.",
@@ -301,6 +302,29 @@ export function rangesOverlap(a: TimeRange, b: TimeRange): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
+/**
+ * Open slots for the client book tab. The client's own booking stays in the
+ * blocked ranges, so that time is not offered again.
+ */
+export function clientOpenSlots(input: {
+  day: CivilDate;
+  timeZone: string;
+  blocks: AvailabilityBlock[];
+  slotMinutes: number;
+  taken: TimeRange[];
+  ownBooked: TimeRange[];
+  now?: Date;
+}): OpenSlot[] {
+  return openSlots({
+    day: input.day,
+    timeZone: input.timeZone,
+    blocks: input.blocks,
+    slotMinutes: input.slotMinutes,
+    booked: [...input.taken, ...input.ownBooked],
+    now: input.now,
+  });
+}
+
 export function openSlots(input: {
   day: CivilDate;
   timeZone: string;
@@ -356,17 +380,25 @@ function escapeIcsText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
 
+/** RFC 5545 folds at 75 octets. A continuation line starts with one space. */
 function foldIcsLine(line: string): string {
-  if (line.length <= 73) return line;
-  const parts: string[] = [];
-  let rest = line;
-  parts.push(rest.slice(0, 73));
-  rest = rest.slice(73);
-  while (rest.length > 0) {
-    parts.push(` ${rest.slice(0, 72)}`);
-    rest = rest.slice(72);
+  const bytes = Buffer.from(line, "utf8");
+  if (bytes.length <= 75) return line;
+  const chunks: string[] = [];
+  let offset = 0;
+  let budget = 75;
+  while (offset < bytes.length) {
+    let end = Math.min(bytes.length, offset + budget);
+    if (end < bytes.length) {
+      while (end > offset && (bytes[end]! & 0xc0) === 0x80) end -= 1;
+      if (end === offset) end = Math.min(bytes.length, offset + budget);
+    }
+    const piece = bytes.subarray(offset, end).toString("utf8");
+    chunks.push(offset === 0 ? piece : ` ${piece}`);
+    offset = end;
+    budget = 74;
   }
-  return parts.join("\r\n");
+  return chunks.join("\r\n");
 }
 
 export function buildIcs(calendarName: string, events: IcsEventInput[], now = new Date()): string {

@@ -36,3 +36,14 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify ICS
+        run: |
+          python -m pip install -r packages/domain/requirements.txt
+          python packages/domain/scripts/verify-ics.py docs/qa/ticket-6/sample-session.ics docs/qa/ticket-6/downloaded-session.ics
+          python packages/domain/scripts/verify-ics.py packages/domain/scripts/fixtures/utf8-fold.ics

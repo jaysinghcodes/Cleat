@@ -28,10 +28,13 @@ export async function POST(request: Request) {
   const cancelled = await user.supabase.rpc("cancel_session", { session_id: sessionId });
   if (cancelled.error) return rpcError(cancelled.error.message);
 
-  await deleteGoogleBooking(
+  const removed = await deleteGoogleBooking(
     String(existing.data.trainer_id),
     existing.data.google_event_id ? String(existing.data.google_event_id) : null,
   );
+  if (removed) {
+    await user.supabase.rpc("clear_google_event", { session_id: sessionId });
+  }
   await deferredPushNotifier.sessionCancelled(sessionId);
   return NextResponse.json({ ok: true });
 }

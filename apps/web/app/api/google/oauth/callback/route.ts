@@ -19,6 +19,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state") ?? "";
+  // State is an HMAC of the signed-in user id and a 10 minute expiry.
+  // The start route signs that user. This redirect carries no session cookie.
   const userId = readOAuthState(state, config.clientSecret);
   if (!code || !userId) {
     return NextResponse.redirect(`${origin}/org?google=denied`);
@@ -34,7 +36,6 @@ export async function GET(request: Request) {
     userId,
     orgId,
     refreshToken: exchanged.refreshToken,
-    email: exchanged.email,
   });
   if (!stored) return NextResponse.redirect(`${origin}/org?google=storage`);
   return NextResponse.redirect(`${origin}/org?google=connected`);

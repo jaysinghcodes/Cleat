@@ -33,12 +33,16 @@ export async function userClientFromRequest(request: Request): Promise<{
   const header = request.headers.get("authorization") ?? "";
   const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
   if (!token) return null;
+  const authClient = createClient(env.url, env.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error || !data.user) return null;
+  // accessToken is the only bearer PostgREST uses. The anon key stays in apikey.
   const supabase = createClient(env.url, env.anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: `Bearer ${token}` } },
+    accessToken: async () => token,
   });
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
   return { supabase, userId: data.user.id };
 }
 

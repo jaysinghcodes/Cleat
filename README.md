@@ -280,11 +280,45 @@ The feed is built from the database on each request. The response sets `Cache-Co
 
 Add to calendar downloads the signed in user's sessions from `GET /api/cal/export`. One session is `GET /api/cal/export?session=<id>`.
 
+A second parse uses Python `icalendar`, separate from the `ical.js` tests. CI runs the file checks. Against a running desk, `--feed` fetches the subscribe URL twice and compares those UIDs with an export file.
+
+```sh
+python3 -m pip install -r packages/domain/requirements.txt
+python3 packages/domain/scripts/verify-ics.py docs/qa/ticket-6/sample-session.ics docs/qa/ticket-6/downloaded-session.ics
+python3 packages/domain/scripts/verify-ics.py packages/domain/scripts/fixtures/utf8-fold.ics
+python3 packages/domain/scripts/verify-ics.py --feed http://localhost:3000/api/cal/<token>.ics --export docs/qa/ticket-6/sample-session.ics
+```
+
+The script checks `VERSION:2.0`, `PRODID`, a `UID` and `DTSTAMP` on every event, `CRLF` line endings, and lines of at most 75 octets.
+
 Slot length defaults to 60 minutes. Client cancel is blocked inside the org cutoff, which defaults to 12 hours. Trainers can cancel any session. Sessions are stored in UTC and shown in the profile timezone.
 
-Google Calendar OAuth is optional. When both Google env vars are set, a coach can connect from Org / Billing. Connect, book, and cancel then create or delete events on that coach's primary Google calendar. Disconnect leaves ICS working and sets the primary calendar back to the ICS feed. The refresh token is stored in `google_credentials`, which has no select grant. Writing it from the OAuth callback uses `SUPABASE_SERVICE_ROLE` on the server only. Without that key, connect cannot save and ICS still works.
+Google Calendar OAuth is optional and stays off until the server env in [Google Calendar for deploy (#18)](#google-calendar-for-deploy-18) is set. With those vars empty, booking does not call Google.
 
 Push notifications for a booked or cancelled session are a no-op interface in `@cleat/domain` (`deferredPushNotifier`). They are not sent.
+
+## Google Calendar for deploy (#18)
+
+ICS subscribe and export stay the calendar path with no Google account. Live Google verification needs a Google Cloud OAuth client and a public redirect URL from deploy ticket #18.
+
+Set these on the trainer desk server only:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `SUPABASE_SERVICE_ROLE`
+
+Do not prefix the client secret or the service role with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile bundles do not read them. Leave both Google vars empty and the desk hides Connect Google Calendar.
+
+The OAuth callback route is `GET /api/google/oauth/callback`.
+
+Register that exact path as an authorized redirect URI in the Google Cloud console:
+
+- Local: `http://localhost:3000/api/google/oauth/callback`
+- Deployed: `https://<your-vercel-host>/api/google/oauth/callback`
+
+The only scope is `https://www.googleapis.com/auth/calendar.events`. The consent screen can stay in Testing with Jay as a test user.
+
+Connect stores a refresh token and leaves the Google email column null. Org settings then show "Google Calendar connected". Disconnect posts the refresh token to `https://oauth2.googleapis.com/revoke`, then deletes the stored credentials. The ICS feed keeps working and the primary calendar goes back to ICS. Booking creates one event per session. A later sync updates that event. Cancel deletes it. A missing event (HTTP 404 or 410) still clears `google_event_id`.
 
 ## What comes next
 

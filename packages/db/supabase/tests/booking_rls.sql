@@ -342,7 +342,7 @@ where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 select public._rls_expect(
   'google connection does not expose the refresh token',
   (
-    select connected = true and email = 'alex@example.com'
+    select connected = true and email is null
     from public.google_connection()
   )
 );

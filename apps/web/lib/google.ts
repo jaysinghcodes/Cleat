@@ -7,6 +7,24 @@ import {
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { serviceClient } from "./server";
 
+export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+
+export type GoogleHttpResponse = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
+
+export type GoogleHttp = (url: string, init?: RequestInit) => Promise<GoogleHttpResponse>;
+
+export type GoogleRuntime = {
+  http?: GoogleHttp;
+  config?: { clientId: string; clientSecret: string } | null;
+  refreshToken?: string | null;
+};
+
+const defaultHttp: GoogleHttp = (url, init) => fetch(url, init);
+
 export function readGoogleConfig(): { clientId: string; clientSecret: string } | null {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim() ?? "";
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() ?? "";
@@ -52,17 +70,26 @@ export function googleAuthUrl(input: {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("access_type", "offline");
   url.searchParams.set("prompt", "consent");
-  url.searchParams.set("include_granted_scopes", "true");
-  url.searchParams.set("scope", "openid email https://www.googleapis.com/auth/calendar.events");
+  url.searchParams.set("scope", GOOGLE_CALENDAR_SCOPE);
   url.searchParams.set("state", input.state);
   return url.toString();
 }
 
+function httpFrom(runtime: GoogleRuntime): GoogleHttp {
+  return runtime.http ?? defaultHttp;
+}
+
+function configFrom(runtime: GoogleRuntime): { clientId: string; clientSecret: string } | null {
+  if ("config" in runtime) return runtime.config ?? null;
+  return readGoogleConfig();
+}
+
 async function refreshAccessToken(
+  http: GoogleHttp,
   config: { clientId: string; clientSecret: string },
   refreshToken: string,
 ): Promise<string | null> {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+  const response = await http("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -77,7 +104,14 @@ async function refreshAccessToken(
   return json.access_token ?? null;
 }
 
-async function trainerRefreshToken(trainerId: string): Promise<string | null> {
+/** Stable Calendar event id. A retry uses the same id, so Google will not create a second event. */
+export function calendarEventId(sessionId: string, existing: string | null): string {
+  const stored = existing?.trim();
+  if (stored) return stored;
+  return sessionId.replace(/-/g, "").toLowerCase();
+}
+
+export async function trainerRefreshToken(trainerId: string): Promise<string | null> {
   const admin = serviceClient();
   if (!admin) return null;
   const { data, error } = await admin
@@ -89,13 +123,16 @@ async function trainerRefreshToken(trainerId: string): Promise<string | null> {
   return String(data.refresh_token);
 }
 
-export async function exchangeGoogleCode(input: {
-  code: string;
-  redirectUri: string;
-}): Promise<{ refreshToken: string; email: string | null } | null> {
-  const config = readGoogleConfig();
+export async function exchangeGoogleCode(
+  input: {
+    code: string;
+    redirectUri: string;
+  },
+  runtime: GoogleRuntime = {},
+): Promise<{ refreshToken: string } | null> {
+  const config = configFrom(runtime);
   if (!config) return null;
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+  const response = await httpFrom(runtime)("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -107,26 +144,15 @@ export async function exchangeGoogleCode(input: {
     }),
   });
   if (!response.ok) return null;
-  const json = (await response.json()) as { refresh_token?: string; access_token?: string };
+  const json = (await response.json()) as { refresh_token?: string };
   if (!json.refresh_token) return null;
-  let email: string | null = null;
-  if (json.access_token) {
-    const profile = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${json.access_token}` },
-    });
-    if (profile.ok) {
-      const body = (await profile.json()) as { email?: string };
-      email = body.email ?? null;
-    }
-  }
-  return { refreshToken: json.refresh_token, email };
+  return { refreshToken: json.refresh_token };
 }
 
 export async function storeGoogleCredentials(input: {
   userId: string;
   orgId: string;
   refreshToken: string;
-  email: string | null;
 }): Promise<boolean> {
   const admin = serviceClient();
   if (!admin) return false;
@@ -134,50 +160,69 @@ export async function storeGoogleCredentials(input: {
     user_id: input.userId,
     org_id: input.orgId,
     refresh_token: input.refreshToken,
-    email: input.email,
+    email: null,
     connected_at: new Date().toISOString(),
   });
   return !error;
 }
 
 async function writeEvent(
+  http: GoogleHttp,
   accessToken: string,
   body: ReturnType<typeof googleEventBody>,
-  eventId: string | null,
+  eventId: string,
+  alreadyAttached: boolean,
 ): Promise<string | null> {
-  const url = eventId
-    ? `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`
-    : "https://www.googleapis.com/calendar/v3/calendars/primary/events";
-  const response = await fetch(url, {
-    method: eventId ? "PATCH" : "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+  const target = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`;
+  if (alreadyAttached) {
+    const patched = await http(target, { method: "PATCH", headers, body: JSON.stringify(body) });
+    return patched.ok ? eventId : null;
+  }
+  const created = await http("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ ...body, id: eventId }),
   });
-  if (!response.ok) return null;
-  const json = (await response.json()) as { id?: string };
-  return json.id ?? eventId;
+  if (created.ok) {
+    const json = (await created.json()) as { id?: string };
+    return json.id ?? eventId;
+  }
+  if (created.status !== 409) return null;
+  const patched = await http(target, { method: "PATCH", headers, body: JSON.stringify(body) });
+  return patched.ok ? eventId : null;
 }
 
-export async function syncGoogleBooking(input: {
-  trainerId: string;
-  sessionId: string;
-  startsAt: string;
-  endsAt: string;
-  personName: string;
-  googleEventId: string | null;
-  attach: (eventId: string) => Promise<void>;
-}): Promise<boolean> {
-  const config = readGoogleConfig();
+async function tokenFor(trainerId: string, runtime: GoogleRuntime): Promise<string | null> {
+  if ("refreshToken" in runtime) return runtime.refreshToken ?? null;
+  return trainerRefreshToken(trainerId);
+}
+
+export async function syncGoogleBooking(
+  input: {
+    trainerId: string;
+    sessionId: string;
+    startsAt: string;
+    endsAt: string;
+    personName: string;
+    googleEventId: string | null;
+    attach: (eventId: string) => Promise<void>;
+  },
+  runtime: GoogleRuntime = {},
+): Promise<boolean> {
+  const config = configFrom(runtime);
   if (!config) return false;
   try {
-    const refreshToken = await trainerRefreshToken(input.trainerId);
+    const refreshToken = await tokenFor(input.trainerId, runtime);
     if (!refreshToken) return false;
-    const access = await refreshAccessToken(config, refreshToken);
+    const access = await refreshAccessToken(httpFrom(runtime), config, refreshToken);
     if (!access) return false;
-    const eventId = await writeEvent(
+    const eventId = calendarEventId(input.sessionId, input.googleEventId);
+    const written = await writeEvent(
+      httpFrom(runtime),
       access,
       googleEventBody({
         summary: sessionSummary(input.personName),
@@ -185,31 +230,56 @@ export async function syncGoogleBooking(input: {
         startsAt: input.startsAt,
         endsAt: input.endsAt,
       }),
-      input.googleEventId,
+      eventId,
+      Boolean(input.googleEventId?.trim()),
     );
-    if (!eventId) return false;
-    if (eventId !== input.googleEventId) await input.attach(eventId);
+    if (!written) return false;
+    if (written !== input.googleEventId) await input.attach(written);
     return true;
   } catch {
     return false;
   }
 }
 
-export async function deleteGoogleBooking(trainerId: string, eventId: string | null): Promise<void> {
-  const config = readGoogleConfig();
-  if (!config || !eventId) return;
+export async function deleteGoogleBooking(
+  trainerId: string,
+  eventId: string | null,
+  runtime: GoogleRuntime = {},
+): Promise<boolean> {
+  const config = configFrom(runtime);
+  if (!config || !eventId) return false;
   try {
-    const refreshToken = await trainerRefreshToken(trainerId);
-    if (!refreshToken) return;
-    const access = await refreshAccessToken(config, refreshToken);
-    if (!access) return;
-    await fetch(
+    const refreshToken = await tokenFor(trainerId, runtime);
+    if (!refreshToken) return false;
+    const access = await refreshAccessToken(httpFrom(runtime), config, refreshToken);
+    if (!access) return false;
+    const response = await httpFrom(runtime)(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
       { method: "DELETE", headers: { Authorization: `Bearer ${access}` } },
     );
+    return response.ok || response.status === 404 || response.status === 410;
   } catch {
-    // ICS remains the calendar of record when Google is unreachable.
+    return false;
   }
+}
+
+export async function disconnectGoogleAccount(input: {
+  refreshToken: string | null;
+  http?: GoogleHttp;
+  deleteCredentials: () => Promise<void>;
+}): Promise<void> {
+  if (input.refreshToken) {
+    try {
+      await (input.http ?? defaultHttp)("https://oauth2.googleapis.com/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: input.refreshToken }),
+      });
+    } catch {
+      // Revoke is best effort. Local credentials still go away.
+    }
+  }
+  await input.deleteCredentials();
 }
 
 export async function trainerOrgId(userId: string): Promise<string | null> {

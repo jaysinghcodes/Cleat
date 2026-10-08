@@ -605,7 +605,6 @@ declare
   uid uuid := auth.uid();
   org uuid;
   clean_token text := btrim(coalesce(new_refresh_token, ''));
-  clean_email text := nullif(btrim(coalesce(account_email, '')), '');
 begin
   if uid is null then
     raise exception 'Sign in before syncing a calendar.';
@@ -625,10 +624,10 @@ begin
   end if;
 
   insert into public.google_credentials (user_id, org_id, refresh_token, email)
-  values (uid, org, clean_token, clean_email)
+  values (uid, org, clean_token, null)
   on conflict (user_id) do update
     set refresh_token = excluded.refresh_token,
-        email = excluded.email,
+        email = null,
         org_id = excluded.org_id,
         connected_at = now();
 end;
@@ -676,6 +675,35 @@ begin
 
   update public.sessions s
   set google_event_id = btrim(event_id)
+  where s.id = session_id
+    and (
+      s.client_id = uid
+      or exists (
+        select 1
+        from public.memberships m
+        where m.user_id = uid
+          and m.org_id = s.org_id
+          and m.role = 'trainer'
+      )
+    );
+end;
+$$;
+
+create or replace function public.clear_google_event(session_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    return;
+  end if;
+
+  update public.sessions s
+  set google_event_id = null
   where s.id = session_id
     and (
       s.client_id = uid
@@ -749,6 +777,7 @@ revoke all on function public.google_connection() from public;
 revoke all on function public.save_google_credentials(text, text) from public;
 revoke all on function public.disconnect_google() from public;
 revoke all on function public.attach_google_event(uuid, text) from public;
+revoke all on function public.clear_google_event(uuid) from public;
 
 grant execute on function public.book_session(timestamptz) to authenticated;
 grant execute on function public.cancel_session(uuid) to authenticated;
@@ -759,3 +788,4 @@ grant execute on function public.google_connection() to authenticated;
 grant execute on function public.save_google_credentials(text, text) to authenticated;
 grant execute on function public.disconnect_google() to authenticated;
 grant execute on function public.attach_google_event(uuid, text) to authenticated;
+grant execute on function public.clear_google_event(uuid) to authenticated;

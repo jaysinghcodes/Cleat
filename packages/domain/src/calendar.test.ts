@@ -6,6 +6,7 @@ import {
   bookingCopy,
   buildIcs,
   clientCanCancel,
+  clientOpenSlots,
   confirmationLine,
   formatInstant,
   formatMinuteRange,
@@ -81,6 +82,43 @@ test("slot length changes which starts are offered", () => {
   assert.equal(formatInstant(taken[0]!.startsAt, ZONE), "6:00 PM");
 });
 
+test("a client's own booking is not an open slot", () => {
+  const blocks = [weekday(4, 7 * 60, 9 * 60)];
+  const day = { year: 2026, month: 10, day: 8 };
+  const now = new Date("2026-10-08T04:00:00.000Z");
+  const start = zonedTimeToUtc(day, 7, 0, ZONE);
+  const own = {
+    startsAt: start.toISOString(),
+    endsAt: new Date(start.getTime() + 60 * 60_000).toISOString(),
+  };
+  const withOwnInTaken = clientOpenSlots({
+    day,
+    timeZone: ZONE,
+    blocks,
+    slotMinutes: 60,
+    taken: [own],
+    ownBooked: [own],
+    now,
+  });
+  const ownRemovedFromTaken = clientOpenSlots({
+    day,
+    timeZone: ZONE,
+    blocks,
+    slotMinutes: 60,
+    taken: [],
+    ownBooked: [own],
+    now,
+  });
+  assert.deepEqual(
+    withOwnInTaken.map((slot) => formatInstant(slot.startsAt, ZONE)),
+    ["8:00 AM"],
+  );
+  assert.deepEqual(
+    ownRemovedFromTaken.map((slot) => formatInstant(slot.startsAt, ZONE)),
+    ["8:00 AM"],
+  );
+});
+
 test("a date override replaces the weekly window", () => {
   const day = { year: 2026, month: 11, day: 1 };
   const blocks: AvailabilityBlock[] = [
@@ -147,6 +185,24 @@ test("ICS export parses and keeps Chicago local time across DST", () => {
   assert.equal(events[1]!.startDate.toJSDate().toISOString(), after);
   assert.equal(formatInstant(events[1]!.startDate.toJSDate().toISOString(), ZONE), "5:00 PM");
   assert.equal(events[1]!.component.getFirstPropertyValue("status"), "CANCELLED");
+  const folded = buildIcs("Cleat", [
+    {
+      uid: "33333333-3333-3333-3333-333333333333",
+      startsAt: before,
+      endsAt: "2026-10-30T23:00:00.000Z",
+      summary: `Session with ${"é".repeat(80)}`,
+      description: bookingCopy.sessionDescription,
+      status: "confirmed",
+    },
+  ]);
+  assert.equal(folded.replaceAll("\r\n", "").includes("\n"), false);
+  assert.equal(folded.replaceAll("\r\n", "").includes("\r"), false);
+  for (const line of folded.split("\r\n")) {
+    if (!line) continue;
+    assert.ok(Buffer.byteLength(line, "utf8") <= 75, line);
+  }
+  const foldedEvent = new ICAL.Event(new ICAL.Component(ICAL.parse(folded)).getFirstSubcomponent("vevent"));
+  assert.equal(foldedEvent.summary, `Session with ${"é".repeat(80)}`);
   const body = googleEventBody({
     summary: sessionSummary("Sam Lee"),
     description: bookingCopy.sessionDescription,

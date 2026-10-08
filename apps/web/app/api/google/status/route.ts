@@ -14,10 +14,10 @@ export async function GET(request: Request) {
   const { data, error } = await user.supabase.rpc("google_connection");
   if (error) return NextResponse.json({ configured: true, connected: false, email: null });
   const row = Array.isArray(data) ? data[0] : data;
-  const record = row && typeof row === "object" ? (row as { connected?: boolean; email?: string | null }) : {};
+  const record = row && typeof row === "object" ? (row as { connected?: boolean }) : {};
   return NextResponse.json({
     configured: true,
     connected: Boolean(record.connected),
-    email: record.email ?? null,
+    email: null,
   });
 }

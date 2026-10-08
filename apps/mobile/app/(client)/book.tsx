@@ -13,13 +13,13 @@ import {
   cancelCutoffMessage,
   civilToKey,
   clientCanCancel,
+  clientOpenSlots,
   copy,
   firstName,
   formatCivil,
   formatInstant,
   formatWeekLabel,
   keyToCivil,
-  openSlots,
   startOfWeekMonday,
   weekDays,
   zonedParts,
@@ -34,7 +34,8 @@ import { useSession } from "../../lib/session";
 import { useTheme } from "../../theme";
 
 function webOrigin(): string {
-  return (process.env.EXPO_PUBLIC_WEB_URL ?? "http://localhost:3000").trim().replace(/\/$/, "");
+  const configured = process.env.EXPO_PUBLIC_WEB_URL?.trim();
+  return (configured || "http://localhost:3000").replace(/\/$/, "");
 }
 
 export default function BookScreen() {
@@ -54,6 +55,7 @@ export default function BookScreen() {
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [subscribeUrl, setSubscribeUrl] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -78,17 +80,17 @@ export default function BookScreen() {
   const days = weekDays(weekStart);
   const ownBooked = sessions.filter((item) => item.status === "booked");
   const slots = useMemo(() => {
-    const ownStarts = new Set(ownBooked.map((item) => new Date(item.startsAt).getTime()));
-    const others = taken.filter((range) => !ownStarts.has(new Date(range.startsAt).getTime()));
+    const ownRanges = ownBooked.map((item) => ({ startsAt: item.startsAt, endsAt: item.endsAt }));
     const origin = addDays(weekStart, -1);
     const span = Array.from({ length: 9 }, (_, index) => addDays(origin, index));
     return span.flatMap((day) =>
-      openSlots({
+      clientOpenSlots({
         day,
         timeZone: trainerTimezone,
         blocks,
         slotMinutes,
-        booked: others,
+        taken,
+        ownBooked: ownRanges,
       }),
     );
   }, [blocks, ownBooked, slotMinutes, taken, trainerTimezone, weekStart]);
@@ -104,18 +106,32 @@ export default function BookScreen() {
   const selected = daySlots.find((slot) => slot.startsAt === selectedSlot) ?? null;
   const showIcs = Boolean(confirmation || upcoming);
 
+  async function loadSubscribeLink(token: string) {
+    try {
+      const link = await subscribeLink(webOrigin(), token, false);
+      setSubscribeUrl(link.url);
+      setLinkError(null);
+    } catch (err) {
+      setLinkError(err instanceof CleatRequestError ? err.message : copy.generic);
+    }
+  }
+
   async function onBook(slot: OpenSlot) {
     if (!client) return;
     setPending(true);
     setError(null);
+    setLinkError(null);
     setConfirmation(null);
     try {
       const token = await accessToken(client);
       const result = await bookSession(webOrigin(), token, slot.startsAt);
       setConfirmation(result.confirmation);
-      const link = await subscribeLink(webOrigin(), token, false);
-      setSubscribeUrl(link.url);
-      await load();
+      try {
+        await load();
+      } catch (err) {
+        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      }
+      void loadSubscribeLink(token);
     } catch (err) {
       setError(err instanceof CleatRequestError ? err.message : copy.generic);
     } finally {
@@ -164,7 +180,7 @@ export default function BookScreen() {
 
   async function onSubscribe() {
     if (!client) return;
-    setError(null);
+    setLinkError(null);
     try {
       const token = await accessToken(client);
       const link = subscribeUrl || (await subscribeLink(webOrigin(), token, false)).url;
@@ -175,7 +191,7 @@ export default function BookScreen() {
         await Share.share({ message: link });
       }
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setLinkError(err instanceof CleatRequestError ? err.message : copy.generic);
     }
   }
 
@@ -384,7 +400,14 @@ export default function BookScreen() {
               </Text>
             </Pressable>
             {subscribeUrl ? (
-              <Text style={{ color: tokens.textTertiary, fontSize: 12, textAlign: "center" }}>{subscribeUrl}</Text>
+              <Text testID="subscribe-url" style={{ color: tokens.textTertiary, fontSize: 12, textAlign: "center" }}>
+                {subscribeUrl}
+              </Text>
+            ) : null}
+            {linkError ? (
+              <Text testID="link-error" style={{ color: tokens.error, fontSize: 13, textAlign: "center" }}>
+                {linkError}
+              </Text>
             ) : null}
           </View>
         ) : null}

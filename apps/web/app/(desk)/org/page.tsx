@@ -180,7 +180,7 @@ export default function OrgPage() {
           ) : null}
           {google.connected ? (
             <div className="row" style={{ marginBottom: 12 }}>
-              <span className="meta">{google.email ?? bookingCopy.primaryGoogle}</span>
+              <span className="meta">{bookingCopy.googleConnected}</span>
               <button
                 className="btn btn-ghost btn-sm"
                 type="button"

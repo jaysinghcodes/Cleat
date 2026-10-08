@@ -27,7 +27,7 @@ One org is one trainer. There is no franchise or team RBAC. A user belongs to ex
 | `availability_blocks` | on, forced | `availability_select_member` (`is_member_of`), `availability_write_trainer` (the trainer's own blocks) |
 | `sessions` | on, forced | `sessions_select_own` (`client_id = auth.uid()` or `is_trainer_of`). No insert, update, or delete grant. Book and cancel go through functions |
 | `calendar_tokens` | on, forced | No policies and no grants. `issue_calendar_token` and `calendar_feed` are security definer |
-| `google_credentials` | on, forced | No policies and no grants. The refresh token is not readable by the signed in user. `google_connection` returns only connected and email |
+| `google_credentials` | on, forced | No policies and no grants. The refresh token is service role only. `google_connection` returns connected and a null email |
 
 There is no insert policy on `profiles`, `orgs`, or `memberships`. Those writes go through `create_trainer_org` and `accept_invite`, which are `security definer` and granted to `authenticated` only. Invites expire within 7 days (`invites_expire_within_7_days`). There is no update or delete grant on `invites`, so a trainer cannot extend a link. `accept_invite` marks a link used.
 
@@ -54,8 +54,8 @@ A client cannot read another client's profile. Helper functions are `security de
 | `issue_calendar_token(regenerate)` | `authenticated` | Returns the active feed nonce, or revokes it and issues a new one |
 | `calendar_feed(feed_nonce)` | `anon`, `authenticated` | Sessions for that nonce only. Missing and revoked nonces raise and return no rows |
 | `booked_ranges()` | `authenticated` | Booked start and end times in the caller's org, with no client names |
-| `google_connection()` | `authenticated` | Whether Google is connected, and the account email. Not the refresh token |
-| `save_google_credentials`, `disconnect_google`, `attach_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics` |
+| `google_connection()` | `authenticated` | Whether Google is connected. The email column stays null. Not the refresh token |
+| `save_google_credentials`, `disconnect_google`, `attach_google_event`, `clear_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics`. Credential rows stay unreadable |
 
 User facing exceptions from these functions:
 
