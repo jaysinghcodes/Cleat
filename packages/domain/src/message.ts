@@ -29,7 +29,20 @@ export const chatCopy = {
   coachMeta: "Coach",
   writeMessage: "Write a message",
   newMessageTitle: "New message",
+  aiAutoSent: "AI · auto-sent",
+  aiLabel: "AI",
+  sourcesPrefix: "Sources",
+  draftHeld: "Draft held",
+  draftHeldBody: "A draft is held for this thread. The client has not received it.",
+  openInbox: "Open the inbox",
+  safetySent: "Safety reply sent",
 } as const;
+
+export function coachJumpIn(coachName: string): string {
+  const name = coachName.trim().split(/\s+/)[0] ?? "";
+  if (!name || name.toLowerCase() === "your") return "Your coach can still jump in anytime";
+  return `${name} can still jump in anytime`;
+}
 
 export function replyPlaceholder(name: string): string {
   return `Reply as ${firstName(name)}`;
@@ -47,6 +60,13 @@ export const messageBodySchema = z
   .refine((value) => value.length >= 1, chatCopy.emptyBody)
   .refine((value) => value.length <= 4000, chatCopy.tooLong);
 
+export const messageSourceSchema = z.object({
+  title: z.string(),
+  articleId: z.uuid().nullable(),
+});
+
+export type MessageSource = z.infer<typeof messageSourceSchema>;
+
 export const messageSchema = z.object({
   id: z.uuid(),
   threadId: z.uuid(),
@@ -54,9 +74,25 @@ export const messageSchema = z.object({
   senderId: z.uuid(),
   body: z.string(),
   createdAt: z.string(),
+  kind: z.enum(["human", "ai"]),
+  sources: z.array(messageSourceSchema),
 });
 
 export type Message = z.infer<typeof messageSchema>;
+
+export function clientAiPresentation(
+  message: Message,
+  coachName: string,
+): { label: string; sources: string | null; footer: string | null } | null {
+  if (message.kind !== "ai") return null;
+  const titles = message.sources.map((source) => source.title.trim()).filter((title) => title.length > 0);
+  if (titles.length === 0) return { label: chatCopy.aiLabel, sources: null, footer: null };
+  return {
+    label: chatCopy.aiAutoSent,
+    sources: `${chatCopy.sourcesPrefix}: ${titles.join(", ")}`,
+    footer: coachJumpIn(coachName),
+  };
+}
 
 export type ThreadPreview = {
   threadId: string;
@@ -77,6 +113,8 @@ const messageRowSchema = z.object({
   sender_id: z.uuid(),
   body: z.string(),
   created_at: z.string(),
+  kind: z.enum(["human", "ai"]).optional(),
+  sources: z.unknown().optional(),
 });
 
 const postedRowSchema = z.object({
@@ -138,7 +176,17 @@ export function parseMessageRow(data: unknown): Message | null {
     senderId: parsed.data.sender_id,
     body: parsed.data.body,
     createdAt: parsed.data.created_at,
+    kind: parsed.data.kind ?? "human",
+    sources: parseSources(parsed.data.sources),
   };
+}
+
+function parseSources(data: unknown): MessageSource[] {
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((item) => {
+    const parsed = messageSourceSchema.safeParse(item);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 export function parseMessageRows(data: unknown): Message[] {
@@ -160,6 +208,8 @@ export function parsePostedMessage(data: unknown): Message | null {
     senderId: parsed.data.message_sender_id,
     body: parsed.data.posted_body,
     createdAt: parsed.data.message_created_at,
+    kind: "human",
+    sources: [],
   };
 }
 

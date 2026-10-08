@@ -3,8 +3,11 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { aiCopy } from "./ai";
 import {
   chatCopy,
+  clientAiPresentation,
+  coachJumpIn,
   mergeMessages,
   messagePlaceholder,
   messagePreview,
@@ -24,10 +27,39 @@ const sample = (id: string, body: string, createdAt: string): Message => ({
   senderId: "22222222-2222-4222-8222-222222222222",
   body,
   createdAt,
+  kind: "human",
+  sources: [],
+});
+
+test("client AI presentation shows sources and never a confidence number", () => {
+  const ai = sample("11111111-1111-4111-8111-111111111111", "Rest two days.", "2026-10-08T12:00:00.000Z");
+  ai.kind = "ai";
+  ai.sources = [{ title: "Rest days", articleId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }];
+  const view = clientAiPresentation(ai, "Alex Rivera");
+  assert.equal(view?.label, "AI · auto-sent");
+  assert.equal(view?.sources, "Sources: Rest days");
+  assert.equal(view?.footer, "Alex can still jump in anytime");
+  assert.equal(JSON.stringify(view).includes("confidence"), false);
+  assert.equal(view?.footer?.includes("Your trainer will reply"), false);
+  const refusal = clientAiPresentation(
+    { ...ai, sources: [], body: "This sounds urgent." },
+    "Alex Rivera",
+  );
+  assert.equal(refusal?.label, "AI");
+  assert.equal(refusal?.sources, null);
+  assert.equal(refusal?.footer, null);
+  assert.equal(clientAiPresentation(sample("22222222-2222-4222-8222-222222222222", "Hi", "2026-10-08T12:00:01.000Z"), "Alex"), null);
+  assert.equal(coachJumpIn(""), "Your coach can still jump in anytime");
+  assert.doesNotMatch(chatCopy.aiAutoSent, DASH);
+  assert.doesNotMatch(chatCopy.draftHeld, DASH);
+  assert.doesNotMatch(chatCopy.draftHeldBody, DASH);
 });
 
 test("chat copy has no dash punctuation", () => {
   for (const value of Object.values(chatCopy)) {
+    assert.doesNotMatch(value, DASH);
+  }
+  for (const value of Object.values(aiCopy)) {
     assert.doesNotMatch(value, DASH);
   }
   assert.doesNotMatch(replyPlaceholder("Alex Rivera"), DASH);

@@ -149,7 +149,7 @@ npx eas-cli build --profile development --platform android
 cp .env.example .env
 ```
 
-Leave the values blank until a later ticket needs them. `.env.example` lists:
+`.env.example` lists:
 
 - Supabase URL, anon key, and service role (service role is server-only)
 - `EXPO_PUBLIC_` and `NEXT_PUBLIC_` copies of the URL and anon key
@@ -171,7 +171,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
 3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
-4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage.
+4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices.
 5. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback` (trainer desk)
    - `http://localhost:8081/auth/callback` (Expo web)
@@ -226,7 +226,7 @@ The client stays compatible with Expo Go. It does not use a custom native module
    - `http://localhost:8081/auth/callback`
    - `exp://**` (Expo Go)
    - `cleat://**` (app scheme; Expo Go does not open this)
-2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, and `0004_chat.sql` in the SQL editor.
+2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, and `0006_rag_audit.sql` in the SQL editor.
 3. Put the anon key in the app env files. Do not put the service role key in either file.
 
 `apps/web/.env.local`:
@@ -269,6 +269,18 @@ pnpm typecheck
 
 GitHub Actions runs both on pull requests (`.github/workflows/ci.yml`).
 
+## AI answers
+
+The trainer desk answers a client chat message from the org knowledge base and that client's program. Leave `OPENAI_API_KEY` unset and the server uses a deterministic stand in: hash embeddings (`cleat-hash-embedding`, 1536 dimensions) and a canned scorer (`cleat-canned-scorer`). Tests always use that stand in.
+
+To use OpenAI, set `OPENAI_API_KEY` on the Next.js server only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The server then calls `text-embedding-3-small` and `gpt-4o-mini`. The Expo app never reads the key. Hard refusals stay fixed templates either way. They are not model output.
+
+`SUPABASE_SERVICE_ROLE` is also server only. The AI write path (chunks, audit rows, safety replies, held drafts) does nothing when it is unset. The client message still saves.
+
+New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to 0.95). The confidence floor is 0.50 and is not a setting. The reserved demo org `d1000000-0000-4000-8000-000000000001` is the only org `enable_demo_auto_send()` turns on. Ticket 7 inserts that org. `seed.sql` calls the function after the org exists.
+
+Escalations show up in the trainer Priority inbox and on the thread. Push delivery is a later ticket.
+
 ## What comes next
 
-Programs, the priority inbox, AI, and calendar booking are later tickets. Chat is live on the trainer desk and the client Chat tab. The other desk links and client tabs are placeholders. Design decisions and the final wireframe screenshots are in [docs/design](docs/design).
+Calendar booking and the held draft review controls are later tickets. Chat, programs, knowledge, AI settings, and the audit log are on the trainer desk. The client Chat tab shows an auto sent answer with sources, or a fixed safety reply. A held draft is invisible to the client. Design decisions and the wireframe screenshots are in [docs/design](docs/design).

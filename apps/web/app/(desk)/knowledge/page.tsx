@@ -1,5 +1,7 @@
-import { DeskPlaceholder } from "../placeholder";
+"use client";
+
+import { KnowledgeDesk } from "./knowledge-desk";
 
 export default function KnowledgePage() {
-  return <DeskPlaceholder title="Knowledge" />;
+  return <KnowledgeDesk />;
 }

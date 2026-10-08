@@ -1,5 +1,7 @@
-import { DeskPlaceholder } from "../placeholder";
+"use client";
+
+import { AuditDesk } from "./audit-desk";
 
 export default function AuditPage() {
-  return <DeskPlaceholder title="Audit log" />;
+  return <AuditDesk />;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { CleatRequestError, assignProgram, fetchOrgPrograms, listClients } from "@cleat/api";
+import { CleatRequestError, assignProgram, embedAssignedProgram, fetchOrgPrograms, listClients } from "@cleat/api";
 import {
   calendarDate,
   copy,
@@ -162,7 +162,12 @@ export default function ProgramsPage() {
     setError(null);
     setNotice(null);
     try {
-      await assignProgram(client, draft);
+      const programId = await assignProgram(client, draft);
+      try {
+        await embedAssignedProgram(client, window.location.origin, programId);
+      } catch {
+        // The program is already assigned. Embedding can retry on the next client message.
+      }
       setNotice(`Assigned to ${selected.displayName}.`);
       await load();
     } catch (err) {

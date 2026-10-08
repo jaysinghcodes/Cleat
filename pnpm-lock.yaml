@@ -96,6 +96,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cleat/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@cleat/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -105,6 +108,9 @@ importers:
       '@cleat/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@supabase/supabase-js':
+        specifier: ^2.75.0
+        version: 2.117.3
       next:
         specifier: ~15.5.27
         version: 15.5.27(@types/node@22.20.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -133,6 +139,12 @@ importers:
 
   packages/ai:
     devDependencies:
+      '@types/node':
+        specifier: ^22.15.3
+        version: 22.20.5
+      tsx:
+        specifier: ^4.20.3
+        version: 4.23.15
       typescript:
         specifier: ~6.0.3
         version: 6.0.3

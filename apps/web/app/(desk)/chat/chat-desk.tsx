@@ -3,6 +3,8 @@
 import {
   CleatRequestError,
   ensureThread,
+  fetchOpenDraft,
+  listAuditEvents,
   listClients,
   listMessages,
   listThreadPreviews,
@@ -10,7 +12,11 @@ import {
   subscribeToThread,
 } from "@cleat/api";
 import {
+  aiCopy,
+  auditTimeline,
   chatCopy,
+  clientAiPresentation,
+  decisionLabel,
   initials,
   isUuid,
   mergeMessages,
@@ -18,6 +24,8 @@ import {
   replyPlaceholder,
   splitMessageBody,
   upsertMessage,
+  type AuditEvent,
+  type HeldDraftMarker,
   type Message,
   type ThreadPreview,
 } from "@cleat/domain";
@@ -26,6 +34,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
+import { ConfidenceBar } from "../confidence";
 
 function MessageBody({ body }: { body: string }) {
   const parts = splitMessageBody(body);
@@ -65,6 +74,8 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
+  const [held, setHeld] = useState<HeldDraftMarker | null>(null);
+  const [latestAudit, setLatestAudit] = useState<AuditEvent | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const rosterRef = useRef(roster);
@@ -146,6 +157,29 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
   }, [client, clientId, rosterReady, rosterKey]);
 
   useEffect(() => {
+    if (!client || !clientId || !isUuid(clientId)) {
+      setHeld(null);
+      setLatestAudit(null);
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([fetchOpenDraft(client, clientId), listAuditEvents(client, { clientId })])
+      .then(([draft, events]) => {
+        if (cancelled) return;
+        setHeld(draft);
+        setLatestAudit(events[0] ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHeld(null);
+        setLatestAudit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client, clientId, messages]);
+
+  useEffect(() => {
     const el = scroller.current;
     if (!el || !stick.current) return;
     el.scrollTop = el.scrollHeight;
@@ -207,7 +241,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
         </div>
       </div>
       {error ? <Banner tone="error">{error}</Banner> : null}
-      <div className="chat-wrap">
+      <div className={selected ? "chat-wrap has-context" : "chat-wrap"}>
         <div className="chat-list">
           <div className="panel-head">{chatCopy.threads}</div>
           <div className="thread-scroll">
@@ -253,6 +287,15 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
               </div>
             </div>
           ) : null}
+          {selected && held ? (
+            <div className="draft-held">
+              <div className="name">{chatCopy.draftHeld}</div>
+              <p className="meta">{chatCopy.draftHeldBody}</p>
+              <div className="meta" style={{ marginTop: 8 }}>
+                <Link href="/inbox">{chatCopy.openInbox}</Link>
+              </div>
+            </div>
+          ) : null}
           <div
             className="thread-body"
             ref={scroller}
@@ -278,6 +321,20 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
             ) : null}
             {selected
               ? messages.map((message) => {
+                  const view = clientAiPresentation(message, membership?.displayName ?? "");
+                  if (view) {
+                    return (
+                      <div key={message.id} className="bubble ai">
+                        <div className="bubble-label">
+                          <span className="ai-dot" />
+                          {view.label}
+                        </div>
+                        <MessageBody body={message.body} />
+                        {view.sources ? <div className="bubble-meta">{view.sources}</div> : null}
+                        {view.footer ? <div className="bubble-meta">{view.footer}</div> : null}
+                      </div>
+                    );
+                  }
                   const mine = message.senderId === session?.userId;
                   return (
                     <div key={message.id} className={mine ? "bubble me" : "bubble them"}>
@@ -310,6 +367,59 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
             </form>
           ) : null}
         </div>
+        {selected ? (
+          <aside className="chat-context">
+            <div className="name">{aiCopy.confidence}</div>
+            {latestAudit ? (
+              <div className="stack" style={{ marginTop: 12 }}>
+                <ConfidenceBar value={latestAudit.confidence} threshold={latestAudit.threshold} />
+                <div>
+                  <div className="meta">{aiCopy.decision}</div>
+                  <div className="name">{decisionLabel(latestAudit.decision)}</div>
+                </div>
+                <div>
+                  <div className="meta">{aiCopy.thresholdLabel}</div>
+                  <div className="name">{latestAudit.threshold.toFixed(2)}</div>
+                </div>
+                {latestAudit.templateId ? (
+                  <div>
+                    <div className="meta">{aiCopy.template}</div>
+                    <div className="name">{latestAudit.templateId}</div>
+                  </div>
+                ) : null}
+                {latestAudit.decision === "hard_refuse" ? <div className="name">{chatCopy.safetySent}</div> : null}
+                <div className="meta">
+                  <Link href={`/audit/${latestAudit.id}`}>{aiCopy.auditTitle}</Link>
+                </div>
+                <div className="meta">
+                  <Link href="/inbox">{chatCopy.openInbox}</Link>
+                </div>
+                {latestAudit.chunks.length > 0 ? (
+                  <div>
+                    <div className="meta">{aiCopy.sources}</div>
+                    {latestAudit.chunks.map((chunk) => (
+                      <p key={chunk.id} className="meta">
+                        {chunk.snippet}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
+                <div>
+                  <div className="meta">{aiCopy.timeline}</div>
+                  {auditTimeline(latestAudit).map((item) => (
+                    <p key={`${item.at}-${item.label}`} className="meta">
+                      {item.label}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="meta" style={{ marginTop: 8 }}>
+                {aiCopy.noneYet}
+              </p>
+            )}
+          </aside>
+        ) : null}
       </div>
     </div>
   );

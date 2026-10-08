@@ -33,6 +33,17 @@ export { noopPushNotifier } from "./push";
 export type { PushNotice, PushNotifier } from "./push";
 export { subscribeToThread } from "./realtime";
 export {
+  embedAssignedProgram,
+  fetchAiSettings,
+  fetchOpenDraft,
+  listAuditEvents,
+  listKbArticles,
+  listTrainerNotices,
+  markNoticeRead,
+  saveAiSettings,
+  saveKbArticle,
+} from "./ai-desk";
+export {
   deliverChatMessage,
   ensureThread,
   listMessages,

@@ -1,5 +1,7 @@
-import { DeskPlaceholder } from "../placeholder";
+"use client";
+
+import { SettingsDesk } from "./settings-desk";
 
 export default function AiSettingsPage() {
-  return <DeskPlaceholder title="AI settings" />;
+  return <SettingsDesk />;
 }
