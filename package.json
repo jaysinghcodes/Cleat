@@ -10,6 +10,8 @@
     "dev": "turbo run dev",
     "dev:web": "pnpm --filter @cleat/web dev",
     "dev:mobile": "pnpm --filter @cleat/mobile start",
+    "seed": "pnpm --filter @cleat/db seed",
+    "eval": "pnpm --filter @cleat/ai exec tsx ../../scripts/run-eval.ts",
     "build": "pnpm --filter @cleat/web build",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",

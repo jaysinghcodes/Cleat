@@ -1,10 +1,12 @@
 # Cleat
 
-Formerly CoachLoop.
+The product name is Cleat. The repo is named `coachloop`.
 
-Expo (iOS and Android) + Next.js trainer web on Vercel, Supabase (Auth, Postgres, Realtime, Storage, pgvector) as the backend, OpenAI for the LLM, and calendar via ICS subscribe/export with optional Google Calendar OAuth.
+A coach runs the web desk. A client uses the Expo app on iOS or Android. A fresh clone plus `pnpm seed` is a two role demo: the phone in Expo Go, the trainer desk in the browser.
 
-Trainers sign in on the web desk. Clients accept an invite and sign in on the Expo app. Programs, chat, AI, the inbox, and calendar are later tickets. Full stack notes are in [docs/architecture.md](docs/architecture.md).
+Expo (iOS and Android) plus Next.js trainer web on Vercel. Supabase (Auth, Postgres, Realtime, Storage, pgvector) is the backend. OpenAI is optional for the LLM. Calendar is ICS subscribe and export, with optional Google Calendar OAuth.
+
+Full stack notes are in [docs/architecture.md](docs/architecture.md). The phone plus desk beats are in [docs/demo-script.md](docs/demo-script.md).
 
 ## Layout
 
@@ -17,6 +19,51 @@ packages/domain Zod schemas
 packages/ai     Retrieval, confidence, refusals (stubs)
 packages/theme  @cleat/theme tokens
 ```
+
+## Architecture
+
+One coach is one org. Clients belong to that org. Postgres row level security keeps every row inside it.
+
+| Surface | What it does |
+| --- | --- |
+| Expo app | Today, program, chat, book, and Me. iOS and Android from one project. |
+| Next.js desk | Clients, programs, knowledge base, accountability board, priority inbox, audit log, calendar. |
+| Supabase | Auth (email code, no passwords), Postgres, Realtime, Storage, pgvector. |
+| Desk server | Retrieval, confidence, refusals, audit writes, ICS feeds. Holds `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE`. |
+| Calendar | ICS subscribe and export. Google stays off until its server env is set. |
+
+The phone talks to Supabase with the anon key for rows the policies allow. Chat replies and booking go through the desk so the service role and the OpenAI key never ship in the Expo bundle. The diagram and the refusal rules are in [docs/architecture.md](docs/architecture.md).
+
+## Cuts
+
+Cleat is not Everfit and it is not Trainerize. Those products ship nutrition plans, wearable sync, habit games, white label store listings, and a payments marketplace. Cleat does not.
+
+v1 leaves out nutrition, wearables, white label apps, a payments marketplace, gamification, camera form checks, and franchise roles. The loop that ships is logging, a who needs a nudge board, and a confidence gated reply that refuses injury, medication, and emergencies.
+
+## Ten minute cold demo
+
+From a fresh clone, with Docker and the Supabase CLI installed:
+
+```sh
+pnpm install
+cd packages/db && supabase start && supabase status && cd ../..
+pnpm seed
+pnpm dev:web
+```
+
+In a second terminal, from `apps/mobile`:
+
+```sh
+npx expo start
+```
+
+`supabase start` applies the migrations and `supabase/seed.sql`. `pnpm seed` runs that file again (it is idempotent) and writes the knowledge base embeddings. Run `pnpm seed` a second time. The printed counts stay the same.
+
+Copy `API_URL` and `ANON_KEY` from `supabase status` into the app env files below. Copy `SERVICE_ROLE` into `apps/web/.env.local` only. Leave `OPENAI_API_KEY` unset so the seed and the desk share the offline embedder. Leave the Google vars empty. Beat 5 is ICS only.
+
+Sign in codes on a local stack are `424242` for the seeded addresses (`packages/db/supabase/config.toml`). The cast, the five beats, and the iOS, Android, and physical phone env blocks are in [docs/demo-script.md](docs/demo-script.md).
+
+`pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. It does not read `SUPABASE_SERVICE_ROLE`.
 
 ## Prerequisites
 
@@ -47,7 +94,7 @@ That starts Postgres, GoTrue, the API on port 54321, and Mailpit. The Mailpit UI
 supabase status
 ```
 
-Copy `API_URL` and `ANON_KEY` into the app env files. Leave the service role key out of both apps.
+Copy `API_URL` and `ANON_KEY` into both apps. Put `SERVICE_ROLE` only in `apps/web/.env.local`. That file is read by the Next.js server. Do not put the service role in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The anon key is the only Supabase key in the browser bundle and the Expo bundle.
 
 `apps/web/.env.local`:
 
@@ -55,14 +102,21 @@ Copy `API_URL` and `ANON_KEY` into the app env files. Leave the service role key
 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
 NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE=<SERVICE_ROLE from supabase status>
+ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
 ```
 
-`apps/mobile/.env`:
+`apps/mobile/.env` for the iOS Simulator. Android and a physical phone use different hosts. See [docs/demo-script.md](docs/demo-script.md).
 
 ```
 EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
+EXPO_PUBLIC_DESK_URL=http://127.0.0.1:3000
+EXPO_PUBLIC_WEB_URL=http://127.0.0.1:3000
 ```
+
+Then, from the repo root, `pnpm seed`. Leave `OPENAI_API_KEY` unset.
 
 The auth redirect allow list is `additional_redirect_urls` in `packages/db/supabase/config.toml`. A hosted project needs the same entries:
 
@@ -127,7 +181,15 @@ Metro prints a QR code and the Expo dev tools.
 | iPhone (Expo Go) | Install Expo Go from the App Store, then scan the QR code. |
 | Android phone (Expo Go) | Install Expo Go from the Play Store, then scan the QR code. |
 
-The native splash is the Cleat mark on a dark background. After sign-in, the client lands on tabs: Today, Program, Chat, Book, and Me. An Apple Developer account is not required for Expo Go. Store submission is later. The iOS bundle id and Android package are `com.jaysinghcodes.cleat`.
+The native splash is the Cleat mark on a dark background. After sign-in, the client lands on tabs: Today, Program, Chat, Book, and Me. The iOS bundle id and Android package are `com.jaysinghcodes.cleat`.
+
+A physical phone cannot use `127.0.0.1`. The iOS Simulator can. The Android Emulator reaches the host at `10.0.2.2`. A phone on the same Wi-Fi needs the computer LAN address, and the desk must listen on all interfaces (`next dev -H 0.0.0.0`). Exact env blocks are in [docs/demo-script.md](docs/demo-script.md).
+
+## Free tier and App Store
+
+Supabase Free, Vercel Hobby, and Expo Go are enough for this demo. OpenAI is pay as you go and optional. Leave `OPENAI_API_KEY` unset and both the seed and `pnpm eval` use the offline hash embedder and canned scorer. No Apple Developer account and no Google Play Console account are required for Expo Go.
+
+App Store and Play submission are later. The posture is general wellness and coaching operations, not a medical device. Injury, medication, and emergency messages get a fixed refusal, not clinical advice. When you submit, it is one Cleat branded app, not a white label listing per gym. Until then, demo with Expo Go. EAS development builds for iOS and Android are optional and use the free build minutes on the Expo plan.
 
 ### EAS dev builds (optional)
 
@@ -151,10 +213,12 @@ cp .env.example .env
 
 `.env.example` lists:
 
-- Supabase URL, anon key, and service role (service role is server-only)
-- `EXPO_PUBLIC_` and `NEXT_PUBLIC_` copies of the URL and anon key
-- `OPENAI_API_KEY` (server-only)
-- `ICS_FEED_SIGNING_SECRET` (server-only)
+- `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
+- `SUPABASE_SERVICE_ROLE` for the desk server only. Never prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. Do not put it in `apps/mobile/.env`.
+- `DATABASE_URL` for `pnpm seed` only. The web and mobile bundles do not read it.
+- `EXPO_PUBLIC_` and `NEXT_PUBLIC_` copies of the URL and the anon key. Those are the only Supabase values that belong in a client bundle.
+- `OPENAI_API_KEY` (server only). Never prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`.
+- `ICS_FEED_SIGNING_SECRET` (server only)
 - optional `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
 
 Do not commit `.env` or any real key. ICS subscribe/export is the calendar path; Google OAuth is optional and can stay empty.
@@ -170,7 +234,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the trainer desk
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
-3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
+3. Leave `SUPABASE_SERVICE_ROLE` in server env only (`apps/web/.env.local` or the host env). Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The browser bundle and the Expo bundle do not read it. The anon key is the only key those bundles get, via `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0005_booking.sql` adds availability, sessions, ICS tokens, and optional Google credential storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices. `0007_inbox.sql` adds the unanswered window, P2 and P3 inbox tiers, and the trainer seed hook.
 5. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback` (trainer desk)
@@ -277,9 +341,11 @@ To use OpenAI, set `OPENAI_API_KEY` on the Next.js server only. Do not prefix it
 
 `SUPABASE_SERVICE_ROLE` is also server only. The AI write path (chunks, audit rows, safety replies, held drafts) does nothing when it is unset. The client message still saves.
 
-New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to 0.95). The confidence floor is 0.50 and is not a setting. The reserved demo org `d1000000-0000-4000-8000-000000000001` is the only org `enable_demo_auto_send()` turns on. Ticket 7 inserts that org. `seed.sql` calls the function after the org exists.
+New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to 0.95). The confidence floor is 0.50 and is not a setting. The reserved demo org `d1000000-0000-4000-8000-000000000001` is the only org `enable_demo_auto_send()` turns on. `pnpm seed` inserts that org and calls the function. The call is server side. The anon and authenticated roles cannot run it.
 
-Escalations show up in the trainer Priority inbox and on the thread. Push delivery is a later ticket.
+`pnpm eval` batches [docs/eval-messages.json](docs/eval-messages.json) through the same gate and prints pass or fail per message, plus totals. With `OPENAI_API_KEY` unset it stays offline (`cleat-hash-embedding`, `cleat-canned-scorer`). With the key set on the server, it uses `text-embedding-3-small` and `gpt-4o-mini`.
+
+Escalations show up in the trainer Priority inbox and on the thread.
 
 ## Calendar
 

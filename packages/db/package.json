@@ -9,9 +9,17 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test:rls": "bash scripts/cross-tenant-rls.sh"
+    "test:rls": "bash scripts/cross-tenant-rls.sh",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@cleat/ai": "workspace:*",
+    "@cleat/domain": "workspace:*",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "tsx": "^4.20.3",
     "typescript": "~6.0.3"
   }
 }
