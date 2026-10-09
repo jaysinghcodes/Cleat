@@ -9,8 +9,9 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/local-docker.test.ts",
     "test:rls": "bash scripts/cross-tenant-rls.sh",
-    "seed": "sh scripts/require-docker.sh && tsx src/seed.ts"
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "@cleat/ai": "workspace:*",

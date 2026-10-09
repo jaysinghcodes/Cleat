@@ -21,6 +21,7 @@ import {
 } from "@cleat/domain";
 import pg from "pg";
 import { DEMO_ARTICLES, DEMO_ORG_ID } from "./demo-copy";
+import { LOCAL_DOCKER_MESSAGE, assertDockerWhenLocal } from "./local-docker";
 
 const CASEY_ID = "d1200000-0000-4000-8000-000000000004";
 const ZONE = "America/Chicago";
@@ -204,17 +205,20 @@ async function assertBoard(client: pg.PoolClient): Promise<void> {
   }
 }
 
-function requireDocker(): void {
-  const script = join(dirname(fileURLToPath(import.meta.url)), "../scripts/require-docker.sh");
+function requireDocker(databaseUrl: string | undefined): void {
   try {
-    execFileSync("sh", [script], { stdio: "inherit" });
-  } catch {
+    assertDockerWhenLocal(databaseUrl, () => {
+      execFileSync("docker", ["info"], { stdio: "ignore" });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : LOCAL_DOCKER_MESSAGE;
+    console.error(message);
     process.exit(1);
   }
 }
 
 async function main(): Promise<void> {
-  requireDocker();
+  requireDocker(process.env.DATABASE_URL);
   const sqlPath = join(dirname(fileURLToPath(import.meta.url)), "../supabase/seed.sql");
   const sql = readFileSync(sqlPath, "utf8");
   const pool = new pg.Pool({ connectionString: databaseUrl() });
