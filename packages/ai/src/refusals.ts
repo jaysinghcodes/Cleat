@@ -41,7 +41,6 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
-  /\b(?:going to|gonna|about to|ready to) die\b/,
   /want(?:s|ed|ing)? to be dead\b/,
   /\brather (?:die|be dead)\b/,
   /\bend(?:ing)? it all\b/,
@@ -305,11 +304,76 @@ function endItClass(text: string): "self_harm" | "hold" | null {
 }
 
 /**
+ * Training talk for "going to die", "gonna die", "about to die", and "ready to die".
+ * Injury rules keep their own list. "run", "burpees", and "leg day" belong here.
+ */
+const DIE_TRAINING =
+  /\b(?:sets?|reps?|runs?|running|squats?|squatting|workouts?|gym|burpees?|leg[-\s]?days?|lifting|lifts?|deadlifts?|lunges?|lunging|bench(?:es|ing)?|sessions?|press(?:es|ing)?|cleans?|snatches?|curls?|rowing|rows?|rdls?|pull-?ups?|push-?ups?|barbells?|dumbbells?|kettlebells?|overhead|cardio|sprints?|sprinting|jogs?|jogging|miles?|hiit|planks?|cooldowns?|warmups?|warm ups?|training|exercises?|circuits?|amrap|emom|wods?)\b/;
+
+/** lol, lmao, haha (and longer ha repeats), or an emoji. */
+const JOKE_MARKER = /\b(?:lol|lmao|ha(?:ha)+)\b|\p{Extended_Pictographic}/u;
+
+const PROSPECTIVE_DIE_SOURCE = "\\b(?:going to|gonna|about to|ready to) die\\b";
+
+/** Words that sit between a subject and "going to die" and are not the subject. */
+const SUBJECT_FILLER =
+  /^(?:is|are|was|were|am|be|been|being|really|just|actually|still|totally|literally|almost|so|definitely|probably|maybe|not|never|even|also|now|soon|already|basically|honestly|finally|very|pretty|kinda|sorta)$/;
+
+const SUBJECT_DETERMINER = /^(?:my|the|this|that|our|your|his|her|their|a|an|its|some|any|these|those)$/;
+
+const PERSON_HEAD =
+  /^(?:i|im|i'm|we|we're|you|you're|youre|he|he's|she|she's|they|they're|theyre|someone|somebody|anyone|anybody|everybody|everyone|people|person|friend|friends|buddy|coach|trainer|mom|dad|mother|father|kid|kids|baby|man|woman|boy|girl|guy|guys|dude|bro|sis|husband|wife|boyfriend|girlfriend|client|athlete|human|humans)$/;
+
+/** A phone, a battery, a car, and the same kind of thing. Not a person. */
+const THING_HEAD =
+  /^(?:phones?|smartphones?|cellphones?|batter(?:y|ies)|chargers?|powerbanks?|laptops?|computers?|tablets?|ipads?|iphones?|watches|watch|airpods?|earbuds?|headphones?|headsets?|devices?|power|charge|wifi|wi-fi|internet|signals?|connections?|routers?|modems?|speakers?|tvs?|televisions?|screens?|keyboards?|apps?|cars?|trucks?|bikes?|bicycles?|scooters?|engines?|motors?|vehicles?|vans?|bus(?:es)?|plants?|flowers?|lights?|bulbs?|flashlights?|cameras?|mics?|microphones?|drones?|printers?|macbooks?|androids?|mobiles?|kindles?|notebooks?|pcs?|desktops?|monitors?|trackers?|pods?)$/;
+
+const THING_PHRASE = /^(?:power bank|cell phone|mobile phone|smart watch|apple watch|air pods|smart phone)$/;
+
+function clauseBounds(text: string, start: number, end: number): { from: number; to: number } {
+  const prior = text.slice(0, start);
+  let from = 0;
+  for (const mark of prior.matchAll(/[.,!?;:\n]/g)) {
+    from = (mark.index ?? 0) + 1;
+  }
+  const rest = text.slice(end);
+  const after = rest.search(/[.,!?;:\n]/);
+  const to = after === -1 ? text.length : end + after;
+  return { from, to };
+}
+
+/** The subject of "going to die" is a thing, not a person. */
+function subjectIsThing(before: string): boolean {
+  const words = before
+    .replace(/['’]s\b/g, "")
+    .split(/[^a-z0-9'-]+/)
+    .filter((word) => word.length > 0);
+  while (words.length > 0) {
+    const last = words[words.length - 1] ?? "";
+    if (SUBJECT_FILLER.test(last) || SUBJECT_DETERMINER.test(last)) {
+      words.pop();
+      continue;
+    }
+    break;
+  }
+  if (words.length === 0) return false;
+  const head = words[words.length - 1] ?? "";
+  if (PERSON_HEAD.test(head)) return false;
+  if (THING_HEAD.test(head)) return true;
+  if (words.length >= 2 && THING_PHRASE.test(`${words[words.length - 2]} ${head}`)) return true;
+  return false;
+}
+
+/**
  * The word "die" is self harm unless it sits inside one of these jokes or idioms.
  * "dying" and "killed" are different words, so "I'm dying" and "killed me" stay clear.
- * "going to die", "gonna die", "about to die", and "ready to die" are not idioms.
+ * "going to", "gonna", "about to", and "ready to" die stay self harm when the subject
+ * is a person and the same clause has no training talk and no joke marker.
+ * Training talk or a joke marker in that clause is a coach hold.
+ * A subject that is not a person stays clear.
+ * Explicit self harm wording is checked earlier and still wins.
  */
-function hasUnbenignDie(text: string): boolean {
+function dieClass(text: string): "self_harm" | "hold" | null {
   const covered = Array.from({ length: text.length }, () => false);
   const idioms = [
     /\bdie hard\b/g,
@@ -325,10 +389,26 @@ function hasUnbenignDie(text: string): boolean {
       for (let index = start; index < end; index += 1) covered[index] = true;
     }
   }
-  for (const match of text.matchAll(/\bdie\b/g)) {
-    if (!covered[match.index ?? 0]) return true;
+
+  let hold = false;
+  for (const match of text.matchAll(new RegExp(PROSPECTIVE_DIE_SOURCE, "g"))) {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+    for (let index = end - 3; index < end; index += 1) covered[index] = true;
+    const bounds = clauseBounds(text, start, end);
+    if (subjectIsThing(text.slice(bounds.from, start))) continue;
+    const clause = text.slice(bounds.from, bounds.to);
+    if (DIE_TRAINING.test(clause) || JOKE_MARKER.test(clause)) {
+      hold = true;
+      continue;
+    }
+    return "self_harm";
   }
-  return false;
+
+  for (const match of text.matchAll(/\bdie\b/g)) {
+    if (!covered[match.index ?? 0]) return "self_harm";
+  }
+  return hold ? "hold" : null;
 }
 
 function distressHold(text: string): DraftHold {
@@ -343,37 +423,31 @@ function distressHold(text: string): DraftHold {
  * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
  * The word "die" is self harm. A listed joke or idiom is the exception.
- * Explicit self harm wording still wins when a joke is in the same message.
+ * "going to", "gonna", "about to", or "ready to" die, with training talk or a joke
+ * marker in the same clause, is a coach hold. A subject that is not a person is clear.
+ * A bare "going to die" stays self harm. Explicit self harm wording still wins.
  * "end it" plus training talk in the same clause is a hold, not a refusal.
+ * Those holds run only after emergency and injury. A medical emergency plus a
+ * die hold still gets the emergency template and the 988 line.
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
-  if (matches(text, SELF_HARM) || hasUnbenignDie(text)) return selfHarmRefusal();
+  if (matches(text, SELF_HARM)) return selfHarmRefusal();
+  const die = dieClass(text);
+  if (die === "self_harm") return selfHarmRefusal();
   const endIt = endItClass(text);
   if (endIt === "self_harm") return selfHarmRefusal();
-  if (endIt === "hold") return distressHold(text);
   const directed = selfDirectedInjury(text);
+  if (directed?.templateId === "emergency" && die === "hold") return selfHarmRefusal();
   if (directed) return directed;
   if (matches(text, EMERGENCY)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "emergency",
-      text: EMERGENCY_TEMPLATE,
-      reasonCodes: ["emergency"],
-      emergency: true,
-    };
+    if (die === "hold") return selfHarmRefusal();
+    return emergencyRefusal();
   }
-  if (matches(text, MEDICAL)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "medical_safety",
-      text: MEDICAL_SAFETY_TEMPLATE,
-      reasonCodes: ["refusal_keyword"],
-      emergency: false,
-    };
-  }
+  if (matches(text, MEDICAL)) return medicalRefusal();
+  if (die === "hold" || endIt === "hold") return distressHold(text);
   const reasonCodes: HoldReason[] = [];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
   if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
