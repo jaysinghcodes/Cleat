@@ -327,6 +327,7 @@ async function main(): Promise<void> {
         `articles ${text(line.articles)}`,
         `chunks ${text(line.chunks)}`,
         `messages ${text(line.messages)}`,
+        `unanswered Riley Wong`,
         `booked sessions ${text(line.sessions)}`,
         `injury inbox ${text(line.injury_inbox)}`,
         `embedder ${embedder.model === HASH_EMBEDDING_MODEL ? "offline hash" : embedder.model}`,

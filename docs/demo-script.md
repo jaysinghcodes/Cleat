@@ -50,6 +50,7 @@ Sam Lee's thread already contains this turn if you want to show it before sendin
 2. Casey Torres has an open Injury item at P0. The preview is `Sharp pain in my knee on lunges, what should I do?`
 3. Open it. The safety reply is already in the thread. There is no held draft. The template is medical safety.
 4. Optional live pass: sign in on the phone as `casey.torres@cleat.demo` and send that same sentence. The client sees the fixed safety reply immediately. A P0 item is on the desk. The model does not write that reply.
+5. Riley Wong is also on the inbox as Unanswered, priority P2. The latest message is from Riley and is older than 4 hours: Still waiting on a reply about Friday.
 
 ## Beat 5. Book a session and subscribe with ICS
 

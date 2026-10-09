@@ -1,6 +1,6 @@
 # Cleat
 
-The product name is Cleat. The GitHub repo is Cleat.
+Cleat. Repo [jaysinghcodes/Cleat](https://github.com/jaysinghcodes/Cleat) (formerly coachloop).
 
 A coach runs the web desk. A client uses the Expo app on iOS or Android. A fresh clone plus `pnpm seed` is a two role demo: the phone in Expo Go, the trainer desk in the browser.
 

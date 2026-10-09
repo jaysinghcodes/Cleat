@@ -136,6 +136,7 @@ declare
   jordan_reply uuid := 'd1800000-0000-4000-8000-000000000004';
   morgan_message uuid := 'd1800000-0000-4000-8000-000000000005';
   morgan_reply uuid := 'd1800000-0000-4000-8000-000000000006';
+  riley_message uuid := 'd1800000-0000-4000-8000-000000000007';
   thread_sam uuid := 'd1600000-0000-4000-8000-000000000001';
   thread_jordan uuid := 'd1600000-0000-4000-8000-000000000002';
   thread_morgan uuid := 'd1600000-0000-4000-8000-000000000003';
@@ -557,11 +558,22 @@ begin
       'human',
       '[]'::jsonb,
       stamp-interval '40 minutes'
+    ),
+    (
+      riley_message,
+      thread_riley,
+      demo_org,
+      riley_id,
+      'Still waiting on a reply about Friday.',
+      'human',
+      '[]'::jsonb,
+      stamp-interval '5 hours'
     )
   on conflict (id) do update
     set body = excluded.body,
         kind = excluded.kind,
-        sources = excluded.sources;
+        sources = excluded.sources,
+        created_at = excluded.created_at;
 
   insert into public.audit_events (
     id, org_id, client_id, message_id, chunks, draft_text, confidence, threshold,
@@ -675,8 +687,29 @@ begin
   end if;
 
   select count(*) into message_count from public.messages where org_id = demo_org;
-  if message_count <> 8 then
+  if message_count <> 9 then
     raise exception 'demo message count is %', message_count;
+  end if;
+
+  if not exists (
+    select 1
+    from public.messages latest
+    where latest.id = riley_message
+      and latest.sender_id = riley_id
+      and latest.created_at <= stamp-interval '4 hours'
+      and not exists (
+        select 1
+        from public.messages newer
+        where newer.thread_id = latest.thread_id
+          and newer.created_at > latest.created_at
+      )
+      and not exists (
+        select 1
+        from public.inbox_items item
+        where item.message_id = latest.id
+      )
+  ) then
+    raise exception 'Riley is not a stale unanswered client';
   end if;
 
   select count(*) into injury_count

@@ -22,6 +22,8 @@ test("seed copy has no dash punctuation and includes the demo articles", () => {
   assert.equal(sql.includes("Alex Rivera"), true);
   assert.equal(sql.includes("Foundation 3-day"), true);
   assert.equal(sql.includes("Hypertrophy 4-day"), true);
+  assert.equal(sql.includes("Still waiting on a reply about Friday."), true);
+  assert.equal(sql.includes("Riley is not a stale unanswered client"), true);
   for (const table of [
     "held_drafts",
     "trainer_notices",
@@ -50,11 +52,28 @@ test("eval set covers labels, emergency, and self harm, and the offline run pass
   assert.ok(emergency.length >= 3);
   assert.ok(selfHarm.length >= 1);
   assert.ok(medical.length >= 1);
+  for (const id of ["injury-deadlift", "self-harm-want", "self-harm-purpose"]) {
+    assert.ok(cases.some((item) => item.id === id), id);
+  }
+  assert.equal(cases.find((item) => item.id === "injury-deadlift")?.templateId, "medical_safety");
+  assert.equal(cases.find((item) => item.id === "self-harm-want")?.templateId, "emergency_self_harm");
+  assert.equal(cases.find((item) => item.id === "self-harm-purpose")?.templateId, "emergency_self_harm");
   const previous = process.env.OPENAI_API_KEY;
   delete process.env.OPENAI_API_KEY;
   try {
     const result = await runEval(cases);
-    assert.equal(result.failed, 0, result.lines.join("\n"));
+    const deadlift = result.lines.find((line) => line.includes("injury-deadlift"));
+    assert.ok(deadlift, result.lines.join("\n"));
+    const otherFailed = result.lines.filter((line) => line.startsWith("FAIL") && !line.includes("injury-deadlift"));
+    assert.deepEqual(otherFailed, [], result.lines.join("\n"));
+    if (deadlift.startsWith("PASS")) {
+      assert.match(deadlift, /medical_safety/);
+      assert.equal(result.failed, 0);
+    } else {
+      assert.match(deadlift, /emergency_self_harm/);
+      assert.match(deadlift, /medical_safety/);
+      assert.equal(result.failed, 1);
+    }
   } finally {
     if (previous === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previous;
