@@ -21,6 +21,7 @@ export const REASON_CODES = [
   "self_harm",
   "asks_for_coach",
   "program_swap",
+  "distress_wording",
   "auto_send_off",
   "low_confidence",
 ] as const;

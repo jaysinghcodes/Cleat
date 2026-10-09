@@ -38,9 +38,10 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
+  /\bdie\b/,
   /\bend(?:ing)? it all\b/,
-  /\b(?:want to|going to|gonna|feel like|thinking about|ready to)\s+end(?:ing)? it\b/,
-  /\bwant it(?: all)? to end\b/,
+  /\bwant it(?: all)? (?:to|2) end\b/,
+  /\bwant it (?:to|2) be over\b/,
   /don'?t want to be here/,
   /do not want to be here/,
   /dont want to be here/,
@@ -127,7 +128,8 @@ const TRAINING_CONTEXT =
 /**
  * Intent to cause the harm. "going to the gym" is not intent.
  * "going to hurt", "on purpose", and "kill myself" are.
- * "end it" is self harm only with an intent or feeling phrase in front of it.
+ * "end it" is handled separately: an intent or feeling verb in front of it is
+ * self harm, unless the same clause continues with training talk.
  * Intent wins even when the message also names a training context.
  */
 const HARM_INTENT =
@@ -173,9 +175,11 @@ export type HardRefusal = {
   emergency: boolean;
 };
 
+export type HoldReason = "asks_for_coach" | "program_swap" | "distress_wording";
+
 export type DraftHold = {
   kind: "hold";
-  reasonCodes: Array<"asks_for_coach" | "program_swap">;
+  reasonCodes: HoldReason[];
 };
 
 export type RefusalCheck = HardRefusal | DraftHold | { kind: "none" };
@@ -232,15 +236,63 @@ function selfDirectedInjury(text: string): HardRefusal | null {
 }
 
 /**
+ * Intent or feeling in front of "end it" or "ending it".
+ * "2" stands in for "to". Other words may come before the verb.
+ * Tense and casual forms stay inside this phrase, which sits against "end it".
+ */
+const END_IT_INTENT =
+  /\b(?:want(?:s|ed|ing)?\s+(?:to|2)|wanna|plan(?:s|ned|ning)?\s+(?:to|2)|about\s+(?:to|2)|tried\s+(?:to|2)|try(?:ing|s)?\s+(?:to|2)|thought\s+about|think(?:s|ing)?\s+about|felt\s+like|feel(?:s|ing)?\s+like|going\s+(?:to|2)|gonna|ready\s+(?:to|2))\s+end(?:ing)?\s+it\b/;
+
+/**
+ * Training talk that comes right after "end it" in the same clause.
+ * That continuation is a coach review, not a 988 refusal.
+ */
+const TRAINING_AFTER_END_IT =
+  /^(?:at\s+\d+\s+(?:sets?|reps?)|with\s+a\s+(?:cooldown|warmup)|early\b|after\s+this\s+set\b|the\s+(?:gym|session|workout)\b)/;
+
+function sameClauseAfter(text: string, end: number): string {
+  const rest = text.slice(end);
+  const cut = rest.search(/[.,!?;:\n]/);
+  return (cut === -1 ? rest : rest.slice(0, cut)).trim();
+}
+
+/**
+ * "end it" with an intent or feeling verb is self harm.
+ * When the same clause continues with training talk, it is a hold instead.
+ * A later bare "end it" in the same message still counts as self harm.
+ */
+function endItClass(text: string): "self_harm" | "hold" | null {
+  const pattern = new RegExp(END_IT_INTENT.source, "g");
+  let hold = false;
+  for (const match of text.matchAll(pattern)) {
+    const after = sameClauseAfter(text, (match.index ?? 0) + match[0].length);
+    if (!TRAINING_AFTER_END_IT.test(after)) return "self_harm";
+    hold = true;
+  }
+  return hold ? "hold" : null;
+}
+
+function distressHold(text: string): DraftHold {
+  const reasonCodes: HoldReason[] = ["distress_wording"];
+  if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
+  if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
+  return { kind: "hold", reasonCodes };
+}
+
+/**
  * Keyword and pattern rules. Self harm is checked before injury and emergency.
  * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
+ * "end it" plus training talk in the same clause is a hold, not a refusal.
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
   if (matches(text, SELF_HARM)) return selfHarmRefusal();
+  const endIt = endItClass(text);
+  if (endIt === "self_harm") return selfHarmRefusal();
+  if (endIt === "hold") return distressHold(text);
   const directed = selfDirectedInjury(text);
   if (directed) return directed;
   if (matches(text, EMERGENCY)) {
@@ -261,7 +313,7 @@ export function checkRefusals(message: string): RefusalCheck {
       emergency: false,
     };
   }
-  const reasonCodes: Array<"asks_for_coach" | "program_swap"> = [];
+  const reasonCodes: HoldReason[] = [];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
   if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
   if (reasonCodes.length > 0) return { kind: "hold", reasonCodes };

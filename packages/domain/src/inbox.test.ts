@@ -17,6 +17,7 @@ import {
   selectInboxItem,
   sortInboxItems,
   unansweredHoursOrDefault,
+  inboxReason,
   whyEscalated,
   type StoredInboxItem,
 } from "./inbox";
@@ -444,6 +445,13 @@ test("INBOX_UNANSWERED_HOURS defaults to 4, clamps from 1 to 168, and the org se
   assert.equal(buildInboxQueue({ ...base, windowHours: resolveUnansweredHours(4, "1") }).length, 0);
   assert.equal(buildInboxQueue({ ...base, windowHours: resolveUnansweredHours(undefined, "0") }).length, 1);
   assert.equal(buildInboxQueue({ ...base, windowHours: resolveUnansweredHours(undefined, "200") }).length, 0);
+});
+
+test("distress wording explains a held end it message", () => {
+  assert.equal(inboxCopy.distressWhy, "Possible distress wording, coach review");
+  assert.doesNotMatch(inboxCopy.distressWhy, DASH);
+  assert.deepEqual(whyEscalated(["distress_wording"]), [inboxCopy.distressWhy]);
+  assert.equal(inboxReason({ priority: "p1", emergency: false, reasonCodes: ["distress_wording"] }), "ai_escalate");
 });
 
 test("a low confidence hold explains why it was held", () => {
