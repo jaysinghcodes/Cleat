@@ -67,7 +67,7 @@ Do this with Google env vars empty. Booking must not call Google.
 Use these on iOS and again on Android. The desk stays on the computer.
 
 1. `pnpm install`
-2. From `packages/db`, `supabase start`, then `supabase status`.
+2. From `packages/db`, run `docker info`, then `supabase start`, then `supabase status`.
 3. `apps/web/.env.local` (browser and server on the computer):
 
 ```

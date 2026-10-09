@@ -9,6 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/local-docker.test.ts",
     "test:rls": "bash scripts/cross-tenant-rls.sh",
     "seed": "tsx src/seed.ts"
   },

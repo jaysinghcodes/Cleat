@@ -21,7 +21,7 @@ From the repo root, after local Postgres is up:
 pnpm seed
 ```
 
-`pnpm seed` is idempotent. Run it twice and the printed counts stay the same. It uses `DATABASE_URL` when set, otherwise `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Leave `OPENAI_API_KEY` unset and the chunks use the offline hash embedder. The service role key is not required for the seed.
+`pnpm seed` is idempotent. Run it twice and the printed counts stay the same. It uses `DATABASE_URL` when set, otherwise `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Docker is required only for that default local URL (`127.0.0.1:54322` or `localhost:54322`). A hosted database or another port does not need Docker. Leave `OPENAI_API_KEY` unset and the chunks use the offline hash embedder. The service role key is not required for the seed.
 
 ```sh
 pnpm --filter @cleat/db test:rls

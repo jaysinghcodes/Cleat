@@ -42,10 +42,16 @@ v1 leaves out nutrition, wearables, white label apps, a payments marketplace, ga
 
 ## Ten minute cold demo
 
+> **Before you start**
+>
+> 1. Command Line Tools: check first. Run `xcode-select -p`, then `brew doctor` or `softwareupdate --list`. Only when brew reports that the Command Line Tools are missing or outdated, run `sudo rm -rf /Library/Developer/CommandLineTools && sudo xcode-select --install`, finish the installer, and verify with `xcode-select -p`. It should print a path. Outdated tools make brew refuse to install the Supabase CLI. If brew does not report that problem, leave the tools installed.
+> 2. Docker Desktop: run `brew install --cask docker && open -a Docker`, wait until it says running, then verify with `docker info`. It should print server details. Docker must stay running while you use the local stack.
+
 From a fresh clone, with Docker and the Supabase CLI installed:
 
 ```sh
 pnpm install
+docker info
 cd packages/db && supabase start && supabase status && cd ../..
 ```
 
@@ -94,7 +100,7 @@ From `packages/db`, `supabase db reset` drops the local database, reapplies the 
 
 On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead. The cast, the five beats, and the iOS, Android, and physical phone env blocks are in [docs/demo-script.md](docs/demo-script.md).
 
-`pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. It does not read `SUPABASE_SERVICE_ROLE`.
+`pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Docker is required only for that default local URL (`127.0.0.1:54322` or `localhost:54322`). A hosted database or another port does not need Docker. If Docker is required and it is not running, seed exits and tells you to open Docker Desktop. It does not read `SUPABASE_SERVICE_ROLE`.
 
 ## Prerequisites
 
@@ -114,6 +120,7 @@ pnpm install
 Install Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started). From `packages/db`:
 
 ```sh
+docker info
 supabase start
 ```
 
@@ -263,7 +270,7 @@ Not required to boot the empty screens. Sign-up, sign-in, and invites need a Sup
 
 There are no passwords. Both roles sign in with an email code or a magic link.
 
-1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `supabase start` when Docker is available. Local mail is captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324).
+1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `docker info`, then `supabase start`. Local mail is captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324).
 2. Copy the project URL and anon key into `.env`:
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the trainer desk
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
@@ -301,7 +308,7 @@ pnpm --filter @cleat/db test:rls
 
 `test:rls` needs the pgvector extension. `0001_init.sql` runs `create extension vector`. On Postgres 16 install `postgresql-16-pgvector`. Supabase and the Supabase CLI image already include it.
 
-This applies the migrations with psql and asserts that a trainer cannot read another org, a client cannot read another client's profile, and booking rows stay inside the org. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps use `supabase start` from [Run locally](#run-locally), which runs real GoTrue.
+This applies the migrations with psql and asserts that a trainer cannot read another org, a client cannot read another client's profile, and booking rows stay inside the org. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps follow [Run locally](#run-locally): `docker info`, then `supabase start`, which runs real GoTrue.
 
 ## Vercel (hobby)
 
