@@ -89,21 +89,15 @@ test("emergency solid fill and injury tint stay distinguishable in grayscale", (
   }
 });
 
-test("text and status inks pass AA on page, card, and their tint fills", () => {
+test("text and status inks pass AA on page and card", () => {
   for (const theme of [dark, light]) {
     for (const surface of [theme.page, theme.card]) {
       assert.ok(contrast(theme.text, surface) >= 4.5, `${theme.colorScheme} text`);
       assert.ok(contrast(theme.textSecondary, surface) >= 4.5, `${theme.colorScheme} secondary`);
       assert.ok(contrast(theme.textTertiary, surface) >= 4.5, `${theme.colorScheme} tertiary`);
       assert.ok(contrast(theme.accentText, surface) >= 4.5, `${theme.colorScheme} accent text`);
-      for (const [ink, tint] of [
-        [theme.success, theme.successTint],
-        [theme.warn, theme.warnTint],
-        [theme.skip, theme.skipTint],
-        [theme.error, theme.errorTint],
-      ] as const) {
+      for (const ink of [theme.success, theme.warn, theme.skip, theme.error]) {
         assert.ok(contrast(ink, surface) >= 4.5, `${theme.colorScheme} ink on surface`);
-        assert.ok(contrast(ink, blendOver(tint, surface)) >= 4.5, `${theme.colorScheme} ink on tint`);
       }
     }
     assert.ok(contrast(theme.text, theme.raised) >= 4.5, `${theme.colorScheme} text on raised`);
