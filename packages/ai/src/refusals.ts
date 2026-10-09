@@ -31,14 +31,19 @@ const SELF_HARM: RegExp[] = [
   /self[-\s]?harm/,
   /suicid/,
   /end(?:ing)? my life/,
-  /want to die/,
-  /wanna die/,
+  /want(?:s|ed|ing)? to (?:(?:just|really|finally|honestly) )?die\b/,
+  /\bwanna die\b/,
+  /\bwish(?:ed|ing)? (?:that )?i (?:was|were) dead\b/,
+  /\bwish(?:ed|ing)? (?:that )?i (?:would|could) die\b/,
+  /\bwish i'?d die\b/,
   /do not want to live/,
   /don't want to live/,
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
-  /\bdie\b/,
+  /\b(?:going to|gonna|about to|ready to) die\b/,
+  /want(?:s|ed|ing)? to be dead\b/,
+  /\brather (?:die|be dead)\b/,
   /\bend(?:ing)? it all\b/,
   /\bwant it(?: all)? (?:to|2) end\b/,
   /\bwant it (?:to|2) be over\b/,
@@ -237,11 +242,23 @@ function selfDirectedInjury(text: string): HardRefusal | null {
 
 /**
  * Intent or feeling in front of "end it" or "ending it".
+ * One or more filler words (just, really, finally, honestly) may sit between them.
+ * "planning on" and "thinking of" count with "planning to" and "thinking about".
+ * "need to", "might", "considering", and "feel like i should" are the same kind of phrase.
  * "2" stands in for "to". Other words may come before the verb.
- * Tense and casual forms stay inside this phrase, which sits against "end it".
+ * Tense and casual forms stay inside this phrase.
+ * "I'll", "Ill", and "I will" are separate: training talk after them stays clear.
  */
 const END_IT_INTENT =
-  /\b(?:want(?:s|ed|ing)?\s+(?:to|2)|wanna|plan(?:s|ned|ning)?\s+(?:to|2)|about\s+(?:to|2)|tried\s+(?:to|2)|try(?:ing|s)?\s+(?:to|2)|thought\s+about|think(?:s|ing)?\s+about|felt\s+like|feel(?:s|ing)?\s+like|going\s+(?:to|2)|gonna|ready\s+(?:to|2))\s+end(?:ing)?\s+it\b/;
+  /\b(?:want(?:s|ed|ing)?\s+(?:to|2)|wanna|plan(?:s|ned|ning)?\s+(?:to|2|on)|about\s+(?:to|2)|tried\s+(?:to|2)|try(?:ing|s)?\s+(?:to|2)|thought\s+(?:about|of)|think(?:s|ing)?\s+(?:about|of)|felt\s+like(?:\s+i\s+should)?|feel(?:s|ing)?\s+like(?:\s+i\s+should)?|going\s+(?:to|2)|gonna|ready\s+(?:to|2)|need(?:s|ed)?\s+(?:to|2)|might|consider(?:s|ed|ing)?)\s+(?:(?:just|really|finally|honestly)\s+)*end(?:ing)?\s+it\b/;
+
+/**
+ * "I'll", "Ill", and "I will" are self harm when the same clause does not
+ * continue with training talk. "Ill" is the same phrase without an apostrophe.
+ * A cooldown, a set count, or "early" keeps the message clear.
+ */
+const END_IT_WILL =
+  /\b(?:i'll|ill|i will)\s+(?:(?:just|really|finally|honestly)\s+)*end(?:ing)?\s+it\b/;
 
 /**
  * Training talk that comes right after "end it" in the same clause.
@@ -257,19 +274,61 @@ function sameClauseAfter(text: string, end: number): string {
 }
 
 /**
- * "end it" with an intent or feeling verb is self harm.
- * When the same clause continues with training talk, it is a hold instead.
- * A later bare "end it" in the same message still counts as self harm.
+ * Scan one "end it" pattern.
+ * A hit with no training continuation is self harm.
+ * When trainingIsHold is set, a training continuation is a coach hold.
+ * "I'll" passes false so "I'll end it with a cooldown walk" stays clear.
  */
-function endItClass(text: string): "self_harm" | "hold" | null {
-  const pattern = new RegExp(END_IT_INTENT.source, "g");
+function scanEndIt(text: string, source: string, trainingIsHold: boolean): "self_harm" | "hold" | null {
+  const pattern = new RegExp(source, "g");
   let hold = false;
   for (const match of text.matchAll(pattern)) {
     const after = sameClauseAfter(text, (match.index ?? 0) + match[0].length);
     if (!TRAINING_AFTER_END_IT.test(after)) return "self_harm";
-    hold = true;
+    if (trainingIsHold) hold = true;
   }
   return hold ? "hold" : null;
+}
+
+/**
+ * "end it" with an intent or feeling verb is self harm.
+ * When the same clause continues with training talk, it is a hold instead.
+ * "I'll", "Ill", and "I will" are self harm only without that training talk.
+ * A later bare "end it" in the same message still counts as self harm.
+ */
+function endItClass(text: string): "self_harm" | "hold" | null {
+  const intent = scanEndIt(text, END_IT_INTENT.source, true);
+  if (intent === "self_harm") return "self_harm";
+  const will = scanEndIt(text, END_IT_WILL.source, false);
+  if (will === "self_harm") return "self_harm";
+  return intent;
+}
+
+/**
+ * The word "die" is self harm unless it sits inside one of these jokes or idioms.
+ * "dying" and "killed" are different words, so "I'm dying" and "killed me" stay clear.
+ * "going to die", "gonna die", "about to die", and "ready to die" are not idioms.
+ */
+function hasUnbenignDie(text: string): boolean {
+  const covered = Array.from({ length: text.length }, () => false);
+  const idioms = [
+    /\bdie hard\b/g,
+    /\b(?:could|i would|i'?d) die for\b/g,
+    /\bto die for\b/g,
+    /\bnever say die\b/g,
+    /\b(?:burpees?|squats?|workouts?)\b[^.]{0,80}?\bmake me die lol\b/g,
+  ];
+  for (const pattern of idioms) {
+    for (const match of text.matchAll(pattern)) {
+      const start = match.index ?? 0;
+      const end = start + match[0].length;
+      for (let index = start; index < end; index += 1) covered[index] = true;
+    }
+  }
+  for (const match of text.matchAll(/\bdie\b/g)) {
+    if (!covered[match.index ?? 0]) return true;
+  }
+  return false;
 }
 
 function distressHold(text: string): DraftHold {
@@ -283,13 +342,15 @@ function distressHold(text: string): DraftHold {
  * Keyword and pattern rules. Self harm is checked before injury and emergency.
  * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
+ * The word "die" is self harm. A listed joke or idiom is the exception.
+ * Explicit self harm wording still wins when a joke is in the same message.
  * "end it" plus training talk in the same clause is a hold, not a refusal.
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
-  if (matches(text, SELF_HARM)) return selfHarmRefusal();
+  if (matches(text, SELF_HARM) || hasUnbenignDie(text)) return selfHarmRefusal();
   const endIt = endItClass(text);
   if (endIt === "self_harm") return selfHarmRefusal();
   if (endIt === "hold") return distressHold(text);
