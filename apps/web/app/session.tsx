@@ -22,6 +22,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { previewMembership } from "./preview/fixtures";
+import { readScreenPreview } from "./preview-mode";
 import { getWebSupabase, webSupabaseConfig } from "./supabase";
 
 export type SessionUser = {
@@ -42,6 +44,18 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+function previewClient(): CleatClient {
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (prop === "then") return undefined;
+        throw new Error("Preview session cannot call the network.");
+      },
+    },
+  ) as CleatClient;
+}
+
 function readPendingTrainer() {
   try {
     const raw = localStorage.getItem(PENDING_TRAINER_KEY);
@@ -54,7 +68,8 @@ function readPendingTrainer() {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const configured = webSupabaseConfig() !== null;
+  const [previewing, setPreviewing] = useState(false);
+  const configured = webSupabaseConfig() !== null || previewing;
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<SessionUser | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -98,6 +113,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     alive.current = true;
+    if (readScreenPreview()) {
+      setPreviewing(true);
+      setClient(previewClient());
+      setSession({
+        userId: "22222222-2222-4222-8222-222222222222",
+        email: "alex@northgym.example",
+      });
+      setMembership(previewMembership);
+      setReady(true);
+      return () => {
+        alive.current = false;
+      };
+    }
     const supabase = getWebSupabase();
     setClient(supabase);
     if (!supabase) {

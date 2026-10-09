@@ -3,6 +3,7 @@
 import { fetchAiSettings, listAuditEvents, saveAiSettings } from "@cleat/api";
 import { aiCopy, auditCounts, DEFAULT_AI_SETTINGS, screenCopy, userFacingError } from "@cleat/domain";
 import { useEffect, useState } from "react";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
@@ -33,6 +34,19 @@ export function SettingsDesk() {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") return;
+      if (preview === "error") {
+        setError(PREVIEW_FAILURE);
+        setStatus("error");
+        return;
+      }
+      setHasRow(preview !== "empty");
+      setError(null);
+      setStatus("ready");
+      return;
+    }
     if (!client) return;
     void Promise.all([fetchAiSettings(client), listAuditEvents(client)])
       .then(([settings, events]) => {

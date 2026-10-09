@@ -38,6 +38,7 @@ import {
   type WeeklyDraft,
 } from "@cleat/domain";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { useSession } from "../../session";
 import { ScreenState } from "../../screen-state";
 import { Banner } from "../../ui";
@@ -83,6 +84,23 @@ export default function CalendarPage() {
   }, [client, membership]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setBlocks([]);
+          setSessions([]);
+          setNames(new Map());
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     void load().catch((err: unknown) => {
       setError(userFacingError(err, screenCopy.loadFailed));
       setStatus("error");

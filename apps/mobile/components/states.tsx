@@ -29,6 +29,7 @@ export function ScreenState({
     <View
       testID={testID}
       accessibilityRole={kind === "loading" ? "progressbar" : "summary"}
+      accessibilityLabel={kind === "loading" ? title : undefined}
       accessibilityLiveRegion={kind === "error" ? "assertive" : "polite"}
       style={{
         marginTop: 16,

@@ -3,6 +3,7 @@
 import { listKbArticles, saveKbArticle } from "@cleat/api";
 import { aiCopy, categoryLabel, screenCopy, userFacingError, type KbArticle, type KbCategory } from "@cleat/domain";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
@@ -29,6 +30,21 @@ export function KnowledgeDesk() {
   }, [client]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setArticles([]);
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     if (!client) return;
     void load().catch((err: unknown) => {
       setError(userFacingError(err, screenCopy.loadFailed));

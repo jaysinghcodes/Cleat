@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { bookingCopy, chatCopy, copy, programCopy } from "@cleat/domain";
 import { CleatRequestError } from "./auth";
-import { bookSession } from "./calendar";
+import { bookSession, loadTrainerCalendar } from "./calendar";
 import { sendChatMessage } from "./messages";
 import { fetchClientTraining } from "./programs";
 import type { CleatClient } from "./supabase";
@@ -79,6 +79,65 @@ test("booking hides a raw database failure and keeps a known slot message", asyn
     );
   } finally {
     globalThis.fetch = original;
+  }
+});
+
+const RAW_ERRORS = [
+  "permission denied for table inbox_items",
+  "Could not find the function public.book_slot(p_slot) in the schema cache",
+  "column clients.foo does not exist",
+  "JSON object requested, multiple (or no) rows returned",
+  "AuthApiError: Invalid Refresh Token: Refresh Token Not Found",
+  "canceling statement due to statement timeout",
+  "insufficient_privilege",
+  "Load failed",
+  "TypeError: Failed to fetch",
+] as const;
+
+test("book session hides raw schema and auth failures", async () => {
+  const original = globalThis.fetch;
+  try {
+    for (const raw of RAW_ERRORS) {
+      globalThis.fetch = async () =>
+        new Response(JSON.stringify({ error: raw }), {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        });
+      await assert.rejects(
+        () => bookSession("http://desk.test", "token", "2026-10-10T15:00:00.000Z"),
+        (err: unknown) => {
+          assert.ok(err instanceof CleatRequestError);
+          assert.equal(err.message, copy.generic);
+          assert.equal(err.message.includes(raw), false);
+          return true;
+        },
+      );
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("trainer calendar hides raw schema and auth failures", async () => {
+  for (const raw of RAW_ERRORS) {
+    const query = Promise.resolve({ data: null, error: { message: raw } });
+    const builder = {
+      select: () => builder,
+      eq: () => builder,
+      order: () => query,
+      maybeSingle: () => query,
+      then: query.then.bind(query),
+    };
+    const client = { from: () => builder } as unknown as CleatClient;
+    await assert.rejects(
+      () => loadTrainerCalendar(client, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      (err: unknown) => {
+        assert.ok(err instanceof CleatRequestError);
+        assert.equal(err.message, copy.generic);
+        assert.equal(err.message.includes(raw), false);
+        return true;
+      },
+    );
   }
 });
 

@@ -11,6 +11,7 @@ import {
 } from "@cleat/domain";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { ConfidenceBar } from "../confidence";
@@ -32,6 +33,22 @@ export function AuditDesk() {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setEvents([]);
+          setRoster([]);
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     if (!client) return;
     let cancelled = false;
     void Promise.all([

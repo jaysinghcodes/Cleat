@@ -26,6 +26,7 @@ import {
 } from "react";
 import { Platform } from "react-native";
 import { completeAuthFromUrl, urlHasAuthParams } from "./auth-link";
+import { previewClientMembership, previewCoach, previewUser, readScreenPreview } from "./preview-mode";
 import { getMobileSupabase, mobileSupabaseConfig } from "./supabase";
 
 export type SessionUser = {
@@ -47,6 +48,18 @@ type SessionContextValue = {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
+function previewClient(): CleatClient {
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        if (prop === "then") return undefined;
+        throw new Error("Preview session cannot call the network.");
+      },
+    },
+  ) as CleatClient;
+}
+
 async function readPendingInvite() {
   try {
     const raw = await AsyncStorage.getItem(PENDING_INVITE_KEY);
@@ -59,7 +72,8 @@ async function readPendingInvite() {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const configured = mobileSupabaseConfig() !== null;
+  const [previewing, setPreviewing] = useState(false);
+  const configured = mobileSupabaseConfig() !== null || previewing;
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<SessionUser | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -112,6 +126,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     alive.current = true;
+    if (readScreenPreview()) {
+      setPreviewing(true);
+      setClient(previewClient());
+      setSession(previewUser);
+      setMembership(previewClientMembership);
+      setCoach(previewCoach);
+      setReady(true);
+      return () => {
+        alive.current = false;
+      };
+    }
     const supabase = getMobileSupabase();
     setClient(supabase);
     if (!supabase) {

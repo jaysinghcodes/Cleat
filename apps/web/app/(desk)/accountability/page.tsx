@@ -18,6 +18,7 @@ import {
 } from "@cleat/domain";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { useSession } from "../../session";
 import { ScreenState } from "../../screen-state";
 import { Banner } from "../../ui";
@@ -56,6 +57,23 @@ export default function AccountabilityPage() {
   }, [client, membership]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setLoadFailed(true);
+          setReady(true);
+        },
+        ready: () => {
+          setRows([]);
+          setLoadFailed(false);
+          setError(null);
+          setReady(true);
+        },
+      })
+    ) {
+      return;
+    }
     let alive = true;
     void load().catch((err: unknown) => {
       if (!alive) return;

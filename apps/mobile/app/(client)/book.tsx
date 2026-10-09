@@ -32,6 +32,7 @@ import { Platform, Pressable, ScrollView, Share, Text, View } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OfflineBanner, OfflineReason, ScreenState } from "../../components/states";
 import { Banner } from "../../components/ui";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../lib/preview-mode";
 import { useSession } from "../../lib/session";
 import { useTraining } from "../../lib/training";
 import { useTheme } from "../../theme";
@@ -65,6 +66,24 @@ export default function BookScreen() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") {
+        setStatus("loading");
+        return;
+      }
+      if (preview === "error") {
+        setError(PREVIEW_FAILURE);
+        setStatus("error");
+        return;
+      }
+      setBlocks([]);
+      setSessions([]);
+      setTaken([]);
+      setError(null);
+      setStatus("ready");
+      return;
+    }
     if (!client || !membership) return;
     const data = await loadClientCalendar(client, membership.orgId);
     setBlocks(data.blocks);
@@ -111,6 +130,9 @@ export default function BookScreen() {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
   const canCancel = upcoming ? clientCanCancel(upcoming.startsAt, cutoff) : false;
   const selected = daySlots.find((slot) => slot.startsAt === selectedSlot) ?? null;
+  const bookLabel = selected
+    ? `${upcoming ? "Book another at" : "Book"} ${formatInstant(selected.startsAt, timezone)}`
+    : "Book";
   const showIcs = Boolean(confirmation || upcoming);
 
   async function loadSubscribeLink(token: string) {
@@ -286,7 +308,9 @@ export default function BookScreen() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={online ? bookingCopy.cancelSession : screenCopy.offlineAction}
+                  accessibilityLabel={
+                    online ? bookingCopy.cancelSession : `${bookingCopy.cancelSession}. ${screenCopy.offlineAction}`
+                  }
                   disabled={pending || !online}
                   onPress={() => void onCancel()}
                   style={{ minHeight: 44, justifyContent: "center" }}
@@ -340,7 +364,7 @@ export default function BookScreen() {
                     setSelectedKey(key);
                     setSelectedSlot(null);
                   }}
-                  accessibilityLabel={formatCivil(day)}
+                  accessibilityLabel={`${formatCivil(day).slice(0, 1)}${day.day}, ${formatCivil(day)}`}
                   style={{
                     width: 44,
                     minHeight: 44,
@@ -427,7 +451,7 @@ export default function BookScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={online ? "Book" : screenCopy.offlineAction}
+          accessibilityLabel={online ? bookLabel : `${bookLabel}. ${screenCopy.offlineAction}`}
           testID="book-button"
           disabled={!selected || pending || !online}
           onPress={() => {
@@ -443,11 +467,7 @@ export default function BookScreen() {
             opacity: !selected || pending || !online ? 0.6 : 1,
           }}
         >
-          <Text style={{ color: tokens.onAccent, fontWeight: "700" }}>
-            {selected
-              ? `${upcoming ? "Book another at" : "Book"} ${formatInstant(selected.startsAt, timezone)}`
-              : "Book"}
-          </Text>
+          <Text style={{ color: tokens.onAccent, fontWeight: "700" }}>{bookLabel}</Text>
         </Pressable>
         {showIcs ? (
           <View testID="ics-actions" style={{ marginTop: 14, gap: 8 }}>

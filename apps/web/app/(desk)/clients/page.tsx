@@ -13,6 +13,7 @@ import {
 } from "@cleat/domain";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { useSession } from "../../session";
 import { clientInviteUrl } from "../../supabase";
 import { ScreenState } from "../../screen-state";
@@ -36,6 +37,22 @@ export default function ClientsPage() {
   }, [client]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setClients([]);
+          setInvites([]);
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     void load().catch((err: unknown) => {
       setError(userFacingError(err, screenCopy.loadFailed));
       setStatus("error");

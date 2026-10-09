@@ -29,6 +29,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OfflineBanner, OfflineReason, ScreenState } from "../../components/states";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../lib/preview-mode";
 import { useSession } from "../../lib/session";
 import { useTraining } from "../../lib/training";
 import { useTheme } from "../../theme";
@@ -88,6 +89,23 @@ export default function ChatScreen() {
   const coachName = coach?.displayName ?? "Your coach";
 
   const load = useCallback(async () => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") {
+        setLoading(true);
+        setError(null);
+        return;
+      }
+      if (preview === "error") {
+        setError(PREVIEW_FAILURE);
+        setLoading(false);
+        return;
+      }
+      setMessages([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!client || !session) return;
     setLoading(true);
     try {
@@ -311,7 +329,7 @@ export default function ChatScreen() {
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={online ? chatCopy.send : screenCopy.offlineAction}
+              accessibilityLabel={online ? chatCopy.send : `${chatCopy.send}. ${screenCopy.offlineAction}`}
               accessibilityState={{ disabled: sending || !online || draft.trim().length === 0 }}
               disabled={sending || !online || draft.trim().length === 0}
               onPress={() => void onSend()}

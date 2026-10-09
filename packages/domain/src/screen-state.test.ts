@@ -8,6 +8,7 @@ import {
   connectionMessage,
   offlineActionReason,
   screenCopy,
+  screenPreviewFromSearch,
   userFacingError,
 } from "./screen-state";
 
@@ -36,6 +37,39 @@ test("chat send, booking, and program load failures stay friendly", () => {
 test("a known product sentence is not replaced", () => {
   assert.equal(userFacingError(copy.emptyBody, copy.generic), copy.emptyBody);
   assert.equal(userFacingError(`prefix ${copy.emptyBody} suffix`, copy.generic), copy.emptyBody);
+});
+
+const RAW_ERRORS = [
+  "permission denied for table inbox_items",
+  "Could not find the function public.book_slot(p_slot) in the schema cache",
+  "column clients.foo does not exist",
+  "JSON object requested, multiple (or no) rows returned",
+  "AuthApiError: Invalid Refresh Token: Refresh Token Not Found",
+  "canceling statement due to statement timeout",
+  "insufficient_privilege",
+  "Load failed",
+  "TypeError: Failed to fetch",
+] as const;
+
+for (const raw of RAW_ERRORS) {
+  test(`userFacingError hides ${raw}`, () => {
+    assert.equal(userFacingError(raw, screenCopy.loadFailed), screenCopy.loadFailed);
+    assert.equal(userFacingError(new Error(raw), copy.generic), copy.generic);
+    assert.equal(userFacingError(raw, chatCopy.sendFailed), chatCopy.sendFailed);
+    assert.equal(userFacingError(raw, programCopy.couldNotLog), programCopy.couldNotLog);
+    assert.equal(userFacingError(raw, screenCopy.loadFailed).includes(raw), false);
+  });
+}
+
+test("screen preview is an allowlisted dev query", () => {
+  assert.equal(screenPreviewFromSearch(""), null);
+  assert.equal(screenPreviewFromSearch("?preview=1&state=error"), "error");
+  assert.equal(screenPreviewFromSearch("preview=1&state=offline"), "offline");
+  assert.equal(screenPreviewFromSearch("?preview=1&state=loading"), "loading");
+  assert.equal(screenPreviewFromSearch("?preview=1"), "empty");
+  assert.equal(screenPreviewFromSearch("?preview=1&state=nope"), "empty");
+  assert.equal(screenPreviewFromSearch("?state=error"), null);
+  assert.equal(screenPreviewFromSearch("?preview=1&state=error", "production"), null);
 });
 
 test("connection banner and offline actions", () => {

@@ -23,6 +23,7 @@ import {
   type PrimaryCalendar,
 } from "@cleat/domain";
 import { useEffect, useState, type FormEvent } from "react";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../preview-mode";
 import { useSession } from "../../session";
 import { ScreenState } from "../../screen-state";
 import { Banner, TextField } from "../../ui";
@@ -40,6 +41,7 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
   const [google, setGoogle] = useState({ configured: false, connected: false, email: null as string | null });
   const [googleNotice, setGoogleNotice] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [previewEmpty, setPreviewEmpty] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -50,6 +52,20 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
   }, []);
 
   useEffect(() => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") return;
+      if (preview === "error") {
+        setPreviewEmpty(false);
+        setError(PREVIEW_FAILURE);
+        setStatus("error");
+        return;
+      }
+      setError(null);
+      setPreviewEmpty(preview === "empty");
+      setStatus("ready");
+      return;
+    }
     if (!client || !session || !membership) return;
     let alive = true;
     void (async () => {
@@ -145,10 +161,10 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
           }}
         />
       ) : null}
-      {!membership && status !== "loading" ? (
+      {previewEmpty || (!membership && status !== "loading") ? (
         <ScreenState kind="empty" title={screenCopy.emptyOrgTitle} body={screenCopy.emptyOrgBody} />
       ) : null}
-      {status === "ready" ? (
+      {status === "ready" && !previewEmpty ? (
       <>
       <div className="card">
         {error ? <Banner tone="error">{error}</Banner> : null}

@@ -16,6 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import { AppState } from "react-native";
+import { PREVIEW_FAILURE, readScreenPreview } from "./preview-mode";
 import { useSession } from "./session";
 import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchNetwork } from "./log-queue";
 
@@ -131,6 +132,27 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   }, [client, session, refresh]);
 
   useEffect(() => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") {
+        setReady(false);
+        setError(null);
+        setOnline(true);
+        return;
+      }
+      if (preview === "error") {
+        setBase(null);
+        setError(PREVIEW_FAILURE);
+        setReady(true);
+        setOnline(true);
+        return;
+      }
+      setBase(null);
+      setError(null);
+      setReady(true);
+      setOnline(preview !== "offline");
+      return;
+    }
     if (!client || !session) return;
     let alive = true;
     void (async () => {

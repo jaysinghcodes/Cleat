@@ -1,4 +1,8 @@
-import { productError } from "./auth";
+import { aiCopy } from "./ai";
+import { copy, productError } from "./auth";
+import { bookingCopy } from "./calendar";
+import { inboxCopy } from "./inbox";
+import { chatCopy } from "./message";
 import { programCopy } from "./program";
 
 /** Plain copy for empty, loading, error, and offline treatments. */
@@ -38,34 +42,72 @@ export const screenCopy = {
   emptyAuditDetailBody: "That action is not in the log.",
 } as const;
 
-const TECHNICAL =
-  /stack|postgres|jwt|pgrst|syntax error|typeerror|referenceerror|fetch failed|failed to fetch|network request failed|network error|econn|sqlstate|relation |violates |password authentication|invalid input|unexpected token|duplicate key|\bat [\w$.]+\s*\(|\/[\w.-]+\.(?:ts|tsx|js)\b/i;
+/** Product sentences that are not already in knownProductErrors. */
+const MORE_PRODUCT_ERRORS = [
+  copy.enterEmail,
+  copy.enterCode,
+  copy.codeFailed,
+  copy.emailFailed,
+  copy.waitCode,
+  copy.noTrainerAccount,
+  copy.noClientAccount,
+  copy.generic,
+  copy.profileSaveFailed,
+  copy.inviteCreateFailed,
+  copy.deskForCoaches,
+  copy.appForClients,
+  copy.unconfigured,
+  bookingCopy.slotTaken,
+  bookingCopy.slotClosed,
+  bookingCopy.alreadyThen,
+  bookingCopy.alreadyCancelled,
+  bookingCopy.notYours,
+  bookingCopy.signInBook,
+  bookingCopy.clientsOnly,
+  bookingCopy.signInSync,
+  bookingCopy.linkInvalid,
+  bookingCopy.linkReplaced,
+  bookingCopy.connectGoogleFirst,
+  chatCopy.sendFailed,
+  chatCopy.loadFailed,
+  chatCopy.missingClient,
+  aiCopy.articleFailed,
+  aiCopy.settingsFailed,
+  aiCopy.loadFailed,
+  aiCopy.thresholdRange,
+  programCopy.couldNotAssign,
+  programCopy.couldNotLog,
+  programCopy.couldNotNudge,
+  screenCopy.couldNotLoad,
+  screenCopy.loadFailed,
+  inboxCopy.windowInvalid,
+  inboxCopy.emptyReply,
+  "Enter a cutoff between 0 and 168 hours.",
+  "End time must be after the start time.",
+  "Choose a date and a time range.",
+] as const;
+
+const CUTOFF = /You can cancel up to \d+ hours before the session\./;
 
 /** A product sentence buried in a technical message, or null when none matches. */
 export function knownProductMessage(message: string | undefined): string | null {
   if (!message) return null;
   const sentinel = "\u0000";
   const known = productError(message, sentinel);
-  return known === sentinel ? null : known;
-}
-
-function plainCopy(message: string): boolean {
-  const trimmed = message.trim();
-  if (!trimmed || trimmed.length > 180 || trimmed.includes("\n")) return false;
-  if (TECHNICAL.test(trimmed)) return false;
-  return true;
+  if (known !== sentinel) return known;
+  const extra = MORE_PRODUCT_ERRORS.find((item) => message.includes(item));
+  if (extra) return extra;
+  const cutoff = message.match(CUTOFF);
+  return cutoff?.[0] ?? null;
 }
 
 /**
- * Text safe to show on a screen. Known product sentences pass through.
- * Supabase, network, and stack text become the fallback.
+ * Text safe to show on a screen. Only known product sentences pass through.
+ * Everything else, including short database and network text, becomes the fallback.
  */
 export function userFacingError(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
-  const known = knownProductMessage(message);
-  if (known) return known;
-  if (plainCopy(message)) return message.trim();
-  return fallback;
+  return knownProductMessage(message) ?? fallback;
 }
 
 /** Queued logs keep the existing offline line. A disconnected phone still gets a banner. */
@@ -77,4 +119,25 @@ export function connectionMessage(online: boolean, pendingCount: number): string
 
 export function offlineActionReason(online: boolean): string | null {
   return online ? null : screenCopy.offlineAction;
+}
+
+export type ScreenPreview = "loading" | "empty" | "error" | "offline";
+
+const SCREEN_PREVIEWS: readonly ScreenPreview[] = ["loading", "empty", "error", "offline"];
+
+/**
+ * Dev-only screen fixture. Production builds ignore the query so a shared link cannot fake a session.
+ * `?preview=1&state=empty` renders that screen's own empty treatment.
+ */
+export function screenPreviewFromSearch(
+  search: string,
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+): ScreenPreview | null {
+  if (nodeEnv === "production") return null;
+  const query = search.startsWith("?") ? search.slice(1) : search;
+  const params = new URLSearchParams(query);
+  if (params.get("preview") !== "1") return null;
+  const state = params.get("state");
+  if (state && (SCREEN_PREVIEWS as readonly string[]).includes(state)) return state as ScreenPreview;
+  return "empty";
 }

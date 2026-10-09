@@ -21,6 +21,7 @@ import {
 } from "@cleat/domain";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { InboxScreen } from "./inbox-view";
@@ -54,6 +55,22 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
   }, [client, membership, defaultWindowHours]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setItems([]);
+          setNotices([]);
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     let alive = true;
     void load().catch((err: unknown) => {
       if (!alive) return;

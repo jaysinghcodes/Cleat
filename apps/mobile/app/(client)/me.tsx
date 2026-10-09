@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OfflineBanner, ScreenState } from "../../components/states";
 import { Banner, Button, Field } from "../../components/ui";
+import { PREVIEW_FAILURE, useScreenPreview } from "../../lib/preview-mode";
 import { useSession } from "../../lib/session";
 import { useTheme } from "../../theme";
 
@@ -24,6 +25,7 @@ export default function MeScreen() {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
+  const preview = useScreenPreview();
   const name = membership?.displayName ?? "You";
   const org = coach?.orgName ?? membership?.orgName ?? "";
   const coachName = coach?.displayName ?? "Your coach";
@@ -49,6 +51,28 @@ export default function MeScreen() {
     } finally {
       setPending(false);
     }
+  }
+
+  if (preview === "loading" || preview === "empty" || preview === "error") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: tokens.page }} edges={["top"]}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+          <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 24, fontWeight: "700", marginBottom: 4 }}>You</Text>
+          <Text style={{ color: tokens.textSecondary, fontSize: 13, marginBottom: 18 }}>
+            {name}
+            {org ? ` · ${org}` : ""}
+          </Text>
+          <OfflineBanner />
+          {preview === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingMe} /> : null}
+          {preview === "empty" ? (
+            <ScreenState kind="empty" title={screenCopy.emptyMeTitle} body={screenCopy.emptyMeBody} />
+          ) : null}
+          {preview === "error" ? (
+            <ScreenState kind="error" title={screenCopy.couldNotLoad} body={PREVIEW_FAILURE} onRetry={() => undefined} />
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
   return (

@@ -117,8 +117,10 @@ export {
   knownProductMessage,
   offlineActionReason,
   screenCopy,
+  screenPreviewFromSearch,
   userFacingError,
 } from "./screen-state";
+export type { ScreenPreview } from "./screen-state";
 
 export { deferredPushDelivery } from "./push";
 export type { NudgePush, PushDelivery } from "./push";

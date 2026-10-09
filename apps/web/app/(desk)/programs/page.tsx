@@ -15,6 +15,7 @@ import {
   type ProgramDraft,
 } from "@cleat/domain";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
@@ -107,6 +108,24 @@ export default function ProgramsPage() {
   }, [client]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setLoadFailed(true);
+          setReady(true);
+        },
+        ready: () => {
+          setClients([]);
+          setPrograms([]);
+          setLoadFailed(false);
+          setError(null);
+          setReady(true);
+        },
+      })
+    ) {
+      return;
+    }
     if (!client || !membership) return;
     let alive = true;
     void load()

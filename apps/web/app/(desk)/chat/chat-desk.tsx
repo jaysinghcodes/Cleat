@@ -35,6 +35,7 @@ import type { ClientRosterItem } from "@cleat/domain";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useOnline } from "../../online";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
@@ -91,6 +92,24 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
   const rosterKey = roster.map((person) => person.userId).join(",");
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setRosterFailed(true);
+          setRosterReady(true);
+        },
+        ready: () => {
+          setRoster([]);
+          setPreviews([]);
+          setError(null);
+          setRosterFailed(false);
+          setRosterReady(true);
+        },
+      })
+    ) {
+      return;
+    }
     if (!client) return;
     let cancelled = false;
     void Promise.all([listClients(client), listThreadPreviews(client)])
