@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test:rls": "bash scripts/cross-tenant-rls.sh",
-    "seed": "tsx src/seed.ts"
+    "seed": "sh scripts/require-docker.sh && tsx src/seed.ts"
   },
   "dependencies": {
     "@cleat/ai": "workspace:*",

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -203,7 +204,17 @@ async function assertBoard(client: pg.PoolClient): Promise<void> {
   }
 }
 
+function requireDocker(): void {
+  const script = join(dirname(fileURLToPath(import.meta.url)), "../scripts/require-docker.sh");
+  try {
+    execFileSync("sh", [script], { stdio: "inherit" });
+  } catch {
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  requireDocker();
   const sqlPath = join(dirname(fileURLToPath(import.meta.url)), "../supabase/seed.sql");
   const sql = readFileSync(sqlPath, "utf8");
   const pool = new pg.Pool({ connectionString: databaseUrl() });
