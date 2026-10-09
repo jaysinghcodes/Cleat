@@ -149,8 +149,52 @@ export {
 } from "./audit";
 export type { AuditEvent, AuditTimelineItem } from "./audit";
 
-export { inboxItemSchema, parseTrainerNotices, trainerNoticeSchema } from "./inbox";
-export type { InboxItem, TrainerNotice } from "./inbox";
+export {
+  DEFAULT_UNANSWERED_HOURS,
+  INBOX_PRIORITIES,
+  INBOX_REASONS,
+  MAX_UNANSWERED_HOURS,
+  MIN_UNANSWERED_HOURS,
+  buildInboxQueue,
+  filterInbox,
+  inboxAge,
+  inboxCopy,
+  inboxHref,
+  inboxItemSchema,
+  inboxReason,
+  inboxReasonCounts,
+  inboxReasonLabel,
+  isPastUnansweredWindow,
+  missedCandidates,
+  missedInboxId,
+  parseDraftSources,
+  parseInboxAudits,
+  parseInboxDrafts,
+  parseStoredInboxItems,
+  parseThreadHeads,
+  parseTrainerNotices,
+  parseUnansweredHours,
+  selectInboxItem,
+  sortInboxItems,
+  templateLabel,
+  trainerNoticeSchema,
+  unansweredHoursOrDefault,
+  unansweredInboxId,
+  whyEscalated,
+} from "./inbox";
+export type {
+  InboxAuditSlice,
+  InboxDraftSlice,
+  InboxDraftView,
+  InboxItem,
+  InboxPriority,
+  InboxQueueItem,
+  InboxReason,
+  InboxSource,
+  StoredInboxItem,
+  ThreadHead,
+  TrainerNotice,
+} from "./inbox";
 
 export {
   DEFAULT_AI_SETTINGS,

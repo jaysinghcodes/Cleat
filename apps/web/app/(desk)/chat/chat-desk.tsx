@@ -16,6 +16,7 @@ import {
   auditTimeline,
   chatCopy,
   clientAiPresentation,
+  inboxHref,
   decisionLabel,
   initials,
   isUuid,
@@ -292,7 +293,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
               <div className="name">{chatCopy.draftHeld}</div>
               <p className="meta">{chatCopy.draftHeldBody}</p>
               <div className="meta" style={{ marginTop: 8 }}>
-                <Link href="/inbox">{chatCopy.openInbox}</Link>
+                <Link href={inboxHref({ clientId })}>{chatCopy.openInbox}</Link>
               </div>
             </div>
           ) : null}
@@ -396,7 +397,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
                   <Link href={`/audit/${latestAudit.id}`}>{aiCopy.auditTitle}</Link>
                 </div>
                 <div className="meta">
-                  <Link href="/inbox">{chatCopy.openInbox}</Link>
+                  <Link href={inboxHref({ clientId })}>{chatCopy.openInbox}</Link>
                 </div>
                 {latestAudit.chunks.length > 0 ? (
                   <div>

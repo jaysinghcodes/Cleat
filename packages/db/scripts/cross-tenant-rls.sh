@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Applies migrations in order and proves a trainer cannot read another org
-# and a client cannot read another client's rows, including chat and bookings.
+# Applies migrations in order (0001_init.sql, 0002_tenancy.sql, 0003_programs.sql,
+# 0004_chat.sql, 0005_booking.sql, 0006_rag_audit.sql, 0007_inbox.sql) and proves
+# a trainer cannot read another org and a client cannot read another client's rows,
+# including chat, bookings, and inbox items.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

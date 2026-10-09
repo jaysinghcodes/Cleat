@@ -1,75 +1,220 @@
 "use client";
 
-import { CleatRequestError, listTrainerNotices, markNoticeRead } from "@cleat/api";
-import { aiCopy, type TrainerNotice } from "@cleat/domain";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import {
+  CleatRequestError,
+  actOnHeldDraft,
+  deliverChatMessage,
+  loadTrainerInbox,
+  markNoticeRead,
+  resolveInboxItem,
+  sendNudge,
+} from "@cleat/api";
+import {
+  aiCopy,
+  inboxCopy,
+  nudgeBody,
+  selectInboxItem,
+  type InboxQueueItem,
+  type InboxReason,
+  type TrainerNotice,
+} from "@cleat/domain";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "../../session";
-import { Banner } from "../../ui";
+import { InboxScreen } from "./inbox-view";
 
 export function InboxDesk() {
-  const { client } = useSession();
+  const params = useSearchParams();
+  const { client, membership } = useSession();
+  const [items, setItems] = useState<InboxQueueItem[]>([]);
   const [notices, setNotices] = useState<TrainerNotice[]>([]);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxReason | "all">("all");
+  const [now, setNow] = useState(() => new Date().toISOString());
   const [error, setError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [draftText, setDraftText] = useState("");
+  const [replyText, setReplyText] = useState("");
+
+  const load = useCallback(async () => {
+    if (!client || !membership) return;
+    const snapshot = await loadTrainerInbox(client, { orgId: membership.orgId, timeZone: membership.timezone });
+    setItems(snapshot.items);
+    setNotices(snapshot.notices);
+    setNow(new Date().toISOString());
+  }, [client, membership]);
 
   useEffect(() => {
-    if (!client) return;
-    let cancelled = false;
-    void listTrainerNotices(client)
-      .then((rows) => {
-        if (!cancelled) setNotices(rows);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
-
-  async function onOpen(notice: TrainerNotice) {
-    if (!client || notice.readAt) return;
-    try {
-      await markNoticeRead(client, notice.id);
-      setNotices((current) =>
-        current.map((item) => (item.id === notice.id ? { ...item, readAt: new Date().toISOString() } : item)),
-      );
-    } catch (err: unknown) {
+    let alive = true;
+    void load().catch((err: unknown) => {
+      if (!alive) return;
       setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [load]);
+
+  const linked = selectInboxItem(items, {
+    item: params.get("item"),
+    client: params.get("client"),
+    focus: params.get("focus"),
+  });
+  const selected = (picked ? items.find((item) => item.id === picked) : null) ?? linked;
+
+  useEffect(() => {
+    setDraftText(selected?.draft?.text ?? "");
+    setReplyText("");
+  }, [selected?.id, selected?.draft?.text]);
+
+  useEffect(() => {
+    if (!client || !selected) return;
+    const unread = notices.filter((notice) => notice.inboxItemId === selected.id && !notice.readAt);
+    if (unread.length === 0) return;
+    for (const notice of unread) {
+      void markNoticeRead(client, notice.id)
+        .then(() => {
+          setNotices((current) =>
+            current.map((item) => (item.id === notice.id ? { ...item, readAt: new Date().toISOString() } : item)),
+          );
+        })
+        .catch(() => undefined);
+    }
+  }, [client, selected, notices]);
+
+  async function refreshAfter(message: string) {
+    setBanner(message);
+    setError(null);
+    await load();
+  }
+
+  async function onSendEdited() {
+    if (!client || !selected?.draft) return;
+    setPending(true);
+    try {
+      await actOnHeldDraft(client, window.location.origin, {
+        draftId: selected.draft.id,
+        action: "send_edited",
+        editedText: draftText,
+      });
+      setPicked(null);
+      await refreshAfter(inboxCopy.draftSent);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onSendAsIs() {
+    if (!client || !selected?.draft) return;
+    setPending(true);
+    try {
+      await actOnHeldDraft(client, window.location.origin, {
+        draftId: selected.draft.id,
+        action: "send_as_is",
+      });
+      setPicked(null);
+      await refreshAfter(inboxCopy.draftSent);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onDismissDraft() {
+    if (!client || !selected?.draft) return;
+    setPending(true);
+    try {
+      await actOnHeldDraft(client, window.location.origin, {
+        draftId: selected.draft.id,
+        action: "dismiss",
+      });
+      setPicked(null);
+      await refreshAfter(inboxCopy.dismissed);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onReply() {
+    if (!client || !selected) return;
+    const body = replyText.trim();
+    if (!body) {
+      setError(inboxCopy.emptyReply);
+      return;
+    }
+    setPending(true);
+    try {
+      if (selected.derived) {
+        await deliverChatMessage(client, { body, clientId: selected.clientId });
+      } else {
+        await resolveInboxItem(client, { itemId: selected.id, action: "reply", body });
+      }
+      setPicked(null);
+      await refreshAfter(inboxCopy.replySent);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onDismiss() {
+    if (!client || !selected || selected.derived) return;
+    setPending(true);
+    try {
+      await resolveInboxItem(client, { itemId: selected.id, action: "dismiss" });
+      setPicked(null);
+      await refreshAfter(inboxCopy.dismissed);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onNudge(item: InboxQueueItem) {
+    if (!client || !membership) return;
+    const kind = item.nudgeKind === "soft" ? "soft" : "nudge";
+    setPending(true);
+    setPicked(item.id);
+    try {
+      await sendNudge(client, item.clientId, kind, nudgeBody(kind, membership.displayName));
+      await refreshAfter(`${inboxCopy.nudgeSent}`);
+    } catch (err) {
+      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+    } finally {
+      setPending(false);
     }
   }
 
   return (
-    <div>
-      <div className="page-head">
-        <div>
-          <h1>{aiCopy.inboxTitle}</h1>
-          <p>{aiCopy.inboxLede}</p>
-        </div>
-      </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
-      <div className="card" style={{ padding: 0 }}>
-        {notices.length === 0 ? (
-          <div className="list-row">
-            <div className="meta">{aiCopy.noNotices}</div>
-          </div>
-        ) : (
-          notices.map((notice) => (
-            <Link
-              key={notice.id}
-              href={`/chat/${notice.clientId}`}
-              className={notice.emergency ? "list-row article-row rail-urgent" : "list-row article-row"}
-              onClick={() => void onOpen(notice)}
-            >
-              <div className="spacer">
-                <div className="name">{notice.title}</div>
-                <div className="meta">{notice.body}</div>
-              </div>
-              <span className="meta">{aiCopy.openChat}</span>
-            </Link>
-          ))
-        )}
-      </div>
-    </div>
+    <InboxScreen
+      items={items}
+      notices={notices}
+      selectedId={selected?.id ?? null}
+      filter={filter}
+      now={now}
+      pending={pending}
+      error={error}
+      banner={banner}
+      draftText={draftText}
+      replyText={replyText}
+      onFilter={setFilter}
+      onSelect={setPicked}
+      onDraftText={setDraftText}
+      onReplyText={setReplyText}
+      onSendEdited={() => void onSendEdited()}
+      onSendAsIs={() => void onSendAsIs()}
+      onDismissDraft={() => void onDismissDraft()}
+      onReply={() => void onReply()}
+      onDismiss={() => void onDismiss()}
+      onNudge={(item) => void onNudge(item)}
+    />
   );
 }

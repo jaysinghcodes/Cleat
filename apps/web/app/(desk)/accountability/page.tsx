@@ -5,6 +5,8 @@ import {
   copy,
   deferredPushDelivery,
   firstName,
+  inboxCopy,
+  inboxHref,
   initials,
   nudgeBody,
   programCopy,
@@ -178,7 +180,7 @@ export default function AccountabilityPage() {
                   <div>{row.adherence}</div>
                   <div className="meta">{row.lastLogged}</div>
                 </div>
-                <div className="board-action">
+                <div className="board-action inbox-board-action">
                   {row.action === "message" ? (
                     <Link className="btn btn-ghost btn-sm" href="/chat">
                       Message
@@ -194,6 +196,16 @@ export default function AccountabilityPage() {
                       {pendingId === row.userId ? "Sending" : actionLabel(row.action)}
                     </button>
                   )}
+                  <Link
+                    className="meta"
+                    data-testid={`open-inbox-${row.userId}`}
+                    href={inboxHref({
+                      clientId: row.userId,
+                      focus: row.needsNudge ? "missed" : undefined,
+                    })}
+                  >
+                    {inboxCopy.openInbox}
+                  </Link>
                 </div>
               </div>
             ))}

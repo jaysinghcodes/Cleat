@@ -301,7 +301,7 @@ test("every AI plan writes one audit row with the required fields", async () => 
   assert.equal(plan.audit.messageId, MESSAGE_ID);
 });
 
-test("draft actions update the audit and only sends post to chat", () => {
+test("draft actions write the audit and only sends post a coach chat message", () => {
   const edited = applyTrainerDraftAction({
     action: "send_edited",
     draftText: "Rest two days.",
@@ -319,15 +319,19 @@ test("draft actions update the audit and only sends post to chat", () => {
   assert.equal(asIs.ok, true);
   if (!asIs.ok) return;
   assert.equal(asIs.trainerEdit, false);
+  assert.equal(asIs.trainerAction, "send_as_is");
   assert.equal(asIs.finalText, "Rest two days.");
-  assert.equal(asIs.chatKind, "ai");
+  assert.equal(asIs.chatBody, "Rest two days.");
+  assert.equal(asIs.chatKind, "human");
   assert.equal(asIs.status, "sent");
 
   const dismissed = applyTrainerDraftAction({ action: "dismiss", draftText: "Rest two days." });
   assert.equal(dismissed.ok, true);
   if (!dismissed.ok) return;
   assert.equal(dismissed.chatBody, null);
+  assert.equal(dismissed.chatKind, null);
   assert.equal(dismissed.finalText, null);
+  assert.equal(dismissed.trainerAction, "dismiss");
   assert.equal(dismissed.status, "dismissed");
   assert.equal(dismissed.trainerEdit, false);
 });

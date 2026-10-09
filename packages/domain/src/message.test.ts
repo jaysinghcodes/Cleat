@@ -48,6 +48,9 @@ test("client AI presentation shows sources and never a confidence number", () =>
   assert.equal(refusal?.label, "AI");
   assert.equal(refusal?.sources, null);
   assert.equal(refusal?.footer, null);
+  const approved = sample("33333333-3333-4333-8333-333333333333", "Rest two days.", "2026-10-08T12:00:02.000Z");
+  approved.sources = [{ title: "Rest days", articleId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }];
+  assert.equal(clientAiPresentation(approved, "Alex Rivera"), null);
   assert.equal(clientAiPresentation(sample("22222222-2222-4222-8222-222222222222", "Hi", "2026-10-08T12:00:01.000Z"), "Alex"), null);
   assert.equal(coachJumpIn(""), "Your coach can still jump in anytime");
   assert.doesNotMatch(chatCopy.aiAutoSent, DASH);

@@ -42,7 +42,7 @@ export function applyTrainerDraftAction(input: {
       trainerAction: "send_as_is",
       finalText: body,
       chatBody: body,
-      chatKind: "ai",
+      chatKind: "human",
       status: "sent",
     };
   }

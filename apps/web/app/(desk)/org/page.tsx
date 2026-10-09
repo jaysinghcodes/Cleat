@@ -7,13 +7,17 @@ import {
   googleStatus,
   loadTrainerCalendar,
   saveOrgCalendarSettings,
+  saveUnansweredHours,
   startGoogleConnect,
   updateProfile,
 } from "@cleat/api";
 import {
   bookingCopy,
   copy,
+  inboxCopy,
+  parseUnansweredHours,
   profileUpdateSchema,
+  unansweredHoursOrDefault,
   validationMessage,
   type PrimaryCalendar,
 } from "@cleat/domain";
@@ -29,6 +33,7 @@ export default function OrgPage() {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
   const [cutoff, setCutoff] = useState("12");
+  const [windowHours, setWindowHours] = useState("4");
   const [primary, setPrimary] = useState<PrimaryCalendar>("ics");
   const [google, setGoogle] = useState({ configured: false, connected: false, email: null as string | null });
   const [googleNotice, setGoogleNotice] = useState<string | null>(null);
@@ -49,6 +54,11 @@ export default function OrgPage() {
         if (!alive) return;
         setCutoff(String(calendar.settings.cancelCutoffHours));
         setPrimary(calendar.settings.primaryCalendar);
+        const org = await client.from("orgs").select("unanswered_hours").eq("id", membership.orgId).maybeSingle();
+        if (!org.error && org.data) {
+          const row = org.data as { unanswered_hours?: unknown };
+          setWindowHours(String(unansweredHoursOrDefault(row.unanswered_hours)));
+        }
       } catch (err) {
         if (alive) setError(err instanceof CleatRequestError ? err.message : copy.generic);
       }
@@ -74,6 +84,12 @@ export default function OrgPage() {
       setError(validationMessage(parsed.error));
       return;
     }
+    const unanswered = parseUnansweredHours(windowHours);
+    if (unanswered === null) {
+      setSaved(false);
+      setError(inboxCopy.windowInvalid);
+      return;
+    }
     setPending(true);
     setError(null);
     setSaved(false);
@@ -89,6 +105,7 @@ export default function OrgPage() {
         cancelCutoffHours: hours,
         primaryCalendar: google.connected ? primary : "ics",
       });
+      await saveUnansweredHours(client, membership?.orgId ?? "", unanswered);
       await refresh();
       setSaved(true);
     } catch (err) {
@@ -153,6 +170,14 @@ export default function OrgPage() {
             value={cutoff}
             onChange={(event) => setCutoff(event.target.value)}
           />
+          <TextField
+            id="unanswered-hours"
+            label={inboxCopy.windowLabel}
+            inputMode="numeric"
+            value={windowHours}
+            onChange={(event) => setWindowHours(event.target.value)}
+          />
+          <p className="meta" style={{ marginTop: -6 }}>{inboxCopy.windowHint}</p>
           {googleNotice ? (
             <Banner tone={googleNotice.startsWith("Google Calendar connected") || googleNotice.startsWith("ICS") ? "ok" : "error"}>
               {googleNotice}

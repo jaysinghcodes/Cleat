@@ -69,7 +69,7 @@ A client cannot read another client's profile. Helper functions are `security de
 | `is_trainer_of`, `is_member_of`, `can_read_profile` | `authenticated` | Policy helpers |
 | `assign_program(payload)` | `authenticated` | Trainer replaces the client's active program |
 | `apply_client_log(payload)` | `authenticated` | Client saves sets or skips a day. The same `clientKey` applies once |
-| `send_nudge(target_client, nudge_kind, body)` | `authenticated` | Trainer writes a nudge. `push_status` stays `deferred` |
+| `send_nudge(target_client, nudge_kind, body)` | `authenticated` | Trainer writes a nudge and posts the same body in chat as a coach message. `push_status` stays `deferred` |
 | `dismiss_nudge(nudge_id)` | `authenticated` | Client hides their own nudge banner |
 | `can_read_thread(thread_id)` | `authenticated` | True for the trainer of that thread's org, or the client who owns it |
 | `ensure_thread(target_client)` | `authenticated` | Opens the one thread for a roster client. A client can only open their own |
@@ -85,6 +85,9 @@ A client cannot read another client's profile. Helper functions are `security de
 | `match_chunks(query_embedding, target_org, target_client, match_count)` | `authenticated` | Cosine search inside one org. Returns org knowledge chunks and that client's program chunks. Security invoker, so RLS still applies |
 | `create_ai_settings_for_org()` | not granted | Trigger on `orgs` insert. New orgs start with auto send off and threshold 0.85 |
 | `enable_demo_auto_send()` | not granted to `authenticated` | Turns auto send on only for the reserved demo org `d1000000-0000-4000-8000-000000000001` |
+| `thread_heads()` | `authenticated` | Latest message per visible thread. Security invoker, so RLS still applies |
+| `resolve_inbox_item(item_id, action, reply_body)` | `authenticated` | Trainer replies to or dismisses an open P0, P2, or P3 item in their org. A reply is a coach chat message. Dismiss writes `trainer_action` on the audit row when there is one |
+| `seed_inbox_tier(target_org, target_client, tier)` | not granted to `authenticated` | Ticket 7 inserts one open inbox item. Tiers are `p0`, `p0_injury`, `p0_emergency`, `p0_self_harm`, `p1`, `p2`, and `p3` |
 
 User facing exceptions from these functions:
 
@@ -115,4 +118,4 @@ User facing exceptions from these functions:
 
 ## Proof
 
-`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, `0006_rag_audit.sql`), then `tests/cross_tenant_rls.sql`, `tests/booking_rls.sql`, `tests/chat_rls.sql`, and `tests/rag_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. That migration does not send push notifications. Booking rows stay inside the org. `0006_rag_audit.sql` proves a trainer cannot read another org's articles, chunks, audits, drafts, or notices, and a client cannot read another client's program chunks or any audit row. `match_chunks` stays inside the caller's org and client.
+`scripts/cross-tenant-rls.sh` applies every file in `migrations/` in order (`0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, `0006_rag_audit.sql`, `0007_inbox.sql`), then `tests/cross_tenant_rls.sql`, `tests/booking_rls.sql`, `tests/chat_rls.sql`, and `tests/rag_rls.sql`. On a machine without Docker it uses plain Postgres and `tests/plain_postgres_auth_stub.sql` so `auth.uid()` still drives the policies. Chat reads are limited to the caller's thread. `messages` is added to the `supabase_realtime` publication when that publication exists. Push token rows are readable only by the user who owns the device. That migration does not send push notifications. Booking rows stay inside the org. `0006_rag_audit.sql` proves a trainer cannot read another org's articles, chunks, audits, drafts, or notices, and a client cannot read another client's program chunks or any audit row. `match_chunks` stays inside the caller's org and client. `0007_inbox.sql` stores the org unanswered window (default 4 hours) and extends inbox items through P3. A trainer of org A cannot read org B inbox items.

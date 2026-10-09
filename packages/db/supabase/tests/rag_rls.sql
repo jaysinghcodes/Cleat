@@ -159,6 +159,22 @@ insert into public.held_drafts (
   'held'
 );
 
+insert into public.inbox_items (
+  id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, status
+) values (
+  'b2000000-0000-4000-8000-000000000001',
+  'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+  '44444444-4444-4444-4444-444444444444',
+  null,
+  'bbbb2222-2222-2222-2222-222222222222',
+  'p2',
+  false,
+  array['unanswered'],
+  'Unanswered',
+  'Org B secret',
+  'open'
+);
+
 insert into public.trainer_notices (id, org_id, client_id, inbox_item_id, title, body, emergency) values (
   'a3000000-0000-4000-8000-000000000001',
   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -239,6 +255,26 @@ select public._rls_expect(
   (select count(*) = 1 and bool_and(emergency) from public.inbox_items)
 );
 select public._rls_expect(
+  'trainer A never sees org B inbox items',
+  (select count(*) = 0 from public.inbox_items where org_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+);
+select public._rls_expect(
+  'the unanswered window defaults to 4 hours',
+  (select unanswered_hours = 4 from public.orgs where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+);
+update public.orgs
+set unanswered_hours = 2
+where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+select public._rls_expect(
+  'trainer A can change the unanswered window',
+  (select unanswered_hours = 2 from public.orgs where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+);
+select public._rls_expect_error(
+  'trainer A cannot set the unanswered window to 0',
+  $$update public.orgs set unanswered_hours = 0 where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$,
+  'check'
+);
+select public._rls_expect(
   'trainer A sees the held draft',
   (select count(*) = 1 from public.held_drafts)
 );
@@ -302,6 +338,19 @@ select public._rls_expect(
 select public._rls_expect(
   'trainer B cannot read org A notices',
   (select count(*) = 0 from public.trainer_notices where org_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+);
+select public._rls_expect(
+  'trainer B cannot read org A inbox items',
+  (select count(*) = 0 from public.inbox_items where org_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+);
+select public._rls_expect(
+  'trainer B sees only the org B inbox item',
+  (
+    select count(*) = 1
+      and bool_and(priority = 'p2')
+      and bool_and(id = 'b2000000-0000-4000-8000-000000000001')
+    from public.inbox_items
+  )
 );
 rollback;
 
@@ -426,6 +475,67 @@ select public._rls_expect(
     from created_org c
     join public.ai_settings s on s.org_id = c.id
   )
+);
+rollback;
+
+begin;
+select public.seed_inbox_tier(
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '22222222-2222-2222-2222-222222222222',
+  'p0_emergency'
+);
+select public.seed_inbox_tier(
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '22222222-2222-2222-2222-222222222222',
+  'p0_injury'
+);
+select public.seed_inbox_tier(
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '22222222-2222-2222-2222-222222222222',
+  'p1'
+);
+select public.seed_inbox_tier(
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '22222222-2222-2222-2222-222222222222',
+  'p2'
+);
+select public.seed_inbox_tier(
+  'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+  '22222222-2222-2222-2222-222222222222',
+  'p3'
+);
+select public._rls_expect(
+  'seed hooks create one open item of each tier',
+  (
+    select count(*) filter (where priority = 'p0' and emergency and id <> 'a2000000-0000-4000-8000-000000000001') = 1
+      and count(*) filter (where priority = 'p0' and not emergency) = 1
+      and count(*) filter (where priority = 'p1') = 1
+      and count(*) filter (where priority = 'p2') = 1
+      and count(*) filter (where priority = 'p3') = 1
+    from public.inbox_items
+    where org_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+      and status = 'open'
+  )
+);
+select public._rls_expect(
+  'a seeded hard refusal has no held draft',
+  (
+    select count(*) = 0
+    from public.held_drafts d
+    join public.inbox_items i on i.id = d.inbox_item_id
+    where i.priority = 'p0'
+      and i.id <> 'a2000000-0000-4000-8000-000000000001'
+  )
+);
+rollback;
+
+begin;
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+set local role authenticated;
+select public._rls_expect_error(
+  'a trainer cannot call the inbox seed hook',
+  $$select public.seed_inbox_tier('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'p3')$$,
+  'permission denied'
 );
 rollback;
 

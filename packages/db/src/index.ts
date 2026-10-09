@@ -6,6 +6,7 @@ export const MIGRATIONS = [
   "supabase/migrations/0004_chat.sql",
   "supabase/migrations/0005_booking.sql",
   "supabase/migrations/0006_rag_audit.sql",
+  "supabase/migrations/0007_inbox.sql",
 ] as const;
 
 /** Ticket 7 inserts the demo org with this id. enable_demo_auto_send() turns auto send on for it only. */
