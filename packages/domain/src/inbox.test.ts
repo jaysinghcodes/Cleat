@@ -244,13 +244,29 @@ test("reason chip counts match the open items and a filter keeps that reason", (
   assert.equal(selected?.clientName, "Jordan Kim");
 });
 
-test("a trainer reply covers an unanswered message and a sent item leaves the queue", () => {
+test("a sent inbox row does not stop the unanswered clock until a coach reply reaches the client", () => {
   const messageId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-  const covered = buildInboxQueue({
+  const trainer = "11111111-1111-4111-8111-111111111111";
+  const now = "2026-10-09T12:00:00.000Z";
+  const head = {
+    threadId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    clientId: SAM,
+    messageId,
+    senderId: SAM,
+    body: "Hello",
+    createdAt: "2026-10-09T06:00:00.000Z",
+  };
+  const base = {
     orgId: ORG,
-    now: "2026-10-09T12:00:00.000Z",
+    now,
     windowHours: 4,
     names: names(),
+    drafts: [],
+    audits: [],
+    missed: [],
+  };
+  const sentOnly = buildInboxQueue({
+    ...base,
     stored: [
       stored({
         id: "10000000-0000-4000-8000-000000000021",
@@ -261,21 +277,33 @@ test("a trainer reply covers an unanswered message and a sent item leaves the qu
         reasonCodes: ["unanswered"],
       }),
     ],
-    drafts: [],
-    audits: [],
+    heads: [head],
+  });
+  assert.equal(sentOnly.some((item) => item.reason === "unanswered" && item.messageId === messageId), true);
+
+  const reached = buildInboxQueue({
+    ...base,
+    stored: [
+      stored({
+        id: "10000000-0000-4000-8000-000000000021",
+        priority: "p2",
+        status: "sent",
+        messageId,
+        createdAt: "2026-10-09T06:00:00.000Z",
+        reasonCodes: ["unanswered"],
+      }),
+    ],
     heads: [
       {
-        threadId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        clientId: SAM,
-        messageId,
-        senderId: SAM,
-        body: "Hello",
-        createdAt: "2026-10-09T06:00:00.000Z",
+        ...head,
+        messageId: "cccccccc-cccc-4ccc-8ccc-cccccccccc99",
+        senderId: trainer,
+        body: "I saw this.",
+        createdAt: "2026-10-09T07:00:00.000Z",
       },
     ],
-    missed: [],
   });
-  assert.equal(covered.length, 0);
+  assert.equal(reached.some((item) => item.reason === "unanswered"), false);
 });
 
 test("a dismissed or pending held draft does not stop the unanswered clock", () => {

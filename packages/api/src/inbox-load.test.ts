@@ -123,14 +123,12 @@ test("an open emergency stays visible after more than 300 resolved items", async
   assert.equal(openQuery.limit, null);
   assert.equal(inbox.items.some((item) => item.id === EMERGENCY && item.priority === "p0" && item.emergency), true);
   assert.equal(inbox.items.some((item) => item.preview === "old note"), false);
-  const covered = queries.find(
-    (query) =>
-      query.table === "inbox_items" &&
-      query.filters.some((filter) => filter.op === "eq" && filter.column === "status" && filter.value === "sent"),
-  );
-  assert.ok(covered);
   assert.equal(
-    covered.filters.some((filter) => filter.op === "neq" && filter.column === "status"),
+    queries.some(
+      (query) =>
+        query.table === "inbox_items" &&
+        query.filters.some((filter) => filter.op === "eq" && filter.column === "status" && filter.value === "sent"),
+    ),
     false,
   );
 });

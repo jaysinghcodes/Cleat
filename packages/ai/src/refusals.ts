@@ -124,10 +124,11 @@ const TRAINING_CONTEXT =
 
 /**
  * Intent to cause the harm. "going to the gym" is not intent.
- * "going to hurt" and "on purpose" are.
+ * "going to hurt", "on purpose", "end it", and "kill myself" are.
+ * Intent wins even when the message also names a training context.
  */
 const HARM_INTENT =
-  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
+  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\b(?:kill(?:ing)? myself|end it)\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
 
 const NEGATED_HARM_INTENT =
   /\b(?:do not|don't|dont|never|not) want(?:ed|ing)? to (?:hurt|injur\w*)|\b(?:not|never) going to (?:hurt|injur\w*)|\bnot on purpose\b|\bnot deliberately\b/g;

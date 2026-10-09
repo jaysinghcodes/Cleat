@@ -427,18 +427,6 @@ function parseSources(data: unknown): InboxSource[] {
   });
 }
 
-/**
- * A reply that reached the client stops the P2 clock.
- * A dismissed item does not. An open item with a still pending held draft does not.
- * coveredMessageIds are sent replies whose rows are not in stored.
- */
-function replyStopsUnansweredClock(item: StoredInboxItem, pendingDraftItems: Set<string>): boolean {
-  if (!item.messageId) return false;
-  if (item.status === "dismissed") return false;
-  if (item.status === "open" && pendingDraftItems.has(item.id)) return false;
-  return true;
-}
-
 export function buildInboxQueue(input: {
   orgId: string;
   now: string;
@@ -449,19 +437,16 @@ export function buildInboxQueue(input: {
   audits: InboxAuditSlice[];
   heads: ThreadHead[];
   missed: { clientId: string; displayName: string; summary: string; occurredAt: string; nudgeKind: "soft" | "nudge" }[];
-  coveredMessageIds?: string[];
 }): InboxQueueItem[] {
   const hours = unansweredHoursOrDefault(input.windowHours);
   const audits = new Map(input.audits.map((audit) => [audit.id, audit]));
   const heldDrafts = input.drafts.filter((draft) => draft.status === "held");
   const drafts = new Map(heldDrafts.map((draft) => [draft.inboxItemId, draft]));
-  const pendingDraftItems = new Set(heldDrafts.map((draft) => draft.inboxItemId));
-  const coveredMessages = new Set(input.coveredMessageIds ?? []);
-  for (const item of input.stored) {
-    if (replyStopsUnansweredClock(item, pendingDraftItems) && item.messageId) {
-      coveredMessages.add(item.messageId);
-    }
-  }
+  const openUnansweredMessages = new Set(
+    input.stored
+      .filter((item) => item.status === "open" && item.priority === "p2" && item.messageId)
+      .map((item) => item.messageId as string),
+  );
   const openP3 = new Set(
     input.stored.filter((item) => item.status === "open" && item.priority === "p3").map((item) => item.clientId),
   );
@@ -500,8 +485,9 @@ export function buildInboxQueue(input: {
     });
 
   for (const head of input.heads) {
+    // The clock stops only when a later coach reply is the message the client has.
     if (head.senderId !== head.clientId) continue;
-    if (coveredMessages.has(head.messageId)) continue;
+    if (openUnansweredMessages.has(head.messageId)) continue;
     if (!isPastUnansweredWindow(head.createdAt, input.now, hours)) continue;
     queue.push({
       id: unansweredInboxId(head.messageId),

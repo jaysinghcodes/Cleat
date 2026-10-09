@@ -616,6 +616,10 @@ test("hurt or injured myself is an injury only with a training context and no in
     "I injured myself",
     "I deliberately hurt myself during the workout",
     "I don't want to hurt myself",
+    "I hurt myself doing deadlifts and I want to kill myself",
+    "I injured myself at the gym and I want to end it",
+    "I am hurting myself this session. I might end it all",
+    "I will hurt myself lifting if I kill myself",
   ];
   for (const body of selfHarm) {
     const hit = checkRefusals(body);
@@ -637,6 +641,8 @@ test("hurt myself refusals are classified before retrieval", async () => {
     { message: "I hurt myself doing deadlifts yesterday", templateId: "medical_safety" as const },
     { message: "I want to hurt myself", templateId: "emergency_self_harm" as const },
     { message: "I hurt myself on purpose after the gym", templateId: "emergency_self_harm" as const },
+    { message: "I hurt myself doing deadlifts and I want to kill myself", templateId: "emergency_self_harm" as const },
+    { message: "I injured myself at the gym and I want to end it", templateId: "emergency_self_harm" as const },
   ];
   for (const item of cases) {
     let calls = 0;
