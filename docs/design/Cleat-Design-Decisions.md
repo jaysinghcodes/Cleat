@@ -35,7 +35,7 @@
 | Text 1 / 2 / 3 | `#F3F0EC` / `#B5AFA9` / `#9D9791` | Primary / secondary / tertiary |
 | Accent | `#E8A87C` | Fill + accent text |
 | CTA label | `#1C1917` | Text on apricot |
-| Success / Warn / Error | `#7CC79F` / `#DCBC72` / `#EE9088` | Dots and tinted text; 14 to 15% tint fills |
+| Success / Warn / Error | `#7CC79F` / `#DCBC72` / `#F1948A` | Dots and tinted text; 14 to 15% tint fills |
 
 ### Light · Grey + white cards
 
@@ -48,9 +48,9 @@
 | Text 1 / 2 / 3 | `#1C1917` / `#57534E` / `#6B6B74` | Primary / secondary / tertiary |
 | Accent fill | `#E8A87C` | Buttons, active nav, AI dots |
 | Accent text | `#9A5B2F` | Apricot-family text on light |
-| Success / Warn / Error | `#15803D` / `#9E6007` / `#B91C1C` | Dots and tinted text; 7 to 9% tint fills |
+| Success / Warn / Error | `#15763D` / `#995707` / `#B91C1C` | Dots and tinted text; 7 to 9% tint fills |
 
-> Warn was nudged from `#A16207` to `#9E6007` (visually identical) so it passes AA on the grey page too, not just on white cards.
+> Warn was nudged from `#A16207` to `#9E6007` (visually identical) so it passes AA on the grey page too, not just on white cards. On Oct 9 2026 Speedy approved `#995707` for that shared warn and skip ink, `#15763D` for light success, and `#F1948A` for dark error, so each ink also passes AA on its own tint over the page and the card.
 
 ## 5. Contrast (WCAG AA, 4.5:1 for body text)
 
@@ -60,9 +60,9 @@
 | Secondary | 7.12 / 6.21 ✅ | 6.94 / 7.63 ✅ |
 | Tertiary | 5.35 / 4.67 ✅ | 4.80 / 5.28 ✅ |
 | Accent text | 7.60 / 6.63 ✅ (`#E8A87C`) | 4.88 / 5.37 ✅ (`#9A5B2F`) |
-| Success | 7.75 / 6.76 ✅ | 4.56 / 5.02 ✅ |
-| Warning | 8.45 / 7.37 ✅ | 4.63 / 5.08 ✅ |
-| Error | 6.61 / 5.76 ✅ | 5.89 / 6.47 ✅ |
+| Success | 7.75 / 6.76 ✅ | 5.18 / 5.69 ✅ |
+| Warning | 8.45 / 7.37 ✅ | 5.13 / 5.64 ✅ |
+| Error | 6.87 / 6.00 ✅ | 5.89 / 6.47 ✅ |
 | Charcoal `#1C1917` on apricot | 8.60 ✅ | 8.60 ✅ |
 
 **Rules**
@@ -102,6 +102,7 @@
 | Oct 7 | **Locked: Dark = Warm mist, Light = Grey + white cards; charcoal-background logo is primary.** Rolled across all wireframes. |
 | Oct 7 | **Copy rule:** no dash punctuation in product text. Marketing tagline TBD / placeholder. |
 | Oct 7 | **Tagline locked:** hero "Your coaching. Never a guess."; AI section "It answers when it's sure. You answer the rest."; accountability "Every rep logged. Every skip seen." |
+| Oct 9 | Speedy approved AA contrast nudges: dark error `#EE9088` → `#F1948A`; light success `#15803D` → `#15763D`; light warn and skip `#9E6007` → `#995707`. Apricot and charcoal stay locked. |
 
 ## 9. Screen inventory (23)
 

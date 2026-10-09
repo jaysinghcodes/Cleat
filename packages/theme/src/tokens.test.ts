@@ -78,6 +78,45 @@ function blendOver(tint: string, background: string): string {
   return `#${parts.map((part) => part.toString(16).padStart(2, "0")).join("")}`;
 }
 
+test("approved status inks stay at least 4.5:1 on their tint over page and card", () => {
+  const cases = [
+    {
+      name: "dark error",
+      ink: dark.error,
+      tint: dark.errorTint,
+      page: dark.page,
+      card: dark.card,
+    },
+    {
+      name: "light success",
+      ink: light.success,
+      tint: light.successTint,
+      page: light.page,
+      card: light.card,
+    },
+    {
+      name: "light warn",
+      ink: light.warn,
+      tint: light.warnTint,
+      page: light.page,
+      card: light.card,
+    },
+    {
+      name: "light skip",
+      ink: light.skip,
+      tint: light.skipTint,
+      page: light.page,
+      card: light.card,
+    },
+  ];
+  for (const item of cases) {
+    for (const surface of ["page", "card"] as const) {
+      const ratio = contrast(item.ink, blendOver(item.tint, item[surface]));
+      assert.ok(ratio >= 4.5, `${item.name} on ${surface} is ${ratio.toFixed(2)}`);
+    }
+  }
+});
+
 test("emergency solid fill and injury tint stay distinguishable in grayscale", () => {
   for (const theme of [dark, light]) {
     const injury = blendOver(theme.errorTint, theme.card);
