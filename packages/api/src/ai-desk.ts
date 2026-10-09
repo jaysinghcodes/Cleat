@@ -1,21 +1,33 @@
 import {
   aiCopy,
   aiSettingsSchema,
+  buildInboxQueue,
+  calendarDate,
+  inboxCopy,
+  missedCandidates,
   parseAiSettings,
   parseAuditEvents,
   parseHeldDraft,
+  parseInboxAudits,
+  parseInboxDrafts,
   parseKbArticles,
+  parseStoredInboxItems,
+  parseThreadHeads,
   parseTrainerNotices,
+  parseUnansweredHours,
   productError,
+  unansweredHoursOrDefault,
   type AiSettings,
   type AuditEvent,
   type HeldDraftMarker,
+  type InboxQueueItem,
   type KbArticle,
   type KbCategory,
   type KbDraft,
   type TrainerNotice,
 } from "@cleat/domain";
-import { CleatRequestError } from "./auth";
+import { CleatRequestError, listClients } from "./auth";
+import { fetchAccountability } from "./programs";
 import type { CleatClient } from "./supabase";
 
 function fail(message: string | undefined, fallback: string): never {
@@ -153,6 +165,130 @@ export async function fetchOpenDraft(supabase: CleatClient, clientId: string): P
     .limit(1);
   if (error) fail(error.message, aiCopy.loadFailed);
   return parseHeldDraft(data);
+}
+
+export type TrainerInbox = {
+  items: InboxQueueItem[];
+  windowHours: number;
+  notices: TrainerNotice[];
+};
+
+const INBOX_COLUMNS =
+  "id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, template_id, status, created_at";
+
+function coveredMessageIds(data: unknown): string[] {
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const id = (row as { message_id?: unknown }).message_id;
+    return typeof id === "string" && id.length > 0 ? [id] : [];
+  });
+}
+
+export async function loadTrainerInbox(
+  supabase: CleatClient,
+  input: { orgId: string; timeZone: string; now?: string },
+): Promise<TrainerInbox> {
+  const now = input.now ?? new Date().toISOString();
+  const [org, items, covered, heads, notices, clients, board] = await Promise.all([
+    supabase.from("orgs").select("unanswered_hours").eq("id", input.orgId).maybeSingle(),
+    supabase
+      .from("inbox_items")
+      .select(INBOX_COLUMNS)
+      .eq("status", "open")
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase.from("inbox_items").select("message_id").neq("status", "open"),
+    supabase.rpc("thread_heads"),
+    supabase
+      .from("trainer_notices")
+      .select("id, org_id, client_id, inbox_item_id, title, body, emergency, read_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    listClients(supabase),
+    fetchAccountability(supabase, input.timeZone),
+  ]);
+  if (org.error) fail(org.error.message, inboxCopy.title);
+  if (items.error) fail(items.error.message, aiCopy.loadFailed);
+  if (covered.error) fail(covered.error.message, aiCopy.loadFailed);
+  if (heads.error) fail(heads.error.message, aiCopy.loadFailed);
+  if (notices.error) fail(notices.error.message, aiCopy.loadFailed);
+  const stored = parseStoredInboxItems(items.data);
+  const itemIds = stored.map((item) => item.id);
+  const auditIds = [...new Set(stored.flatMap((item) => (item.auditId ? [item.auditId] : [])))];
+  const [drafts, audits] = await Promise.all([
+    itemIds.length === 0
+      ? Promise.resolve({ data: [], error: null })
+      : supabase
+          .from("held_drafts")
+          .select("id, inbox_item_id, draft_text, sources, status")
+          .eq("status", "held")
+          .in("inbox_item_id", itemIds),
+    auditIds.length === 0
+      ? Promise.resolve({ data: [], error: null })
+      : supabase.from("audit_events").select("id, confidence, threshold, template_id, reason_codes").in("id", auditIds),
+  ]);
+  if (drafts.error) fail(drafts.error.message, aiCopy.loadFailed);
+  if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
+  const windowHours = unansweredHoursOrDefault(
+    org.data && typeof org.data === "object" ? (org.data as { unanswered_hours?: unknown }).unanswered_hours : undefined,
+  );
+  const names: Record<string, string> = {};
+  for (const client of clients) names[client.userId] = client.displayName;
+  const today = calendarDate(input.timeZone, new Date(now));
+  return {
+    windowHours,
+    notices: parseTrainerNotices(notices.data),
+    items: buildInboxQueue({
+      orgId: input.orgId,
+      now,
+      windowHours,
+      names,
+      stored,
+      drafts: parseInboxDrafts(drafts.data),
+      audits: parseInboxAudits(audits.data),
+      heads: parseThreadHeads(heads.data),
+      missed: missedCandidates(board.rows, today, input.timeZone),
+      coveredMessageIds: coveredMessageIds(covered.data),
+    }),
+  };
+}
+
+export async function saveUnansweredHours(supabase: CleatClient, orgId: string, hours: number): Promise<void> {
+  const parsed = parseUnansweredHours(hours);
+  if (parsed === null) throw new CleatRequestError(inboxCopy.windowInvalid);
+  const { error } = await supabase.from("orgs").update({ unanswered_hours: parsed }).eq("id", orgId);
+  if (error) fail(error.message, inboxCopy.windowInvalid);
+}
+
+export async function actOnHeldDraft(
+  supabase: CleatClient,
+  origin: string,
+  input: { draftId: string; action: "send_edited" | "send_as_is" | "dismiss"; editedText?: string },
+): Promise<void> {
+  const token = await authHeader(supabase);
+  const response = await fetch(`${origin.replace(/\/$/, "")}/api/ai/drafts`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
+    const message = payload && typeof payload.error === "string" ? payload.error : aiCopy.loadFailed;
+    throw new CleatRequestError(message);
+  }
+}
+
+export async function resolveInboxItem(
+  supabase: CleatClient,
+  input: { itemId: string; action: "reply" | "dismiss"; body?: string },
+): Promise<void> {
+  const { error } = await supabase.rpc("resolve_inbox_item", {
+    item_id: input.itemId,
+    action: input.action,
+    reply_body: input.body ?? "",
+  });
+  if (error) fail(error.message, input.action === "dismiss" ? inboxCopy.dismissed : inboxCopy.replySent);
 }
 
 export function kbCategoryOrNull(value: string): KbCategory | null {

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test lib/google.test.ts && TSX_TSCONFIG_PATH=./tsconfig.test.json node --import tsx --test components/marketing/landing.test.tsx"
+    "test": "node --import tsx --test lib/google.test.ts lib/actor.test.ts lib/pipeline.test.ts lib/draft-commit.test.ts && TSX_TSCONFIG_PATH=./tsconfig.test.json node --import tsx --test components/marketing/landing.test.tsx"
   },
   "dependencies": {
     "@cleat/ai": "workspace:*",

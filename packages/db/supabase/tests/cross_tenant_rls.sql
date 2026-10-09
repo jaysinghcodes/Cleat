@@ -738,6 +738,16 @@ select public._rls_expect(
   (select count(*) = 1 from public.nudge_events where client_id = '22222222-2222-2222-2222-222222222222')
 );
 select public._rls_expect(
+  'a nudge posts the templated coach chat message',
+  (
+    select count(*) = 1
+      and bool_and(kind = 'human')
+      and bool_and(body = 'Alex sent a nudge. Open today and log your sets.')
+    from public.messages
+    where sender_id = '11111111-1111-1111-1111-111111111111'
+  )
+);
+select public._rls_expect(
   'assign replaces the active program',
   (
     select public.assign_program(jsonb_build_object(

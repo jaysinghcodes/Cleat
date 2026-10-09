@@ -61,13 +61,18 @@ export {
   embedAssignedProgram,
   fetchAiSettings,
   fetchOpenDraft,
+  actOnHeldDraft,
   listAuditEvents,
   listKbArticles,
   listTrainerNotices,
+  loadTrainerInbox,
   markNoticeRead,
+  resolveInboxItem,
   saveAiSettings,
   saveKbArticle,
+  saveUnansweredHours,
 } from "./ai-desk";
+export type { TrainerInbox } from "./ai-desk";
 export {
   deliverChatMessage,
   ensureThread,

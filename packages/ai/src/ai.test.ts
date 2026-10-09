@@ -262,6 +262,25 @@ test("medium band is held and low band is held without a client reply", async ()
   assert.equal(low.audit.reasonCodes.includes("retrieval_gap"), true);
 });
 
+test("a below threshold hold records low confidence", async () => {
+  const held = await planClientTurn({
+    message: "What shoes should I wear for squats tomorrow?",
+    messageId: MESSAGE_ID,
+    orgId: ORG_A,
+    clientId: CLIENT_C,
+    threadId: THREAD_ID,
+    chunks: [chunk({ id: "11111111-1111-4111-8111-111111111111", snippet: "squats shoes", score: 0.8 })],
+    settings: { autoSend: false, threshold: 0.85, signOff: "", toneNotes: "" },
+    chat: cannedChatModel,
+    now: NOW,
+  });
+  assert.equal(held.band, "medium");
+  assert.equal(held.audit.decision, "escalate");
+  assert.equal(held.audit.reasonCodes.includes("low_confidence"), true);
+  assert.equal(held.inbox?.reasonCodes.includes("low_confidence"), true);
+  assert.equal(held.audit.reasonCodes.includes("auto_send_off"), false);
+});
+
 test("every AI plan writes one audit row with the required fields", async () => {
   const plan = await planClientTurn({
     message: "How many rest days are in the program?",
@@ -301,7 +320,7 @@ test("every AI plan writes one audit row with the required fields", async () => 
   assert.equal(plan.audit.messageId, MESSAGE_ID);
 });
 
-test("draft actions update the audit and only sends post to chat", () => {
+test("draft actions write the audit and only sends post a coach chat message", () => {
   const edited = applyTrainerDraftAction({
     action: "send_edited",
     draftText: "Rest two days.",
@@ -319,15 +338,19 @@ test("draft actions update the audit and only sends post to chat", () => {
   assert.equal(asIs.ok, true);
   if (!asIs.ok) return;
   assert.equal(asIs.trainerEdit, false);
+  assert.equal(asIs.trainerAction, "send_as_is");
   assert.equal(asIs.finalText, "Rest two days.");
-  assert.equal(asIs.chatKind, "ai");
+  assert.equal(asIs.chatBody, "Rest two days.");
+  assert.equal(asIs.chatKind, "human");
   assert.equal(asIs.status, "sent");
 
   const dismissed = applyTrainerDraftAction({ action: "dismiss", draftText: "Rest two days." });
   assert.equal(dismissed.ok, true);
   if (!dismissed.ok) return;
   assert.equal(dismissed.chatBody, null);
+  assert.equal(dismissed.chatKind, null);
   assert.equal(dismissed.finalText, null);
+  assert.equal(dismissed.trainerAction, "dismiss");
   assert.equal(dismissed.status, "dismissed");
   assert.equal(dismissed.trainerEdit, false);
 });

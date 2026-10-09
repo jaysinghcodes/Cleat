@@ -23,11 +23,14 @@ export const DESK_NAV = [
 export function DeskShell({
   membership,
   children,
+  activeHref,
 }: {
   membership: Membership;
   children: ReactNode;
+  activeHref?: string;
 }) {
-  const pathname = usePathname();
+  const currentPath = usePathname();
+  const pathname = activeHref ?? currentPath;
   const router = useRouter();
   const { signOut } = useSession();
 

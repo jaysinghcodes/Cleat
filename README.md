@@ -171,7 +171,7 @@ There are no passwords. Both roles sign in with an email code or a magic link.
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
    - `SUPABASE_URL` and `SUPABASE_ANON_KEY` for server tools
 3. Leave `SUPABASE_SERVICE_ROLE` in server env only. Do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The web and mobile apps do not read it.
-4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0005_booking.sql` adds availability, sessions, ICS tokens, and optional Google credential storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices.
+4. Apply `packages/db/supabase/migrations` with the Supabase CLI (`supabase db reset` from `packages/db`) or the SQL editor. `0001_init.sql` enables `pgcrypto` and `pgvector`. `0002_tenancy.sql` adds orgs, profiles, memberships, invites, and row level security. `0003_programs.sql` adds programs, set logs, nudge events, and the client weight unit. `0004_chat.sql` adds threads, messages, and push token storage. `0005_booking.sql` adds availability, sessions, ICS tokens, and optional Google credential storage. `0006_rag_audit.sql` adds the knowledge base, embeddings, AI settings, the audit log, held drafts, and in app notices. `0007_inbox.sql` adds the unanswered window, P2 and P3 inbox tiers, and the trainer seed hook.
 5. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback` (trainer desk)
    - `http://localhost:8081/auth/callback` (Expo web)
@@ -226,7 +226,7 @@ The client stays compatible with Expo Go. It does not use a custom native module
    - `http://localhost:8081/auth/callback`
    - `exp://**` (Expo Go)
    - `cleat://**` (app scheme; Expo Go does not open this)
-2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, and `0006_rag_audit.sql` in the SQL editor.
+2. Run `packages/db/supabase/migrations/0001_init.sql`, `0002_tenancy.sql`, `0003_programs.sql`, `0004_chat.sql`, `0005_booking.sql`, `0006_rag_audit.sql`, and `0007_inbox.sql` in the SQL editor.
 3. Put the anon key in the app env files. Do not put the service role key in either file.
 
 `apps/web/.env.local`:
@@ -335,4 +335,4 @@ Connect stores a refresh token and leaves the Google email column null. Org sett
 
 ## What comes next
 
-Chat, programs, calendar booking, knowledge, AI settings, and the audit log are in the app. Held draft review controls are a later ticket. The client Chat tab shows an auto sent answer with sources, or a fixed safety reply. A held draft is invisible to the client. Design decisions and the wireframe screenshots are in [docs/design](docs/design).
+Chat, programs, calendar booking, knowledge, AI settings, the audit log, and the trainer priority inbox are in the app. The client Chat tab shows an auto sent answer with sources, or a fixed safety reply. A held draft is invisible to the client until a coach sends it, and that send is a coach message. Design decisions and the wireframe screenshots are in [docs/design](docs/design).

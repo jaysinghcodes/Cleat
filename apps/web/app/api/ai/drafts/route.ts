@@ -1,8 +1,9 @@
-import { applyTrainerDraftAction, type DraftAction } from "@cleat/ai";
+import { type DraftAction } from "@cleat/ai";
 import { aiCopy } from "@cleat/domain";
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "../../../../lib/server/admin";
 import { aiCors, aiJson, requireTrainer } from "../../../../lib/server/actor";
+import { commitHeldDraft } from "../../../../lib/server/draft-commit";
 
 export const dynamic = "force-dynamic";
 
@@ -35,39 +36,58 @@ export async function POST(request: Request) {
     .eq("org_id", actor.orgId)
     .eq("status", "held")
     .maybeSingle();
-  if (loaded.error || !loaded.data) return aiJson({ error: aiCopy.loadFailed }, 404);
-  const result = applyTrainerDraftAction({
-    action: action as DraftAction,
-    draftText: String(loaded.data.draft_text ?? ""),
-    editedText: typeof payload.editedText === "string" ? payload.editedText : undefined,
-  });
-  if (!result.ok) return aiJson({ error: result.error }, 400);
-  const actedAt = new Date().toISOString();
-  const audit = await admin
-    .from("audit_events")
-    .update({
-      trainer_edit: result.trainerEdit,
-      trainer_action: result.trainerAction,
-      final_text: result.finalText,
-      trainer_acted_at: actedAt,
-      delivered_at: result.chatBody ? actedAt : null,
-    })
-    .eq("id", loaded.data.audit_id)
-    .eq("org_id", actor.orgId);
-  if (audit.error) return aiJson({ error: aiCopy.loadFailed }, 500);
-  if (result.chatBody && result.chatKind) {
-    const message = await admin.from("messages").insert({
-      thread_id: loaded.data.thread_id,
-      org_id: actor.orgId,
-      sender_id: actor.userId,
-      body: result.chatBody,
-      kind: result.chatKind,
-      sources: result.chatKind === "ai" ? loaded.data.sources ?? [] : [],
+  if (loaded.error) return aiJson({ error: aiCopy.loadFailed }, 500);
+  const row = loaded.data;
+  try {
+    const commit = await commitHeldDraft({
+      loaded: row ? { draftText: String(row.draft_text ?? "") } : null,
+      action: action as DraftAction,
+      editedText: typeof payload.editedText === "string" ? payload.editedText : undefined,
+      claim: async (status) => {
+        const claimed = await admin
+          .from("held_drafts")
+          .update({ status })
+          .eq("id", draftId)
+          .eq("org_id", actor.orgId)
+          .eq("status", "held")
+          .select("id")
+          .maybeSingle();
+        if (claimed.error) throw new Error(claimed.error.message);
+        return Boolean(claimed.data);
+      },
+      writeAudit: async (result) => {
+        const actedAt = new Date().toISOString();
+        const audit = await admin
+          .from("audit_events")
+          .update({
+            trainer_edit: result.trainerEdit,
+            trainer_action: result.trainerAction,
+            final_text: result.finalText,
+            trainer_acted_at: actedAt,
+            delivered_at: result.chatBody ? actedAt : null,
+          })
+          .eq("id", row?.audit_id)
+          .eq("org_id", actor.orgId);
+        if (audit.error) throw new Error(audit.error.message);
+      },
+      postChat: async (body, kind) => {
+        const message = await admin.from("messages").insert({
+          thread_id: row?.thread_id,
+          org_id: actor.orgId,
+          sender_id: actor.userId,
+          body,
+          kind,
+          sources: kind === "ai" ? row?.sources ?? [] : [],
+        });
+        if (message.error) throw new Error(message.error.message);
+      },
+      closeInbox: async (status) => {
+        const inbox = await admin.from("inbox_items").update({ status }).eq("id", row?.inbox_item_id).eq("org_id", actor.orgId);
+        if (inbox.error) throw new Error(inbox.error.message);
+      },
     });
-    if (message.error) return aiJson({ error: aiCopy.loadFailed }, 500);
+    return aiJson(commit.body, commit.httpStatus);
+  } catch {
+    return aiJson({ error: aiCopy.loadFailed }, 500);
   }
-  const status = result.status;
-  await admin.from("held_drafts").update({ status }).eq("id", draftId).eq("org_id", actor.orgId);
-  await admin.from("inbox_items").update({ status }).eq("id", loaded.data.inbox_item_id).eq("org_id", actor.orgId);
-  return aiJson({ ok: true, status }, 200);
 }
