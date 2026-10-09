@@ -3,6 +3,7 @@ import {
   cancelCutoffSchema,
   copy,
   parseAvailability,
+  userFacingError,
   parseSessions,
   primaryCalendarSchema,
   slotMinutesSchema,
@@ -59,7 +60,7 @@ export type SubscribeLink = {
 };
 
 function fail(message: string | undefined, fallback: string, status?: number): never {
-  throw new CleatRequestError(message?.trim() || fallback, status);
+  throw new CleatRequestError(userFacingError(message, fallback), status);
 }
 
 async function readJson(response: Response): Promise<Record<string, unknown>> {

@@ -1,12 +1,21 @@
 import {
-  CleatRequestError,
   applyClientLog,
   dismissNudge,
   fetchClientTraining,
   updateWeightUnit,
   type ClientTraining,
 } from "@cleat/api";
-import { copy, isOfflineError, programCopy, type LogOperation, type WeightUnit } from "@cleat/domain";
+import {
+  calendarDate,
+  copy,
+  isOfflineError,
+  programCopy,
+  trainingRetryResult,
+  trainingRetryStart,
+  userFacingError,
+  type LogOperation,
+  type WeightUnit,
+} from "@cleat/domain";
 import {
   createContext,
   useCallback,
@@ -17,8 +26,9 @@ import {
   type ReactNode,
 } from "react";
 import { AppState } from "react-native";
+import { PREVIEW_FAILURE, previewClientMembership, previewUser, readScreenPreview } from "./preview-mode";
 import { useSession } from "./session";
-import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchOnline } from "./log-queue";
+import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchNetwork } from "./log-queue";
 
 type TrainingContextValue = {
   ready: boolean;
@@ -26,13 +36,78 @@ type TrainingContextValue = {
   pendingCount: number;
   error: string | null;
   notice: string | null;
-  refresh: () => Promise<void>;
+  online: boolean;
+  refresh: (mode?: "retry") => Promise<void>;
   saveOperation: (operation: LogOperation) => Promise<boolean>;
   setUnit: (unit: WeightUnit) => Promise<void>;
   dismiss: (nudgeId: string) => Promise<void>;
 };
 
 const TrainingContext = createContext<TrainingContextValue | null>(null);
+
+/** Dev preview only. `?preview=1&rows=1` paints the seeded Lower A day on Today. */
+function readPreviewRows(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  if (typeof window === "undefined") return false;
+  const search = typeof window.location?.search === "string" ? window.location.search : "";
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  return params.get("preview") === "1" && params.get("rows") === "1";
+}
+
+function previewClientTraining(): ClientTraining {
+  const today = calendarDate(previewClientMembership.timezone);
+  return {
+    program: {
+      id: "d1400000-0000-4000-8000-000000000003",
+      orgId: previewClientMembership.orgId,
+      clientId: previewUser.userId,
+      name: "Foundation 3-day",
+      startDate: today,
+      days: [
+        {
+          id: "d1500000-0000-4000-8000-000000000001",
+          position: 0,
+          name: "Lower A",
+          rest: false,
+          exercises: [
+            {
+              id: "d1510000-0000-4000-8000-000000000001",
+              position: 0,
+              name: "Back squat",
+              sets: 3,
+              reps: "8",
+              notes: "Brace before you descend.",
+              videoUrl: null,
+            },
+            {
+              id: "d1510000-0000-4000-8000-000000000002",
+              position: 1,
+              name: "Romanian deadlift",
+              sets: 3,
+              reps: "8",
+              notes: "Soft knees, flat back.",
+              videoUrl: null,
+            },
+            {
+              id: "d1510000-0000-4000-8000-000000000003",
+              position: 2,
+              name: "Walking lunge",
+              sets: 2,
+              reps: "10",
+              notes: "Short steps.",
+              videoUrl: null,
+            },
+          ],
+        },
+      ],
+    },
+    workouts: [],
+    exerciseLogs: [],
+    sets: [],
+    weightUnit: "lb",
+    nudge: null,
+  };
+}
 
 function overlay(base: ClientTraining, queue: LogOperation[], userId: string): ClientTraining {
   const workouts = base.workouts.map((row) => ({ ...row }));
@@ -105,22 +180,36 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (mode?: "retry") => {
     if (!client || !session) return;
-    const [next, pending] = await Promise.all([
-      fetchClientTraining(client, session.userId),
-      readLogQueue(),
-    ]);
-    setBase(next);
-    setQueue(pending);
-    setReady(true);
+    if (mode === "retry") {
+      const started = trainingRetryStart();
+      setReady(started.ready);
+      setError(started.error);
+    }
+    try {
+      const [next, pending] = await Promise.all([
+        fetchClientTraining(client, session.userId),
+        readLogQueue(),
+      ]);
+      setBase(next);
+      setQueue(pending);
+      const done = trainingRetryResult(null);
+      setReady(done.ready);
+      setError(done.error);
+    } catch (err: unknown) {
+      const done = trainingRetryResult(err);
+      setReady(done.ready);
+      setError(done.error);
+    }
   }, [client, session]);
 
   const flush = useCallback(async () => {
     if (!client || !session) return;
     const result = await flushLogQueue((operation) => applyClientLog(client, operation));
-    if (result.error) setError(result.error);
+    if (result.error) setError(userFacingError(result.error, programCopy.couldNotLog));
     if (result.flushed > 0) {
       setNotice(programCopy.synced);
       await refresh();
@@ -130,21 +219,38 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   }, [client, session, refresh]);
 
   useEffect(() => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") {
+        setReady(false);
+        setError(null);
+        setOnline(true);
+        return;
+      }
+      if (preview === "error") {
+        setBase(null);
+        setError(PREVIEW_FAILURE);
+        setReady(true);
+        setOnline(true);
+        return;
+      }
+      setBase(readPreviewRows() ? previewClientTraining() : null);
+      setError(null);
+      setReady(true);
+      setOnline(preview !== "offline");
+      return;
+    }
     if (!client || !session) return;
     let alive = true;
     void (async () => {
-      try {
-        await refresh();
-      } catch (err: unknown) {
-        if (!alive) return;
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
-        setReady(true);
-      }
+      await refresh();
       if (!alive) return;
       await flush();
     })();
-    const watcher = watchOnline(() => {
-      void flush();
+    void deviceOnline().then(setOnline);
+    const watcher = watchNetwork((next) => {
+      setOnline(next);
+      if (next) void flush();
     });
     const appState = AppState.addEventListener("change", (next) => {
       if (next === "active") void flush();
@@ -180,7 +286,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
           return true;
         }
         setNotice(null);
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
         return false;
       }
     },
@@ -195,7 +301,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         await updateWeightUnit(client, session.userId, unit);
         await refresh();
       } catch (err) {
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
       }
     },
     [client, session, refresh],
@@ -208,7 +314,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         await dismissNudge(client, nudgeId);
         await refresh();
       } catch (err) {
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
       }
     },
     [client, refresh],
@@ -226,12 +332,13 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
       pendingCount: queue.length,
       error,
       notice,
+      online,
       refresh,
       saveOperation,
       setUnit,
       dismiss,
     }),
-    [ready, training, queue.length, error, notice, refresh, saveOperation, setUnit, dismiss],
+    [ready, training, queue.length, error, notice, online, refresh, saveOperation, setUnit, dismiss],
   );
 
   return <TrainingContext.Provider value={value}>{children}</TrainingContext.Provider>;

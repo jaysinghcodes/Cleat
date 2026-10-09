@@ -63,6 +63,8 @@ export {
   loggedExerciseCount,
   nudgeBody,
   nudgeReasons,
+  exerciseRowContent,
+  exerciseRowLabel,
   prescription,
   programCopy,
   programDayForDate,
@@ -111,6 +113,21 @@ export type { Log, LogOperation, SetEntry, WeightUnit } from "./log";
 
 export { createLogQueue } from "./log-queue";
 export type { LogFlushResult, LogQueue } from "./log-queue";
+
+export {
+  clientSessionView,
+  connectionMessage,
+  deskSessionView,
+  knownProductMessage,
+  offlineActionReason,
+  screenCopy,
+  screenPreviewFromSearch,
+  sessionLoadError,
+  trainingRetryResult,
+  trainingRetryStart,
+  userFacingError,
+} from "./screen-state";
+export type { ClientSessionView, DeskSessionView, ScreenPreview } from "./screen-state";
 
 export { deferredPushDelivery } from "./push";
 export type { NudgePush, PushDelivery } from "./push";

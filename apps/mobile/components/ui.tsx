@@ -1,4 +1,4 @@
-import { APP_NAME } from "@cleat/domain";
+import { APP_NAME, copy, userFacingError } from "@cleat/domain";
 import type { ReactNode } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +28,7 @@ export function Field({
     <View style={styles.field}>
       <Text style={[styles.label, { color: tokens.textSecondary }]}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         placeholderTextColor={tokens.textTertiary}
         style={[
           styles.input,
@@ -60,6 +61,8 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
       style={[
@@ -81,11 +84,16 @@ export function Button({
 
 export function Banner({ message, tone = "error" }: { message: string; tone?: "error" | "ok" }) {
   const { tokens } = useTheme();
+  const text = tone === "error" ? userFacingError(message, copy.generic) : message;
   const color = tone === "ok" ? tokens.success : tokens.error;
   const backgroundColor = tone === "ok" ? tokens.successTint : tokens.errorTint;
   return (
-    <View style={[styles.banner, { backgroundColor, borderColor: tokens.border, borderRadius: tokens.radiusSm }]}>
-      <Text style={{ color, fontSize: 14, lineHeight: 20 }}>{message}</Text>
+    <View
+      accessibilityRole="summary"
+      accessibilityLiveRegion={tone === "error" ? "assertive" : "polite"}
+      style={[styles.banner, { backgroundColor, borderColor: tokens.border, borderRadius: tokens.radiusSm }]}
+    >
+      <Text style={{ color, fontSize: 14, lineHeight: 20 }}>{text}</Text>
     </View>
   );
 }
@@ -166,6 +174,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
+    minHeight: 44,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
@@ -174,6 +183,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 44,
+    minWidth: 44,
     paddingVertical: 14,
     paddingHorizontal: 22,
   },

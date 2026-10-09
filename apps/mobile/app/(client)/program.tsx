@@ -6,6 +6,7 @@ import {
   loggedExerciseCount,
   programCopy,
   programDayForDate,
+  screenCopy,
   shortDate,
   weekdayLabel,
   weekDates,
@@ -13,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OfflineBanner, ScreenState } from "../../components/states";
 import { useSession } from "../../lib/session";
 import { useTraining } from "../../lib/training";
 import { useTheme } from "../../theme";
@@ -20,7 +22,7 @@ import { useTheme } from "../../theme";
 export default function ProgramScreen() {
   const router = useRouter();
   const { session, membership, coach } = useSession();
-  const { ready, training } = useTraining();
+  const { ready, training, error, refresh } = useTraining();
   const { tokens } = useTheme();
   const today = calendarDate(membership?.timezone ?? "UTC");
   const program = training?.program ?? null;
@@ -30,25 +32,20 @@ export default function ProgramScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.page }} edges={["top"]} testID="program-screen">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-        <Text style={{ color: tokens.text, fontSize: 28, fontWeight: "700" }}>Program</Text>
-        {!ready ? <Text style={{ color: tokens.textSecondary, marginTop: 12 }}>Loading your program</Text> : null}
-        {ready && !program ? (
-          <View
-            testID="program-empty"
-            style={{
-              marginTop: 16,
-              backgroundColor: tokens.card,
-              borderColor: tokens.border,
-              borderWidth: 1,
-              borderRadius: tokens.radius,
-              padding: 16,
-            }}
-          >
-            <Text style={{ color: tokens.text, fontWeight: "600", marginBottom: 6 }}>No program yet</Text>
-            <Text style={{ color: tokens.textSecondary, lineHeight: 20 }}>{programCopy.emptyProgram}</Text>
+        <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 28, fontWeight: "700" }}>Program</Text>
+        <View style={{ marginTop: 12 }}>
+          <OfflineBanner />
+        </View>
+        {error ? (
+          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void refresh("retry")} />
+        ) : null}
+        {!ready && !error ? <ScreenState kind="loading" title={screenCopy.loadingProgram} /> : null}
+        {ready && !program && !error ? (
+          <View testID="program-empty">
+            <ScreenState kind="empty" title="No program yet" body={programCopy.emptyProgram} />
           </View>
         ) : null}
-        {ready && program ? (
+        {ready && program && !error ? (
           <>
             <Text style={{ color: tokens.textSecondary, marginTop: 6, marginBottom: 16 }}>
               {program.name} · week of {shortDate(weekDates(today)[0] ?? today)}
@@ -106,14 +103,20 @@ export default function ProgramScreen() {
                   </View>
                   {isToday && day && !day.rest ? (
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Open today"
                       onPress={() => router.push("/today")}
                       style={{
                         borderWidth: 1,
                         borderColor: tokens.border,
                         backgroundColor: tokens.raised,
                         borderRadius: 9,
-                        paddingVertical: 7,
-                        paddingHorizontal: 12,
+                        minHeight: 44,
+                        minWidth: 44,
+                        paddingVertical: 10,
+                        paddingHorizontal: 14,
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       <Text style={{ color: tokens.text, fontWeight: "600", fontSize: 12 }}>Open</Text>

@@ -1,6 +1,6 @@
 "use client";
 
-import { CleatRequestError, fetchAccountability, sendNudge } from "@cleat/api";
+import { fetchAccountability, sendNudge } from "@cleat/api";
 import {
   copy,
   deferredPushDelivery,
@@ -10,13 +10,17 @@ import {
   initials,
   nudgeBody,
   programCopy,
+  screenCopy,
+  userFacingError,
   type BoardAction,
   type BoardRow,
   type TodayStatus,
 } from "@cleat/domain";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
 import { useSession } from "../../session";
+import { ScreenState } from "../../screen-state";
 import { Banner } from "../../ui";
 
 function pillClass(status: TodayStatus): string {
@@ -41,20 +45,40 @@ export default function AccountabilityPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     if (!client || !membership) return;
     const snapshot = await fetchAccountability(client, membership.timezone);
     setRows(snapshot.rows);
     setCounts(snapshot.counts);
+    setLoadFailed(false);
     setReady(true);
   }, [client, membership]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setLoadFailed(true);
+          setReady(true);
+        },
+        ready: () => {
+          setRows([]);
+          setLoadFailed(false);
+          setError(null);
+          setReady(true);
+        },
+      })
+    ) {
+      return;
+    }
     let alive = true;
     void load().catch((err: unknown) => {
       if (!alive) return;
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setLoadFailed(true);
       setReady(true);
     });
     return () => {
@@ -79,7 +103,7 @@ export default function AccountabilityPage() {
       setNotice(`Nudge sent to ${row.displayName}.`);
       await load();
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPendingId(null);
     }
@@ -109,16 +133,33 @@ export default function AccountabilityPage() {
           </button>
         </div>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {error && !loadFailed ? <Banner tone="error">{error}</Banner> : null}
       {notice ? <Banner tone="ok">{notice}</Banner> : null}
-      {!ready ? <p className="meta">Loading the board</p> : null}
-      {ready && rows.length === 0 ? (
+      {!ready ? <ScreenState kind="loading" title={screenCopy.loadingBoard} /> : null}
+      {ready && loadFailed ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setReady(false);
+            setLoadFailed(false);
+            setError(null);
+            void load().catch((err: unknown) => {
+              setError(userFacingError(err, screenCopy.loadFailed));
+              setLoadFailed(true);
+              setReady(true);
+            });
+          }}
+        />
+      ) : null}
+      {ready && !loadFailed && rows.length === 0 ? (
         <div className="card" data-testid="accountability-empty">
           <div className="name">No clients yet</div>
           <p className="meta">{programCopy.emptyBoard}</p>
         </div>
       ) : null}
-      {ready && rows.length > 0 ? (
+      {ready && !loadFailed && rows.length > 0 ? (
         <>
           <div className="grid-3" style={{ marginBottom: 20 }}>
             <div className="card stat-card">
@@ -150,15 +191,15 @@ export default function AccountabilityPage() {
             <div className="list-row" style={{ background: "var(--bg-soft)" }}>
               <div style={{ width: 36 }} />
               <div className="spacer">
-                <strong style={{ fontSize: 12, color: "var(--faint)", letterSpacing: "0.04em" }}>CLIENT</strong>
+                <strong style={{ fontSize: 12, color: "var(--sub)", letterSpacing: "0.04em" }}>CLIENT</strong>
               </div>
-              <div className="board-today" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-today" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 TODAY
               </div>
-              <div className="board-adherence" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-adherence" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 ADHERENCE
               </div>
-              <div className="board-action" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-action" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 ACTION
               </div>
             </div>

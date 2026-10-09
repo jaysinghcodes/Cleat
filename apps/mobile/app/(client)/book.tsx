@@ -1,5 +1,4 @@
 import {
-  CleatRequestError,
   accessToken,
   bookSession,
   cancelSession,
@@ -16,6 +15,8 @@ import {
   clientOpenSlots,
   copy,
   firstName,
+  screenCopy,
+  userFacingError,
   formatCivil,
   formatInstant,
   formatWeekLabel,
@@ -29,8 +30,11 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OfflineBanner, OfflineReason, ScreenState } from "../../components/states";
 import { Banner } from "../../components/ui";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../lib/preview-mode";
 import { useSession } from "../../lib/session";
+import { useTraining } from "../../lib/training";
 import { useTheme } from "../../theme";
 
 function webOrigin(): string {
@@ -40,6 +44,7 @@ function webOrigin(): string {
 
 export default function BookScreen() {
   const { client, membership, coach } = useSession();
+  const { online } = useTraining();
   const { tokens } = useTheme();
   const timezone = membership?.timezone || "UTC";
   const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date(), timezone));
@@ -58,8 +63,27 @@ export default function BookScreen() {
   const [linkError, setLinkError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") {
+        setStatus("loading");
+        return;
+      }
+      if (preview === "error") {
+        setError(PREVIEW_FAILURE);
+        setStatus("error");
+        return;
+      }
+      setBlocks([]);
+      setSessions([]);
+      setTaken([]);
+      setError(null);
+      setStatus("ready");
+      return;
+    }
     if (!client || !membership) return;
     const data = await loadClientCalendar(client, membership.orgId);
     setBlocks(data.blocks);
@@ -69,11 +93,13 @@ export default function BookScreen() {
     setTrainerName(data.trainerName);
     setTrainerTimezone(data.trainerTimezone || timezone);
     setCutoff(data.cancelCutoffHours);
+    setStatus("ready");
   }, [client, membership, timezone]);
 
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setStatus("error");
     });
   }, [load]);
 
@@ -104,6 +130,9 @@ export default function BookScreen() {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0];
   const canCancel = upcoming ? clientCanCancel(upcoming.startsAt, cutoff) : false;
   const selected = daySlots.find((slot) => slot.startsAt === selectedSlot) ?? null;
+  const bookLabel = selected
+    ? `${upcoming ? "Book another at" : "Book"} ${formatInstant(selected.startsAt, timezone)}`
+    : "Book";
   const showIcs = Boolean(confirmation || upcoming);
 
   async function loadSubscribeLink(token: string) {
@@ -112,12 +141,12 @@ export default function BookScreen() {
       setSubscribeUrl(link.url);
       setLinkError(null);
     } catch (err) {
-      setLinkError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setLinkError(userFacingError(err, copy.generic));
     }
   }
 
   async function onBook(slot: OpenSlot) {
-    if (!client) return;
+    if (!client || !online) return;
     setPending(true);
     setError(null);
     setLinkError(null);
@@ -129,11 +158,11 @@ export default function BookScreen() {
       try {
         await load();
       } catch (err) {
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
       }
       void loadSubscribeLink(token);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -150,7 +179,7 @@ export default function BookScreen() {
       setConfirmation(null);
       await load();
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -174,7 +203,7 @@ export default function BookScreen() {
         await Share.share({ message: ics });
       }
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     }
   }
 
@@ -191,7 +220,7 @@ export default function BookScreen() {
         await Share.share({ message: link });
       }
     } catch (err) {
-      setLinkError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setLinkError(userFacingError(err, copy.generic));
     }
   }
 
@@ -200,12 +229,32 @@ export default function BookScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.page }} edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-        <Text style={{ color: tokens.text, fontSize: 28, fontWeight: "700" }}>Book</Text>
+        <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 28, fontWeight: "700" }}>Book</Text>
         <Text style={{ color: tokens.textSecondary, fontSize: 13, marginTop: 4, marginBottom: 16 }} testID="book-sub">
           {`1:1 with ${coachLabel} · ICS calendar sync`}
         </Text>
-        {error ? <Banner message={error} /> : null}
-        {confirmation ? <Banner message={confirmation} tone="ok" /> : null}
+        <OfflineBanner />
+        <OfflineReason />
+        {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingBook} /> : null}
+        {status === "error" ? (
+          <ScreenState
+            kind="error"
+            title={screenCopy.couldNotLoad}
+            body={error ?? screenCopy.loadFailed}
+            onRetry={() => {
+              setStatus("loading");
+              setError(null);
+              void load().catch((err: unknown) => {
+                setError(userFacingError(err, screenCopy.loadFailed));
+                setStatus("error");
+              });
+            }}
+          />
+        ) : null}
+        {status === "ready" && error ? <Banner message={error} /> : null}
+        {status === "ready" && confirmation ? <Banner message={confirmation} tone="ok" /> : null}
+        {status === "ready" ? (
+        <>
         <View
           testID="upcoming-card"
           style={{
@@ -226,7 +275,13 @@ export default function BookScreen() {
                 </Text>
               </View>
               {canCancel && !confirming ? (
-                <Pressable accessibilityRole="button" onPress={() => setConfirming(true)}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel"
+                  disabled={!online}
+                  onPress={() => setConfirming(true)}
+                  style={{ minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center" }}
+                >
                   <Text style={{ color: tokens.error, fontWeight: "600" }}>Cancel</Text>
                 </Pressable>
               ) : null}
@@ -243,10 +298,23 @@ export default function BookScreen() {
             <View testID="cancel-confirm" style={{ marginTop: 12 }}>
               <Text style={{ color: tokens.text, marginBottom: 8 }}>{bookingCopy.cancelConfirm}</Text>
               <View style={{ flexDirection: "row", gap: 12 }}>
-                <Pressable accessibilityRole="button" onPress={() => setConfirming(false)}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={bookingCopy.keepSession}
+                  onPress={() => setConfirming(false)}
+                  style={{ minHeight: 44, justifyContent: "center" }}
+                >
                   <Text style={{ color: tokens.textSecondary, fontWeight: "600" }}>{bookingCopy.keepSession}</Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" disabled={pending} onPress={() => void onCancel()}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    online ? bookingCopy.cancelSession : `${bookingCopy.cancelSession}. ${screenCopy.offlineAction}`
+                  }
+                  disabled={pending || !online}
+                  onPress={() => void onCancel()}
+                  style={{ minHeight: 44, justifyContent: "center" }}
+                >
                   <Text style={{ color: tokens.error, fontWeight: "600" }}>{bookingCopy.cancelSession}</Text>
                 </Pressable>
               </View>
@@ -264,10 +332,20 @@ export default function BookScreen() {
           }}
         >
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-            <Pressable accessibilityRole="button" onPress={() => setWeekStart(addDays(weekStart, -7))}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bookingCopy.previousWeek}
+              onPress={() => setWeekStart(addDays(weekStart, -7))}
+              style={{ minHeight: 44, minWidth: 44, justifyContent: "center" }}
+            >
               <Text style={{ color: tokens.textSecondary }}>{bookingCopy.previousWeek}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => setWeekStart(addDays(weekStart, 7))}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bookingCopy.nextWeek}
+              onPress={() => setWeekStart(addDays(weekStart, 7))}
+              style={{ minHeight: 44, minWidth: 44, justifyContent: "center" }}
+            >
               <Text style={{ color: tokens.textSecondary }}>{bookingCopy.nextWeek}</Text>
             </Pressable>
           </View>
@@ -286,11 +364,14 @@ export default function BookScreen() {
                     setSelectedKey(key);
                     setSelectedSlot(null);
                   }}
+                  accessibilityLabel={`${formatCivil(day).slice(0, 1)}${day.day}, ${formatCivil(day)}`}
                   style={{
-                    width: 36,
+                    width: 44,
+                    minHeight: 44,
                     paddingVertical: 8,
                     borderRadius: 10,
                     alignItems: "center",
+                    justifyContent: "center",
                     backgroundColor: selectedDay ? tokens.accent : "transparent",
                   }}
                 >
@@ -332,7 +413,9 @@ export default function BookScreen() {
               <Pressable
                 key={slot.startsAt}
                 accessibilityRole="button"
+                accessibilityLabel={formatInstant(slot.startsAt, timezone)}
                 testID={`slot-${slot.startsAt}`}
+                disabled={!online}
                 onPress={() => setSelectedSlot(slot.startsAt)}
                 style={{
                   backgroundColor: tokens.card,
@@ -352,7 +435,7 @@ export default function BookScreen() {
             );
           })}
           {daySlots.length === 0 && dayOwn.length === 0 ? (
-            <Text style={{ color: tokens.textSecondary }}>{bookingCopy.noSlots}</Text>
+            <ScreenState kind="empty" title="No open slots" body={bookingCopy.noSlots} />
           ) : null}
         </View>
         <View
@@ -368,33 +451,44 @@ export default function BookScreen() {
         </View>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={online ? bookLabel : `${bookLabel}. ${screenCopy.offlineAction}`}
           testID="book-button"
-          disabled={!selected || pending}
+          disabled={!selected || pending || !online}
           onPress={() => {
             if (selected) void onBook(selected);
           }}
           style={{
             backgroundColor: tokens.accent,
             borderRadius: 14,
+            minHeight: 44,
             paddingVertical: 14,
             alignItems: "center",
-            opacity: !selected || pending ? 0.6 : 1,
+            justifyContent: "center",
+            opacity: !selected || pending || !online ? 0.6 : 1,
           }}
         >
-          <Text style={{ color: tokens.onAccent, fontWeight: "700" }}>
-            {selected
-              ? `${upcoming ? "Book another at" : "Book"} ${formatInstant(selected.startsAt, timezone)}`
-              : "Book"}
-          </Text>
+          <Text style={{ color: tokens.onAccent, fontWeight: "700" }}>{bookLabel}</Text>
         </Pressable>
         {showIcs ? (
           <View testID="ics-actions" style={{ marginTop: 14, gap: 8 }}>
-            <Pressable accessibilityRole="button" onPress={() => void onDownload()}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bookingCopy.addToCalendar}
+              disabled={!online}
+              onPress={() => void onDownload()}
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
               <Text style={{ color: tokens.accentText, fontWeight: "600", textAlign: "center" }}>
                 {bookingCopy.addToCalendar}
               </Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => void onSubscribe()}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={bookingCopy.subscribe}
+              disabled={!online}
+              onPress={() => void onSubscribe()}
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
               <Text style={{ color: tokens.accentText, fontWeight: "600", textAlign: "center" }}>
                 {bookingCopy.subscribe}
               </Text>
@@ -414,6 +508,8 @@ export default function BookScreen() {
         <Text testID="timezone-label" style={{ color: tokens.textTertiary, textAlign: "center", marginTop: 12 }}>
           {`Timezone: ${timezone}`}
         </Text>
+        </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

@@ -3,6 +3,7 @@ import {
   aiSettingsSchema,
   buildInboxQueue,
   calendarDate,
+  copy,
   inboxCopy,
   missedCandidates,
   parseAiSettings,
@@ -17,6 +18,7 @@ import {
   parseUnansweredHours,
   productError,
   resolveUnansweredHours,
+  userFacingError,
   type AiSettings,
   type AuditEvent,
   type HeldDraftMarker,
@@ -277,7 +279,7 @@ export async function resolveInboxItem(
     action: input.action,
     reply_body: input.body ?? "",
   });
-  if (error) fail(error.message, input.action === "dismiss" ? inboxCopy.dismissed : inboxCopy.replySent);
+  if (error) throw new CleatRequestError(userFacingError(error.message, copy.generic));
 }
 
 export function kbCategoryOrNull(value: string): KbCategory | null {

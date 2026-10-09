@@ -1,9 +1,11 @@
-import { CleatRequestError, updateProfile } from "@cleat/api";
-import { copy, initials, profileUpdateSchema, validationMessage } from "@cleat/domain";
+import { updateProfile } from "@cleat/api";
+import { copy, initials, profileUpdateSchema, screenCopy, userFacingError, validationMessage } from "@cleat/domain";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OfflineBanner, ScreenState } from "../../components/states";
 import { Banner, Button, Field } from "../../components/ui";
+import { PREVIEW_FAILURE, useScreenPreview } from "../../lib/preview-mode";
 import { useSession } from "../../lib/session";
 import { useTheme } from "../../theme";
 
@@ -23,6 +25,7 @@ export default function MeScreen() {
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
+  const preview = useScreenPreview();
   const name = membership?.displayName ?? "You";
   const org = coach?.orgName ?? membership?.orgName ?? "";
   const coachName = coach?.displayName ?? "Your coach";
@@ -44,21 +47,50 @@ export default function MeScreen() {
       setSaved(true);
       setEditing(false);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.profileSaveFailed));
     } finally {
       setPending(false);
     }
   }
 
+  if (preview === "loading" || preview === "empty" || preview === "error") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: tokens.page }} edges={["top"]}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+          <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 24, fontWeight: "700", marginBottom: 4 }}>You</Text>
+          <Text style={{ color: tokens.textSecondary, fontSize: 13, marginBottom: 18 }}>
+            {name}
+            {org ? ` · ${org}` : ""}
+          </Text>
+          <OfflineBanner />
+          {preview === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingMe} /> : null}
+          {preview === "empty" ? (
+            <ScreenState kind="empty" title={screenCopy.emptyMeTitle} body={screenCopy.emptyMeBody} />
+          ) : null}
+          {preview === "error" ? (
+            <ScreenState kind="error" title={screenCopy.couldNotLoad} body={PREVIEW_FAILURE} onRetry={() => undefined} />
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: tokens.page }} edges={["top"]}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
-        <Text style={{ color: tokens.text, fontSize: 24, fontWeight: "700", marginBottom: 4 }}>You</Text>
+        <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 24, fontWeight: "700", marginBottom: 4 }}>You</Text>
         <Text style={{ color: tokens.textSecondary, fontSize: 13, marginBottom: 18 }}>
           {name}
           {org ? ` · ${org}` : ""}
         </Text>
-        {error ? <Banner message={error} /> : null}
+        <OfflineBanner />
+        {!session ? <ScreenState kind="loading" title={screenCopy.loadingMe} /> : null}
+        {session && !membership ? (
+          <ScreenState kind="empty" title={screenCopy.emptyMeTitle} body={screenCopy.emptyMeBody} />
+        ) : null}
+        {error ? (
+          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void onSave()} />
+        ) : null}
         {saved ? <Banner message="Saved" tone="ok" /> : null}
         <View
           style={{
@@ -95,6 +127,7 @@ export default function MeScreen() {
           </View>
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Edit profile"
             onPress={() => {
               setDisplayName(membership?.displayName ?? "");
               setTimezone(membership?.timezone ?? "UTC");
@@ -105,8 +138,12 @@ export default function MeScreen() {
               borderWidth: 1,
               borderColor: tokens.border,
               borderRadius: 9,
-              paddingVertical: 7,
-              paddingHorizontal: 12,
+              minHeight: 44,
+              minWidth: 44,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Text style={{ color: tokens.text, fontSize: 12, fontWeight: "600" }}>Edit</Text>
@@ -171,14 +208,19 @@ export default function MeScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={`Theme ${preferenceLabel[preference]}`}
               onPress={cycle}
               style={{
                 borderWidth: 1,
                 borderColor: tokens.borderStrong,
                 backgroundColor: tokens.raised,
                 borderRadius: 9,
-                paddingVertical: 7,
-                paddingHorizontal: 12,
+                minHeight: 44,
+                minWidth: 44,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <Text style={{ color: tokens.text, fontSize: 12, fontWeight: "600" }}>

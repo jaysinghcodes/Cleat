@@ -127,3 +127,30 @@ test("emergency solid fill and injury tint stay distinguishable in grayscale", (
     assert.notEqual(theme.error.toLowerCase(), injury.toLowerCase());
   }
 });
+
+test("accountability headers use textSecondary on raised and soft rows", () => {
+  for (const theme of [dark, light]) {
+    const onRaised = contrast(theme.textSecondary, theme.raised);
+    const onSoft = contrast(theme.textSecondary, theme.bgSoft);
+    assert.ok(onRaised >= 4.5, `${theme.colorScheme} textSecondary on raised is ${onRaised.toFixed(2)}`);
+    assert.ok(onSoft >= 4.5, `${theme.colorScheme} textSecondary on bgSoft is ${onSoft.toFixed(2)}`);
+  }
+});
+
+test("text and status inks pass AA on page and card", () => {
+  for (const theme of [dark, light]) {
+    for (const surface of [theme.page, theme.card]) {
+      assert.ok(contrast(theme.text, surface) >= 4.5, `${theme.colorScheme} text`);
+      assert.ok(contrast(theme.textSecondary, surface) >= 4.5, `${theme.colorScheme} secondary`);
+      assert.ok(contrast(theme.textTertiary, surface) >= 4.5, `${theme.colorScheme} tertiary`);
+      assert.ok(contrast(theme.accentText, surface) >= 4.5, `${theme.colorScheme} accent text`);
+      for (const ink of [theme.success, theme.warn, theme.skip, theme.error]) {
+        assert.ok(contrast(ink, surface) >= 4.5, `${theme.colorScheme} ink on surface`);
+      }
+    }
+    assert.ok(contrast(theme.text, theme.raised) >= 4.5, `${theme.colorScheme} text on raised`);
+    assert.ok(contrast(theme.textSecondary, theme.raised) >= 4.5, `${theme.colorScheme} secondary on raised`);
+    assert.ok(contrast(theme.onAccent, theme.accent) >= 4.5, `${theme.colorScheme} on accent`);
+    assert.ok(contrast(theme.accentText, blendOver(theme.accentSoft, theme.card)) >= 4.5, `${theme.colorScheme} accent on soft`);
+  }
+});

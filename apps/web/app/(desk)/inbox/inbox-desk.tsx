@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CleatRequestError,
   actOnHeldDraft,
   deliverChatMessage,
   loadTrainerInbox,
@@ -13,13 +12,17 @@ import {
   aiCopy,
   inboxCopy,
   nudgeBody,
+  screenCopy,
   selectInboxItem,
+  userFacingError,
   type InboxQueueItem,
   type InboxReason,
   type TrainerNotice,
 } from "@cleat/domain";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { haltForPreview, PREVIEW_FAILURE } from "../../preview-mode";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { InboxScreen } from "./inbox-view";
 
@@ -36,6 +39,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
   const [pending, setPending] = useState(false);
   const [draftText, setDraftText] = useState("");
   const [replyText, setReplyText] = useState("");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
     if (!client || !membership) return;
@@ -47,13 +51,31 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
     setItems(snapshot.items);
     setNotices(snapshot.notices);
     setNow(new Date().toISOString());
+    setStatus("ready");
   }, [client, membership, defaultWindowHours]);
 
   useEffect(() => {
+    if (
+      haltForPreview({
+        error: () => {
+          setError(PREVIEW_FAILURE);
+          setStatus("error");
+        },
+        ready: () => {
+          setItems([]);
+          setNotices([]);
+          setError(null);
+          setStatus("ready");
+        },
+      })
+    ) {
+      return;
+    }
     let alive = true;
     void load().catch((err: unknown) => {
       if (!alive) return;
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setStatus("error");
     });
     return () => {
       alive = false;
@@ -105,7 +127,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       setPicked(null);
       await refreshAfter(inboxCopy.draftSent);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
@@ -122,7 +144,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       setPicked(null);
       await refreshAfter(inboxCopy.draftSent);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
@@ -139,7 +161,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       setPicked(null);
       await refreshAfter(inboxCopy.dismissed);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
@@ -162,7 +184,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       setPicked(null);
       await refreshAfter(inboxCopy.replySent);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
@@ -176,7 +198,7 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       setPicked(null);
       await refreshAfter(inboxCopy.dismissed);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
@@ -191,10 +213,50 @@ export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }
       await sendNudge(client, item.clientId, kind, nudgeBody(kind, membership.displayName));
       await refreshAfter(`${inboxCopy.nudgeSent}`);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, aiCopy.loadFailed));
     } finally {
       setPending(false);
     }
+  }
+
+  if (status === "loading") {
+    return (
+      <div data-testid="inbox-page">
+        <div className="page-head">
+          <div>
+            <h1>{inboxCopy.title}</h1>
+            <p>{inboxCopy.lede}</p>
+          </div>
+        </div>
+        <ScreenState kind="loading" title={screenCopy.loadingInbox} />
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div data-testid="inbox-page">
+        <div className="page-head">
+          <div>
+            <h1>{inboxCopy.title}</h1>
+            <p>{inboxCopy.lede}</p>
+          </div>
+        </div>
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            void load().catch((err: unknown) => {
+              setError(userFacingError(err, screenCopy.loadFailed));
+              setStatus("error");
+            });
+          }}
+        />
+      </div>
+    );
   }
 
   return (

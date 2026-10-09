@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CleatRequestError,
   accessToken,
   disconnectGoogle,
   googleStatus,
@@ -18,11 +17,15 @@ import {
   parseUnansweredHours,
   profileUpdateSchema,
   resolveUnansweredHours,
+  screenCopy,
+  userFacingError,
   validationMessage,
   type PrimaryCalendar,
 } from "@cleat/domain";
 import { useEffect, useState, type FormEvent } from "react";
+import { PREVIEW_FAILURE, readScreenPreview } from "../../preview-mode";
 import { useSession } from "../../session";
+import { ScreenState } from "../../screen-state";
 import { Banner, TextField } from "../../ui";
 
 export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) {
@@ -37,6 +40,9 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
   const [primary, setPrimary] = useState<PrimaryCalendar>("ics");
   const [google, setGoogle] = useState({ configured: false, connected: false, email: null as string | null });
   const [googleNotice, setGoogleNotice] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [previewEmpty, setPreviewEmpty] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const flag = new URLSearchParams(window.location.search).get("google");
@@ -46,6 +52,20 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
   }, []);
 
   useEffect(() => {
+    const preview = readScreenPreview();
+    if (preview) {
+      if (preview === "loading") return;
+      if (preview === "error") {
+        setPreviewEmpty(false);
+        setError(PREVIEW_FAILURE);
+        setStatus("error");
+        return;
+      }
+      setError(null);
+      setPreviewEmpty(preview === "empty");
+      setStatus("ready");
+      return;
+    }
     if (!client || !session || !membership) return;
     let alive = true;
     void (async () => {
@@ -60,8 +80,13 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
           setWindowHours(String(resolveUnansweredHours(row.unanswered_hours, defaultWindowHours)));
         }
       } catch (err) {
-        if (alive) setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        if (alive) {
+          setError(userFacingError(err, screenCopy.loadFailed));
+          setStatus("error");
+        }
+        return;
       }
+      if (alive) setStatus("ready");
       try {
         const token = await accessToken(client);
         const status = await googleStatus("", token);
@@ -73,7 +98,7 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
     return () => {
       alive = false;
     };
-  }, [client, session, membership, defaultWindowHours]);
+  }, [client, session, membership, defaultWindowHours, attempt]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -109,7 +134,7 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
       await refresh();
       setSaved(true);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -123,6 +148,24 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
           <p>{membership ? `Org: ${membership.orgName}` : "Org"}</p>
         </div>
       </div>
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingOrg} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            setAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {previewEmpty || (!membership && status !== "loading") ? (
+        <ScreenState kind="empty" title={screenCopy.emptyOrgTitle} body={screenCopy.emptyOrgBody} />
+      ) : null}
+      {status === "ready" && !previewEmpty ? (
+      <>
       <div className="card">
         {error ? <Banner tone="error">{error}</Banner> : null}
         {saved ? <Banner tone="ok">Saved</Banner> : null}
@@ -196,7 +239,7 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
                     window.location.href = url;
                   })
                   .catch((err: unknown) => {
-                    setError(err instanceof CleatRequestError ? err.message : copy.generic);
+                    setError(userFacingError(err, copy.generic));
                   });
               }}
             >
@@ -219,7 +262,7 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
                       setGoogleNotice("ICS feed is ready.");
                     })
                     .catch((err: unknown) => {
-                      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+                      setError(userFacingError(err, copy.generic));
                     });
                 }}
               >
@@ -235,6 +278,8 @@ export function OrgDesk({ defaultWindowHours }: { defaultWindowHours: number }) 
       <div className="card">
         <p className="meta">{copy.billingLater}</p>
       </div>
+      </>
+      ) : null}
     </>
   );
 }
