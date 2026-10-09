@@ -3,9 +3,9 @@ import {
   dayStatus,
   firstName,
   initials,
+  exerciseRowContent,
   exerciseRowLabel,
   loggedExerciseCount,
-  prescription,
   programCopy,
   programDayForDate,
   screenCopy,
@@ -211,6 +211,7 @@ export default function TodayScreen() {
                     : false;
                   const current = nextExercise?.id === exercise.id && !done;
                   const rowStatus = done ? "Logged" : current ? "Active" : `${index + 1}`;
+                  const rowText = exerciseRowContent(exercise, rowStatus);
                   return (
                     <Pressable
                       key={exercise.id}
@@ -225,11 +226,11 @@ export default function TodayScreen() {
                     >
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: tokens.text, fontWeight: "700" }}>{exercise.name}</Text>
-                          <Text style={{ color: tokens.textSecondary, marginTop: 4 }}>{prescription(exercise)}</Text>
+                          <Text style={{ color: tokens.text, fontWeight: "700" }}>{rowText.name}</Text>
+                          <Text style={{ color: tokens.textSecondary, marginTop: 4 }}>{rowText.detail}</Text>
                         </View>
                         <Text style={{ color: done ? tokens.success : tokens.textTertiary, fontWeight: "600", fontSize: 12 }}>
-                          {rowStatus}
+                          {rowText.status}
                         </Text>
                       </View>
                     </Pressable>

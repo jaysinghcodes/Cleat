@@ -6,6 +6,7 @@ import {
   type ClientTraining,
 } from "@cleat/api";
 import {
+  calendarDate,
   copy,
   isOfflineError,
   programCopy,
@@ -25,7 +26,7 @@ import {
   type ReactNode,
 } from "react";
 import { AppState } from "react-native";
-import { PREVIEW_FAILURE, readScreenPreview } from "./preview-mode";
+import { PREVIEW_FAILURE, previewClientMembership, previewUser, readScreenPreview } from "./preview-mode";
 import { useSession } from "./session";
 import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchNetwork } from "./log-queue";
 
@@ -43,6 +44,70 @@ type TrainingContextValue = {
 };
 
 const TrainingContext = createContext<TrainingContextValue | null>(null);
+
+/** Dev preview only. `?preview=1&rows=1` paints the seeded Lower A day on Today. */
+function readPreviewRows(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  if (typeof window === "undefined") return false;
+  const search = typeof window.location?.search === "string" ? window.location.search : "";
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  return params.get("preview") === "1" && params.get("rows") === "1";
+}
+
+function previewClientTraining(): ClientTraining {
+  const today = calendarDate(previewClientMembership.timezone);
+  return {
+    program: {
+      id: "d1400000-0000-4000-8000-000000000003",
+      orgId: previewClientMembership.orgId,
+      clientId: previewUser.userId,
+      name: "Foundation 3-day",
+      startDate: today,
+      days: [
+        {
+          id: "d1500000-0000-4000-8000-000000000001",
+          position: 0,
+          name: "Lower A",
+          rest: false,
+          exercises: [
+            {
+              id: "d1510000-0000-4000-8000-000000000001",
+              position: 0,
+              name: "Back squat",
+              sets: 3,
+              reps: "8",
+              notes: "Brace before you descend.",
+              videoUrl: null,
+            },
+            {
+              id: "d1510000-0000-4000-8000-000000000002",
+              position: 1,
+              name: "Romanian deadlift",
+              sets: 3,
+              reps: "8",
+              notes: "Soft knees, flat back.",
+              videoUrl: null,
+            },
+            {
+              id: "d1510000-0000-4000-8000-000000000003",
+              position: 2,
+              name: "Walking lunge",
+              sets: 2,
+              reps: "10",
+              notes: "Short steps.",
+              videoUrl: null,
+            },
+          ],
+        },
+      ],
+    },
+    workouts: [],
+    exerciseLogs: [],
+    sets: [],
+    weightUnit: "lb",
+    nudge: null,
+  };
+}
 
 function overlay(base: ClientTraining, queue: LogOperation[], userId: string): ClientTraining {
   const workouts = base.workouts.map((row) => ({ ...row }));
@@ -169,7 +234,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         setOnline(true);
         return;
       }
-      setBase(null);
+      setBase(readPreviewRows() ? previewClientTraining() : null);
       setError(null);
       setReady(true);
       setOnline(preview !== "offline");

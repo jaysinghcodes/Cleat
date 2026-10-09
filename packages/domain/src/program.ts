@@ -246,12 +246,28 @@ export function prescription(exercise: { sets: number; reps: string; notes: stri
   return notes ? `${base} · ${notes}` : base;
 }
 
-/** Accessible name for a Today row. It includes the name, prescription, and status that are on screen. */
+/**
+ * Text painted on a Today row. The trailing spaces are real characters, so the
+ * accessible name and the content share the same words.
+ */
+export function exerciseRowContent(
+  exercise: { name: string; sets: number; reps: string; notes: string },
+  status: string,
+): { name: string; detail: string; status: string } {
+  return {
+    name: `${exercise.name} `,
+    detail: `${prescription(exercise)} `,
+    status,
+  };
+}
+
+/** Accessible name for a Today row. It is the name, prescription, and status that are on screen. */
 export function exerciseRowLabel(
   exercise: { name: string; sets: number; reps: string; notes: string },
   status: string,
 ): string {
-  return `${exercise.name} ${prescription(exercise)} ${status}`;
+  const content = exerciseRowContent(exercise, status);
+  return `${content.name}${content.detail}${content.status}`;
 }
 
 export function progressLabel(logged: number, total: number): string {

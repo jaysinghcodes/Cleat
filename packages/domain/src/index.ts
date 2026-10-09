@@ -63,6 +63,7 @@ export {
   loggedExerciseCount,
   nudgeBody,
   nudgeReasons,
+  exerciseRowContent,
   exerciseRowLabel,
   prescription,
   programCopy,
