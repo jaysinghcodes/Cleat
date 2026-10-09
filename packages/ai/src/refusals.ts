@@ -123,6 +123,12 @@ const MEDICAL: RegExp[] = [
   /what should i eat/,
   /eating plan/,
   /\bnutrition\b/,
+  /**
+   * tore, torn, pulled, strained, or tweaked, next to a hamstring, calf, quad, groin, or acl.
+   * "hamstring curls" and "calf raises" do not match. A die joke later in the message still does.
+   */
+  /\b(?:tore|torn|pulled|strained|tweaked)\b(?:\s+(?:a|an|my|the|his|her|their|left|right|both|badly|really|just|up|slightly|pretty|so|very)){0,4}\s+(?:hamstrings?|calves|calf|quadriceps|quads?|groins?|acls?)\b/,
+  /\b(?:(?:a|an|my|the|his|her|their)\s+)?(?:(?:left|right|both)\s+)?(?:hamstrings?|calves|calf|quadriceps|quads?|groins?|acls?)\b(?:\s+(?:is|was|got|feels|feel|feeling|really|badly|just|so|very|still)){0,3}\s+(?:tore|torn|pulled|strained|tweaked)\b/,
 ];
 
 /** Training words that make "hurt myself" or "injured myself" an injury, not self harm. */
@@ -367,9 +373,12 @@ function subjectIsThing(before: string): boolean {
 /**
  * The word "die" is self harm unless it sits inside one of these jokes or idioms.
  * "dying" and "killed" are different words, so "I'm dying" and "killed me" stay clear.
+ * "I'll die on this hill", "die on a hill", and "hill to die on" are idioms, along with
+ * "die hard", "to die for", "could die for", and "never say die".
  * "going to", "gonna", "about to", and "ready to" die stay self harm when the subject
  * is a person and the same clause has no training talk and no joke marker.
  * Training talk or a joke marker in that clause is a coach hold.
+ * When that "die" is already inside an idiom, the phrase stays clear.
  * A subject that is not a person stays clear.
  * Explicit self harm wording is checked earlier and still wins.
  */
@@ -380,6 +389,8 @@ function dieClass(text: string): "self_harm" | "hold" | null {
     /\b(?:could|i would|i'?d) die for\b/g,
     /\bto die for\b/g,
     /\bnever say die\b/g,
+    /\bdie on (?:this|that|a) hill\b/g,
+    /\bhills? to die on\b/g,
     /\b(?:burpees?|squats?|workouts?)\b[^.]{0,80}?\bmake me die lol\b/g,
   ];
   for (const pattern of idioms) {
@@ -394,6 +405,7 @@ function dieClass(text: string): "self_harm" | "hold" | null {
   for (const match of text.matchAll(new RegExp(PROSPECTIVE_DIE_SOURCE, "g"))) {
     const start = match.index ?? 0;
     const end = start + match[0].length;
+    if (covered[end - 3]) continue;
     for (let index = end - 3; index < end; index += 1) covered[index] = true;
     const bounds = clauseBounds(text, start, end);
     if (subjectIsThing(text.slice(bounds.from, start))) continue;
@@ -423,9 +435,12 @@ function distressHold(text: string): DraftHold {
  * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
  * The word "die" is self harm. A listed joke or idiom is the exception.
+ * "I'll die on this hill", "die hard", and "to die for" are clear.
  * "going to", "gonna", "about to", or "ready to" die, with training talk or a joke
  * marker in the same clause, is a coach hold. A subject that is not a person is clear.
  * A bare "going to die" stays self harm. Explicit self harm wording still wins.
+ * tore, torn, pulled, strained, or tweaked, with a hamstring, calf, quad, groin, or acl,
+ * is the medical safety template, including when a die joke is in the same message.
  * "end it" plus training talk in the same clause is a hold, not a refusal.
  * Those holds run only after emergency and injury. A medical emergency plus a
  * die hold still gets the emergency template and the 988 line.

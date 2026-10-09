@@ -1371,3 +1371,148 @@ test("emergency and injury win over a die hold or an end it hold", async () => {
   assert.equal(endItPlan.inbox?.title, "Emergency");
   assert.equal(endItPlan.holdDraft, null);
 });
+
+test("muscle tears route to medical and hill idioms stay clear", async () => {
+  const injury = [
+    "tore my hamstring",
+    "pulled my hamstring",
+    "tore my acl",
+    "strained a calf",
+    "tweaked a quad",
+    "torn a groin",
+    "tore my hamstring, gonna die lol",
+    "pulled my hamstring, gonna die lol",
+    "tore my acl, gonna die lol",
+    "strained a calf, gonna die lol",
+    "tweaked a quad, gonna die lol",
+    "torn a groin, gonna die lol",
+    "my hamstring is torn",
+    "tweaked my right quad",
+  ];
+  for (const body of injury) {
+    assert.doesNotMatch(body, DASH);
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text, MEDICAL_SAFETY_TEMPLATE, body);
+    assert.equal(hit.text.includes("988"), false, body);
+    assert.equal(hit.emergency, false, body);
+    let calls = 0;
+    const plan = await gateClientMessage({
+      message: body,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      settings: gateSettings,
+      chat: throwingChat,
+      now: NOW,
+      loadChunks: async () => {
+        calls += 1;
+        return highChunks(body);
+      },
+    });
+    assert.equal(calls, 0, body);
+    assert.equal(plan.audit.decision, "hard_refuse", body);
+    assert.equal(plan.audit.templateId, "medical_safety", body);
+    assert.equal(plan.clientMessage?.body, MEDICAL_SAFETY_TEMPLATE, body);
+    assert.equal(plan.clientMessage?.body.includes("988"), false, body);
+    assert.equal(plan.inbox?.priority, "p0", body);
+    assert.equal(plan.inbox?.emergency, false, body);
+    assert.equal(plan.inbox?.title, "Medical safety", body);
+    assert.equal(plan.holdDraft, null, body);
+  }
+
+  const clear = [
+    "I'll die on this hill",
+    "I will die on this hill",
+    "I’ll die on this hill",
+    "die on this hill",
+    "die on a hill",
+    "this is the hill to die on",
+    "I'm going to die on this hill",
+    "die hard",
+    "to die for",
+    "hamstring curls today",
+    "calf raises",
+    "quad day",
+    "I tweaked my program",
+    "I pulled a pr",
+  ];
+  for (const body of clear) {
+    assert.doesNotMatch(body, DASH);
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "none", body);
+    const plan = await planClientTurn({
+      message: body,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      chunks: highChunks(body),
+      settings: { autoSend: true, threshold: 0.85, signOff: "", toneNotes: "" },
+      chat: cannedChatModel,
+      now: NOW,
+    });
+    assert.equal(plan.audit.decision, "auto_send", body);
+    assert.equal(plan.audit.templateId, null, body);
+    assert.equal(plan.inbox, null, body);
+    assert.equal(plan.audit.reasonCodes.includes("distress_wording"), false, body);
+    assert.equal(plan.audit.reasonCodes.includes("self_harm"), false, body);
+    assert.equal((plan.clientMessage?.body ?? "").includes("988"), false, body);
+  }
+
+  const selfHarm = [
+    "I'll die on this hill and I want to die",
+    "I want to die on this hill",
+    "die hard fan but I am suicidal",
+    "to die for but I want to die",
+    "tore my hamstring and I want to die",
+    "I'm going to die. I'll die on this hill",
+  ];
+  for (const body of selfHarm) {
+    assert.doesNotMatch(body, DASH);
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+    assert.equal(hit.emergency, true, body);
+    let calls = 0;
+    const plan = await gateClientMessage({
+      message: body,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      settings: gateSettings,
+      chat: throwingChat,
+      now: NOW,
+      loadChunks: async () => {
+        calls += 1;
+        return highChunks(body);
+      },
+    });
+    assert.equal(calls, 0, body);
+    assert.equal(plan.audit.decision, "hard_refuse", body);
+    assert.equal(plan.audit.templateId, "emergency_self_harm", body);
+    assert.equal(plan.clientMessage?.body.includes("988"), true, body);
+    assert.equal(plan.inbox?.priority, "p0", body);
+    assert.equal(plan.inbox?.emergency, true, body);
+    assert.equal(plan.holdDraft, null, body);
+  }
+
+  const emergency = "chest pain on my run, gonna die lol";
+  assert.doesNotMatch(emergency, DASH);
+  const emergencyHit = checkRefusals(emergency);
+  assert.equal(emergencyHit.kind, "hard_refuse");
+  if (emergencyHit.kind === "hard_refuse") {
+    assert.equal(emergencyHit.templateId, "emergency_self_harm");
+    assert.equal(emergencyHit.text, EMERGENCY_SELF_HARM_TEMPLATE);
+    assert.equal(emergencyHit.text.startsWith(EMERGENCY_TEMPLATE), true);
+    assert.equal(emergencyHit.text.includes(SELF_HARM_LINE), true);
+    assert.equal(emergencyHit.emergency, true);
+  }
+});
