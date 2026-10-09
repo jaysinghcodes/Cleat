@@ -37,7 +37,7 @@ export default function ProgramScreen() {
           <OfflineBanner />
         </View>
         {error ? (
-          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void refresh()} />
+          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void refresh("retry")} />
         ) : null}
         {!ready && !error ? <ScreenState kind="loading" title={screenCopy.loadingProgram} /> : null}
         {ready && !program && !error ? (
@@ -45,7 +45,7 @@ export default function ProgramScreen() {
             <ScreenState kind="empty" title="No program yet" body={programCopy.emptyProgram} />
           </View>
         ) : null}
-        {ready && program ? (
+        {ready && program && !error ? (
           <>
             <Text style={{ color: tokens.textSecondary, marginTop: 6, marginBottom: 16 }}>
               {program.name} · week of {shortDate(weekDates(today)[0] ?? today)}

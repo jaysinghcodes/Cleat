@@ -3,6 +3,7 @@ import {
   dayStatus,
   firstName,
   initials,
+  exerciseRowLabel,
   loggedExerciseCount,
   prescription,
   programCopy,
@@ -116,7 +117,7 @@ export default function TodayScreen() {
             kind="error"
             title={screenCopy.couldNotLoad}
             body={error}
-            onRetry={() => void refresh()}
+            onRetry={() => void refresh("retry")}
           />
         ) : null}
         {!ready && !error ? <ScreenState kind="loading" title={screenCopy.loadingToday} /> : null}
@@ -148,7 +149,7 @@ export default function TodayScreen() {
             <ScreenState kind="empty" title="No program yet" body={programCopy.emptyToday} />
           </View>
         ) : null}
-        {ready && program && !day ? (
+        {ready && program && !day && !error ? (
           <View style={cardStyle(tokens)}>
             <Text style={{ color: tokens.text, fontWeight: "700", fontSize: 18 }}>{program.name}</Text>
             <Text style={{ color: tokens.textSecondary, marginTop: 6 }}>
@@ -156,7 +157,7 @@ export default function TodayScreen() {
             </Text>
           </View>
         ) : null}
-        {ready && program && day ? (
+        {ready && program && day && !error ? (
           <>
             <Text style={{ color: tokens.textSecondary, marginBottom: 14 }}>
               {day.name} · {program.name}
@@ -209,11 +210,12 @@ export default function TodayScreen() {
                       ) > 0
                     : false;
                   const current = nextExercise?.id === exercise.id && !done;
+                  const rowStatus = done ? "Logged" : current ? "Active" : `${index + 1}`;
                   return (
                     <Pressable
                       key={exercise.id}
                       accessibilityRole="button"
-                      accessibilityLabel={exercise.name}
+                      accessibilityLabel={exerciseRowLabel(exercise, rowStatus)}
                       onPress={() => router.push({ pathname: "/log", params: { exerciseId: exercise.id } })}
                       style={[
                         cardStyle(tokens),
@@ -227,7 +229,7 @@ export default function TodayScreen() {
                           <Text style={{ color: tokens.textSecondary, marginTop: 4 }}>{prescription(exercise)}</Text>
                         </View>
                         <Text style={{ color: done ? tokens.success : tokens.textTertiary, fontWeight: "600", fontSize: 12 }}>
-                          {done ? "Logged" : current ? "Active" : `${index + 1}`}
+                          {rowStatus}
                         </Text>
                       </View>
                     </Pressable>

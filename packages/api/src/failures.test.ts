@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bookingCopy, chatCopy, copy, programCopy } from "@cleat/domain";
-import { CleatRequestError } from "./auth";
+import {
+  aiCopy,
+  bookingCopy,
+  chatCopy,
+  clientSessionView,
+  copy,
+  deskSessionView,
+  inboxCopy,
+  programCopy,
+  screenCopy,
+  sessionLoadError,
+  userFacingError,
+} from "@cleat/domain";
+import { CleatRequestError, fetchCoach, fetchMembership } from "./auth";
+import { resolveInboxItem } from "./ai-desk";
 import { bookSession, loadTrainerCalendar } from "./calendar";
 import { sendChatMessage } from "./messages";
 import { fetchClientTraining } from "./programs";
@@ -164,10 +177,137 @@ test("program load hides a raw JWT failure", async () => {
     () => fetchClientTraining(client, USER),
     (err: unknown) => {
       assert.ok(err instanceof CleatRequestError);
-      assert.equal(err.message, programCopy.couldNotLog);
+      assert.equal(err.message, screenCopy.loadFailed);
+      assert.notEqual(err.message, programCopy.couldNotLog);
       assert.equal(err.message.includes("JWT"), false);
       assert.equal(err.message.includes("PGRST"), false);
       return true;
     },
   );
+});
+
+test("a membership load failure shows the error state, not Checking your session", async () => {
+  const client = {
+    rpc: async () => ({ data: null, error: { message: "permission denied for table inbox_items" } }),
+  } as unknown as CleatClient;
+  let loadError = "";
+  try {
+    await fetchMembership(client);
+    assert.fail("membership should fail");
+  } catch (err) {
+    loadError = sessionLoadError(err);
+  }
+  assert.equal(loadError, screenCopy.loadFailed);
+  assert.equal(loadError.includes("permission denied"), false);
+  assert.equal(loadError.includes("Checking your session"), false);
+  const view = deskSessionView({
+    ready: true,
+    configured: true,
+    hasSession: true,
+    role: null,
+    loadError,
+  });
+  assert.equal(view, "error");
+  assert.notEqual(view, "signup");
+  assert.notEqual(view, "login");
+});
+
+test("a coach load failure shows the error state, not the login redirect", async () => {
+  const client = {
+    rpc: async () => ({ data: null, error: { message: "TypeError: Failed to fetch" } }),
+  } as unknown as CleatClient;
+  let loadError = "";
+  try {
+    await fetchCoach(client);
+    assert.fail("coach should fail");
+  } catch (err) {
+    loadError = sessionLoadError(err);
+  }
+  assert.equal(loadError, screenCopy.loadFailed);
+  const view = clientSessionView({
+    ready: true,
+    configured: true,
+    hasSession: true,
+    role: "client",
+    loadError,
+  });
+  assert.equal(view, "error");
+});
+
+const CALENDAR_SENTENCES = [
+  "Calendar signing is not configured.",
+  "Google Calendar is not configured.",
+  "Only a coach can connect Google Calendar.",
+  "Google did not return a calendar connection.",
+] as const;
+
+for (const sentence of CALENDAR_SENTENCES) {
+  test(`calendar fail keeps ${sentence}`, async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ error: sentence }), {
+        status: 503,
+        headers: { "content-type": "application/json" },
+      });
+    try {
+      await assert.rejects(
+        () => bookSession("http://desk.test", "token", "2026-10-10T15:00:00.000Z"),
+        (err: unknown) => {
+          assert.ok(err instanceof CleatRequestError);
+          assert.equal(err.message, sentence);
+          assert.equal(userFacingError(err.message, copy.generic), sentence);
+          return true;
+        },
+      );
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+}
+
+const INBOX_SENTENCES = [
+  inboxCopy.signIn,
+  inboxCopy.notOpen,
+  inboxCopy.useDraft,
+  "Choose reply or dismiss.",
+  inboxCopy.badTier,
+] as const;
+
+for (const sentence of INBOX_SENTENCES) {
+  test(`inbox resolve keeps ${sentence}`, async () => {
+    const client = {
+      rpc: async () => ({ data: null, error: { message: sentence } }),
+    } as unknown as CleatClient;
+    await assert.rejects(
+      () => resolveInboxItem(client, { itemId: "item-1", action: "reply", body: "On my way" }),
+      (err: unknown) => {
+        assert.ok(err instanceof CleatRequestError);
+        assert.equal(err.message, sentence);
+        assert.equal(userFacingError(err.message, copy.generic), sentence);
+        assert.equal(userFacingError(err.message, aiCopy.loadFailed), sentence);
+        assert.notEqual(err.message, inboxCopy.replySent);
+        assert.notEqual(err.message, inboxCopy.dismissed);
+        return true;
+      },
+    );
+  });
+}
+
+test("inbox resolve does not report success as an error", async () => {
+  const client = {
+    rpc: async () => ({ data: null, error: { message: "permission denied for table inbox_items" } }),
+  } as unknown as CleatClient;
+  for (const action of ["reply", "dismiss"] as const) {
+    await assert.rejects(
+      () => resolveInboxItem(client, { itemId: "item-1", action }),
+      (err: unknown) => {
+        assert.ok(err instanceof CleatRequestError);
+        assert.equal(err.message, copy.generic);
+        assert.notEqual(err.message, inboxCopy.replySent);
+        assert.notEqual(err.message, inboxCopy.dismissed);
+        assert.equal(err.message.includes("permission denied"), false);
+        return true;
+      },
+    );
+  }
 });

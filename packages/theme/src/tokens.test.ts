@@ -128,6 +128,15 @@ test("emergency solid fill and injury tint stay distinguishable in grayscale", (
   }
 });
 
+test("accountability headers use textSecondary on raised and soft rows", () => {
+  for (const theme of [dark, light]) {
+    const onRaised = contrast(theme.textSecondary, theme.raised);
+    const onSoft = contrast(theme.textSecondary, theme.bgSoft);
+    assert.ok(onRaised >= 4.5, `${theme.colorScheme} textSecondary on raised is ${onRaised.toFixed(2)}`);
+    assert.ok(onSoft >= 4.5, `${theme.colorScheme} textSecondary on bgSoft is ${onSoft.toFixed(2)}`);
+  }
+});
+
 test("text and status inks pass AA on page and card", () => {
   for (const theme of [dark, light]) {
     for (const surface of [theme.page, theme.card]) {

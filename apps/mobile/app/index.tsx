@@ -1,15 +1,26 @@
-import { copy } from "@cleat/domain";
+import { clientSessionView, copy, screenCopy } from "@cleat/domain";
 import { Redirect } from "expo-router";
 import { Text, View } from "react-native";
+import { SessionLoadFallback } from "../components/session-fallback";
 import { useSession } from "../lib/session";
 import { useTheme } from "../theme";
 
 export default function Index() {
-  const { ready, configured, membership } = useSession();
+  const { ready, configured, session, membership, loadError, refresh } = useSession();
   const { tokens } = useTheme();
+  const view = clientSessionView({
+    ready,
+    configured,
+    hasSession: session !== null,
+    role: membership?.role ?? null,
+    loadError,
+  });
 
-  if (!ready) {
+  if (view === "checking") {
     return <View style={{ flex: 1, backgroundColor: tokens.page }} />;
+  }
+  if (view === "error") {
+    return <SessionLoadFallback body={loadError ?? screenCopy.loadFailed} onRetry={() => void refresh()} />;
   }
   if (!configured) {
     return (

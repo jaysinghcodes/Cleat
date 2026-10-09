@@ -116,7 +116,7 @@ export default function LogScreen() {
         </Pressable>
         <OfflineBanner />
         {error ? (
-          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void refresh()} />
+          <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void refresh("retry")} />
         ) : null}
         {!ready ? <ScreenState kind="loading" title={screenCopy.loadingLog} /> : null}
         {ready && !exercise ? (

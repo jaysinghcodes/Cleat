@@ -11,6 +11,9 @@
     "app/theme.tsx",
     "app/screen-state.tsx",
     "app/screen-state.test.tsx",
+    "app/session-fallback.tsx",
+    "app/session-fallback.test.tsx",
+    "app/ui.tsx",
     "app/state-gallery.tsx"
   ]
 }

@@ -7,6 +7,7 @@ import {
   lastLoggedLabel,
   nudgeBody,
   nudgeReasons,
+  exerciseRowLabel,
   programDayForDate,
   programDraftMessage,
   type AssignedProgram,
@@ -265,6 +266,14 @@ test("the board sorts the client who needs a nudge ahead of a finished client", 
   assert.equal(board.rows[1]?.todayLabel, "Done");
   assert.equal(board.rows[1]?.needsNudge, false);
   assert.equal(board.counts.needsNudge >= 1, true);
+});
+
+test("today exercise row label includes the visible text", () => {
+  const label = exerciseRowLabel({ name: "Squat", sets: 3, reps: "5", notes: "" }, "Active");
+  assert.equal(label, "Squat 3 × 5 Active");
+  assert.equal(label.includes("Squat"), true);
+  assert.equal(label.includes("3 × 5"), true);
+  assert.equal(label.includes("Active"), true);
 });
 
 test("nudge copy names the coach and does not use dash punctuation", () => {

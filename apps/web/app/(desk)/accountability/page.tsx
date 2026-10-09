@@ -191,15 +191,15 @@ export default function AccountabilityPage() {
             <div className="list-row" style={{ background: "var(--bg-soft)" }}>
               <div style={{ width: 36 }} />
               <div className="spacer">
-                <strong style={{ fontSize: 12, color: "var(--faint)", letterSpacing: "0.04em" }}>CLIENT</strong>
+                <strong style={{ fontSize: 12, color: "var(--sub)", letterSpacing: "0.04em" }}>CLIENT</strong>
               </div>
-              <div className="board-today" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-today" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 TODAY
               </div>
-              <div className="board-adherence" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-adherence" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 ADHERENCE
               </div>
-              <div className="board-action" style={{ fontSize: 12, color: "var(--faint)", fontWeight: 600 }}>
+              <div className="board-action" style={{ fontSize: 12, color: "var(--sub)", fontWeight: 600 }}>
                 ACTION
               </div>
             </div>

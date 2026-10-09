@@ -246,6 +246,14 @@ export function prescription(exercise: { sets: number; reps: string; notes: stri
   return notes ? `${base} · ${notes}` : base;
 }
 
+/** Accessible name for a Today row. It includes the name, prescription, and status that are on screen. */
+export function exerciseRowLabel(
+  exercise: { name: string; sets: number; reps: string; notes: string },
+  status: string,
+): string {
+  return `${exercise.name} ${prescription(exercise)} ${status}`;
+}
+
 export function progressLabel(logged: number, total: number): string {
   return `${logged} of ${total} exercises logged`;
 }

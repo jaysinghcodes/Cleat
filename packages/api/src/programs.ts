@@ -5,6 +5,7 @@ import {
   logOperationSchema,
   productError,
   programCopy,
+  screenCopy,
   programDraftMessage,
   programDraftSchema,
   weightUnitSchema,
@@ -100,7 +101,7 @@ export async function fetchActiveProgram(
 
 export async function fetchMyProgram(supabase: CleatClient): Promise<AssignedProgram | null> {
   const programs = await supabase.from("programs").select("id").eq("status", "active");
-  if (programs.error) fail(programs.error.message, programCopy.couldNotLog);
+  if (programs.error) fail(programs.error.message, screenCopy.loadFailed);
   const ids = asRows(programs.data).map((row) => String(row.id));
   const bundled = await loadProgramGraph(supabase, ids);
   return bundled[0] ?? null;
@@ -133,10 +134,10 @@ export async function fetchClientTraining(
       .order("created_at", { ascending: false })
       .limit(1),
   ]);
-  if (profile.error) fail(profile.error.message, programCopy.couldNotLog);
-  if (workouts.error) fail(workouts.error.message, programCopy.couldNotLog);
-  if (exerciseLogs.error) fail(exerciseLogs.error.message, programCopy.couldNotLog);
-  if (nudges.error) fail(nudges.error.message, programCopy.couldNotLog);
+  if (profile.error) fail(profile.error.message, screenCopy.loadFailed);
+  if (workouts.error) fail(workouts.error.message, screenCopy.loadFailed);
+  if (exerciseLogs.error) fail(exerciseLogs.error.message, screenCopy.loadFailed);
+  if (nudges.error) fail(nudges.error.message, screenCopy.loadFailed);
 
   const logRows = asRows(exerciseLogs.data);
   const logIds = logRows.map((row) => String(row.id));
@@ -146,7 +147,7 @@ export async function fetchClientTraining(
       .from("set_logs")
       .select("exercise_log_id, set_index, weight_kg, reps")
       .in("exercise_log_id", logIds);
-    if (sets.error) fail(sets.error.message, programCopy.couldNotLog);
+    if (sets.error) fail(sets.error.message, screenCopy.loadFailed);
     setRows = asRows(sets.data);
   }
 

@@ -1,7 +1,8 @@
-import { screenCopy } from "@cleat/domain";
+import { clientSessionView, screenCopy } from "@cleat/domain";
 import type { ThemeTokens } from "@cleat/theme";
 import { Redirect, Tabs } from "expo-router";
 import { Text, View } from "react-native";
+import { SessionLoadFallback } from "../../components/session-fallback";
 import { useSession } from "../../lib/session";
 import { TrainingProvider } from "../../lib/training";
 import { useTheme } from "../../theme";
@@ -42,10 +43,17 @@ function TabGlyph({
 }
 
 export default function ClientLayout() {
-  const { ready, membership } = useSession();
+  const { ready, configured, session, membership, loadError, refresh } = useSession();
   const { tokens } = useTheme();
+  const view = clientSessionView({
+    ready,
+    configured,
+    hasSession: session !== null,
+    role: membership?.role ?? null,
+    loadError,
+  });
 
-  if (!ready) {
+  if (view === "checking") {
     return (
       <View style={{ flex: 1, backgroundColor: tokens.page, alignItems: "center", justifyContent: "center" }}>
         <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 16, fontWeight: "600" }}>
@@ -54,7 +62,10 @@ export default function ClientLayout() {
       </View>
     );
   }
-  if (membership?.role !== "client") return <Redirect href="/login" />;
+  if (view === "error") {
+    return <SessionLoadFallback body={loadError ?? screenCopy.loadFailed} onRetry={() => void refresh()} />;
+  }
+  if (view !== "app" || !membership) return <Redirect href="/login" />;
 
   return (
     <TrainingProvider>

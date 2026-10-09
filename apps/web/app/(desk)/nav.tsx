@@ -3,11 +3,12 @@
 import { screenCopy, type Membership } from "@cleat/domain";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import { useOnline } from "../online";
-import { OfflineBanner } from "../screen-state";
+import { OfflineBanner, ScreenState } from "../screen-state";
 import { useSession } from "../session";
 import { ThemeCycle } from "../theme";
+import { shouldHoldDynamicDeskNav } from "./nav-offline";
 
 export const DESK_NAV = [
   { href: "/accountability", label: "Accountability" },
@@ -36,6 +37,36 @@ export function DeskShell({
   const router = useRouter();
   const { signOut } = useSession();
   const online = useOnline();
+  const [heldOffline, setHeldOffline] = useState(false);
+  const showOffline = !online || heldOffline;
+
+  async function openDynamic(href: string) {
+    const browserOnline = typeof navigator === "undefined" ? online : navigator.onLine;
+    let fetchThrew = false;
+    if (browserOnline) {
+      try {
+        await fetch(href, { cache: "no-store" });
+      } catch {
+        fetchThrew = true;
+      }
+    }
+    if (shouldHoldDynamicDeskNav(href, browserOnline, fetchThrew)) {
+      setHeldOffline(true);
+      return;
+    }
+    setHeldOffline(false);
+    router.push(href);
+  }
+
+  function onNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    if (href !== "/inbox" && href !== "/org") {
+      setHeldOffline(false);
+      return;
+    }
+    event.preventDefault();
+    void openDynamic(href);
+  }
 
   return (
     <div className="desk">
@@ -58,6 +89,7 @@ export function DeskShell({
                 href={item.href}
                 className={active ? "active" : undefined}
                 aria-current={active ? "page" : undefined}
+                onClick={(event) => onNavClick(event, item.href)}
               >
                 {item.label}
               </Link>
@@ -84,8 +116,8 @@ export function DeskShell({
         </div>
       </aside>
       <main className="main">
-        {online ? null : <OfflineBanner message={screenCopy.offline} />}
-        {children}
+        {showOffline ? <OfflineBanner message={screenCopy.offline} /> : null}
+        {heldOffline ? <ScreenState kind="offline" title={screenCopy.offline} /> : children}
       </main>
     </div>
   );

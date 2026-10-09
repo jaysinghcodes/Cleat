@@ -4,11 +4,17 @@ import { chatCopy } from "./message";
 import { programCopy } from "./program";
 import { copy } from "./auth";
 import { bookingCopy } from "./calendar";
+import { inboxCopy } from "./inbox";
 import {
+  clientSessionView,
   connectionMessage,
+  deskSessionView,
   offlineActionReason,
   screenCopy,
   screenPreviewFromSearch,
+  sessionLoadError,
+  trainingRetryResult,
+  trainingRetryStart,
   userFacingError,
 } from "./screen-state";
 
@@ -70,6 +76,84 @@ test("screen preview is an allowlisted dev query", () => {
   assert.equal(screenPreviewFromSearch("?preview=1&state=nope"), "empty");
   assert.equal(screenPreviewFromSearch("?state=error"), null);
   assert.equal(screenPreviewFromSearch("?preview=1&state=error", "production"), null);
+});
+
+const KEPT_SENTENCES = [
+  "Calendar signing is not configured.",
+  "Google Calendar is not configured.",
+  "Only a coach can connect Google Calendar.",
+  "Google did not return a calendar connection.",
+  inboxCopy.signIn,
+  inboxCopy.notOpen,
+  inboxCopy.useDraft,
+  "Choose reply or dismiss.",
+  inboxCopy.badTier,
+] as const;
+
+for (const sentence of KEPT_SENTENCES) {
+  test(`userFacingError keeps ${sentence}`, () => {
+    assert.equal(userFacingError(sentence, copy.generic), sentence);
+    assert.equal(userFacingError(`db says: ${sentence}`, screenCopy.loadFailed), sentence);
+  });
+}
+
+test("a membership load failure shows the error state, not Checking your session", () => {
+  const loadError = sessionLoadError(new Error("permission denied for table inbox_items"));
+  assert.equal(loadError, screenCopy.loadFailed);
+  assert.equal(loadError.includes("permission denied"), false);
+  assert.equal(sessionLoadError(new Error(copy.generic)), screenCopy.loadFailed);
+  const view = deskSessionView({
+    ready: true,
+    configured: true,
+    hasSession: true,
+    role: null,
+    loadError,
+  });
+  assert.equal(view, "error");
+  assert.notEqual(view, "checking");
+  assert.notEqual(view, "signup");
+  assert.notEqual(view, "login");
+  assert.equal(
+    deskSessionView({ ready: false, configured: true, hasSession: true, role: "trainer", loadError: null }),
+    "checking",
+  );
+});
+
+test("a load sentence is not shortened to its title", () => {
+  assert.equal(userFacingError(screenCopy.loadFailed, copy.generic), screenCopy.loadFailed);
+  assert.equal(userFacingError(new Error(screenCopy.loadFailed), programCopy.couldNotLog), screenCopy.loadFailed);
+});
+
+test("a successful retry clears the load error", () => {
+  const started = trainingRetryStart();
+  assert.equal(started.ready, false);
+  assert.equal(started.error, null);
+  const done = trainingRetryResult(null);
+  assert.equal(done.ready, true);
+  assert.equal(done.error, null);
+});
+
+test("a failed retry shows the load sentence again", () => {
+  const done = trainingRetryResult(new Error("permission denied for table inbox_items"));
+  assert.equal(done.ready, true);
+  assert.equal(done.error, screenCopy.loadFailed);
+  assert.notEqual(done.error, programCopy.couldNotLog);
+  assert.equal(done.error?.includes("permission denied"), false);
+});
+
+test("a coach load failure shows the error state, not the login redirect", () => {
+  const view = clientSessionView({
+    ready: true,
+    configured: true,
+    hasSession: true,
+    role: "client",
+    loadError: screenCopy.loadFailed,
+  });
+  assert.equal(view, "error");
+  assert.equal(
+    clientSessionView({ ready: true, configured: true, hasSession: false, role: null, loadError: null }),
+    "login",
+  );
 });
 
 test("connection banner and offline actions", () => {

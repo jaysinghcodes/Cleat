@@ -82,6 +82,15 @@ const MORE_PRODUCT_ERRORS = [
   screenCopy.loadFailed,
   inboxCopy.windowInvalid,
   inboxCopy.emptyReply,
+  inboxCopy.signIn,
+  inboxCopy.notOpen,
+  inboxCopy.useDraft,
+  inboxCopy.badTier,
+  "Choose reply or dismiss.",
+  "Calendar signing is not configured.",
+  "Google Calendar is not configured.",
+  "Only a coach can connect Google Calendar.",
+  "Google did not return a calendar connection.",
   "Enter a cutoff between 0 and 168 hours.",
   "End time must be after the start time.",
   "Choose a date and a time range.",
@@ -95,7 +104,7 @@ export function knownProductMessage(message: string | undefined): string | null 
   const sentinel = "\u0000";
   const known = productError(message, sentinel);
   if (known !== sentinel) return known;
-  const extra = MORE_PRODUCT_ERRORS.find((item) => message.includes(item));
+  const extra = MORE_PRODUCT_ERRORS.filter((item) => message.includes(item)).sort((a, b) => b.length - a.length)[0];
   if (extra) return extra;
   const cutoff = message.match(CUTOFF);
   return cutoff?.[0] ?? null;
@@ -108,6 +117,66 @@ export function knownProductMessage(message: string | undefined): string | null 
 export function userFacingError(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   return knownProductMessage(message) ?? fallback;
+}
+
+/**
+ * Membership and coach load failures. The generic product fallback is a retry
+ * sentence for actions, so a screen load uses the load sentence instead.
+ */
+export function sessionLoadError(error: unknown): string {
+  const message = userFacingError(error, screenCopy.loadFailed);
+  return message === copy.generic ? screenCopy.loadFailed : message;
+}
+
+export type DeskSessionView = "checking" | "unconfigured" | "error" | "login" | "signup" | "coach" | "desk";
+
+export function deskSessionView(input: {
+  ready: boolean;
+  configured: boolean;
+  hasSession: boolean;
+  role: string | null;
+  loadError: string | null;
+}): DeskSessionView {
+  if (!input.ready) return "checking";
+  if (!input.configured) return "unconfigured";
+  if (input.loadError) return "error";
+  if (!input.hasSession) return "login";
+  if (!input.role) return "signup";
+  if (input.role !== "trainer") return "coach";
+  return "desk";
+}
+
+export type ClientSessionView = "checking" | "unconfigured" | "error" | "login" | "app";
+
+export function clientSessionView(input: {
+  ready: boolean;
+  configured: boolean;
+  hasSession: boolean;
+  role: string | null;
+  loadError: string | null;
+}): ClientSessionView {
+  if (!input.ready) return "checking";
+  if (!input.configured) return "unconfigured";
+  if (input.loadError) return "error";
+  if (!input.hasSession) return "login";
+  if (input.role !== "client") return "login";
+  return "app";
+}
+
+export type TrainingLoad = {
+  ready: boolean;
+  error: string | null;
+};
+
+/** Try again hides the stale card and shows the loading sentence. */
+export function trainingRetryStart(): TrainingLoad {
+  return { ready: false, error: null };
+}
+
+/** A successful load clears the error. A failed load shows the load sentence. */
+export function trainingRetryResult(error: unknown): TrainingLoad {
+  if (!error) return { ready: true, error: null };
+  return { ready: true, error: userFacingError(error, screenCopy.loadFailed) };
 }
 
 /** Queued logs keep the existing offline line. A disconnected phone still gets a banner. */

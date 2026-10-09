@@ -5,7 +5,16 @@ import {
   updateWeightUnit,
   type ClientTraining,
 } from "@cleat/api";
-import { copy, isOfflineError, programCopy, userFacingError, type LogOperation, type WeightUnit } from "@cleat/domain";
+import {
+  copy,
+  isOfflineError,
+  programCopy,
+  trainingRetryResult,
+  trainingRetryStart,
+  userFacingError,
+  type LogOperation,
+  type WeightUnit,
+} from "@cleat/domain";
 import {
   createContext,
   useCallback,
@@ -27,7 +36,7 @@ type TrainingContextValue = {
   error: string | null;
   notice: string | null;
   online: boolean;
-  refresh: () => Promise<void>;
+  refresh: (mode?: "retry") => Promise<void>;
   saveOperation: (operation: LogOperation) => Promise<boolean>;
   setUnit: (unit: WeightUnit) => Promise<void>;
   dismiss: (nudgeId: string) => Promise<void>;
@@ -108,15 +117,28 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (mode?: "retry") => {
     if (!client || !session) return;
-    const [next, pending] = await Promise.all([
-      fetchClientTraining(client, session.userId),
-      readLogQueue(),
-    ]);
-    setBase(next);
-    setQueue(pending);
-    setReady(true);
+    if (mode === "retry") {
+      const started = trainingRetryStart();
+      setReady(started.ready);
+      setError(started.error);
+    }
+    try {
+      const [next, pending] = await Promise.all([
+        fetchClientTraining(client, session.userId),
+        readLogQueue(),
+      ]);
+      setBase(next);
+      setQueue(pending);
+      const done = trainingRetryResult(null);
+      setReady(done.ready);
+      setError(done.error);
+    } catch (err: unknown) {
+      const done = trainingRetryResult(err);
+      setReady(done.ready);
+      setError(done.error);
+    }
   }, [client, session]);
 
   const flush = useCallback(async () => {
@@ -156,13 +178,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
     if (!client || !session) return;
     let alive = true;
     void (async () => {
-      try {
-        await refresh();
-      } catch (err: unknown) {
-        if (!alive) return;
-        setError(userFacingError(err, copy.generic));
-        setReady(true);
-      }
+      await refresh();
       if (!alive) return;
       await flush();
     })();
