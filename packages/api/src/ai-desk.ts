@@ -178,7 +178,7 @@ const INBOX_COLUMNS =
 
 export async function loadTrainerInbox(
   supabase: CleatClient,
-  input: { orgId: string; timeZone: string; now?: string },
+  input: { orgId: string; timeZone: string; now?: string; defaultWindowHours?: number },
 ): Promise<TrainerInbox> {
   const now = input.now ?? new Date().toISOString();
   const [org, items, heads, notices, clients, board] = await Promise.all([
@@ -221,7 +221,7 @@ export async function loadTrainerInbox(
   if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
   const windowHours = resolveUnansweredHours(
     org.data && typeof org.data === "object" ? (org.data as { unanswered_hours?: unknown }).unanswered_hours : undefined,
-    process.env.INBOX_UNANSWERED_HOURS,
+    input.defaultWindowHours,
   );
   const names: Record<string, string> = {};
   for (const client of clients) names[client.userId] = client.displayName;

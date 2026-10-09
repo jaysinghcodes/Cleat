@@ -133,8 +133,7 @@ test("an open emergency stays visible after more than 300 resolved items", async
   );
 });
 
-test("loadTrainerInbox uses INBOX_UNANSWERED_HOURS unless the org saved a window", async () => {
-  const previous = process.env.INBOX_UNANSWERED_HOURS;
+test("loadTrainerInbox uses the passed default unless the org saved a window", async () => {
   const messageId = "30000000-0000-4000-8000-0000000000aa";
   const head = {
     thread_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -190,36 +189,24 @@ test("loadTrainerInbox uses INBOX_UNANSWERED_HOURS unless the org saved a window
     return supabase as unknown as CleatClient;
   }
 
-  async function hours(unansweredHours: unknown, env: string | undefined) {
-    if (env === undefined) delete process.env.INBOX_UNANSWERED_HOURS;
-    else process.env.INBOX_UNANSWERED_HOURS = env;
-    const inbox = await loadTrainerInbox(desk(unansweredHours), {
+  async function hours(unansweredHours: unknown, defaultWindowHours?: number) {
+    return loadTrainerInbox(desk(unansweredHours), {
       orgId: ORG,
       timeZone: "America/Chicago",
       now: "2026-10-09T16:00:00.000Z",
+      defaultWindowHours,
     });
-    return inbox;
   }
 
-  try {
-    const fromEnv = await hours(null, "1");
-    assert.equal(fromEnv.windowHours, 1);
-    assert.equal(fromEnv.items.some((item) => item.reason === "unanswered" && item.messageId === messageId), true);
+  const fromDefault = await hours(null, 1);
+  assert.equal(fromDefault.windowHours, 1);
+  assert.equal(fromDefault.items.some((item) => item.reason === "unanswered" && item.messageId === messageId), true);
 
-    const orgWins = await hours(4, "1");
-    assert.equal(orgWins.windowHours, 4);
-    assert.equal(orgWins.items.some((item) => item.reason === "unanswered"), false);
+  const orgWins = await hours(4, 1);
+  assert.equal(orgWins.windowHours, 4);
+  assert.equal(orgWins.items.some((item) => item.reason === "unanswered"), false);
 
-    const clampedLow = await hours(undefined, "0");
-    assert.equal(clampedLow.windowHours, 1);
-    const clampedHigh = await hours(undefined, "999");
-    assert.equal(clampedHigh.windowHours, 168);
-    assert.equal(clampedHigh.items.some((item) => item.reason === "unanswered"), false);
-
-    const fallback = await hours(null, undefined);
-    assert.equal(fallback.windowHours, 4);
-  } finally {
-    if (previous === undefined) delete process.env.INBOX_UNANSWERED_HOURS;
-    else process.env.INBOX_UNANSWERED_HOURS = previous;
-  }
+  const fallback = await hours(null, undefined);
+  assert.equal(fallback.windowHours, 4);
+  assert.equal(fallback.items.some((item) => item.reason === "unanswered"), false);
 });
