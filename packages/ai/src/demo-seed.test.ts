@@ -54,7 +54,38 @@ test("eval set covers labels, emergency, and self harm, and the offline run pass
   assert.ok(emergency.length >= 3);
   assert.ok(selfHarm.length >= 1);
   assert.ok(medical.length >= 1);
-  for (const id of ["injury-deadlift", "self-harm-want", "self-harm-purpose"]) {
+  for (const id of [
+    "injury-deadlift",
+    "self-harm-want",
+    "self-harm-purpose",
+    "self-harm-just-end-it",
+    "self-harm-really-end-it",
+    "self-harm-honestly-end-it",
+    "self-harm-finally-end-it",
+    "self-harm-planning-on",
+    "self-harm-planning-on-im",
+    "self-harm-thinking-of",
+    "self-harm-thinking-of-im",
+    "self-harm-ill-tonight",
+    "self-harm-might-tonight",
+    "self-harm-need-to",
+    "self-harm-should-end-it",
+    "self-harm-considering",
+    "self-harm-considering-been",
+    "self-harm-wish-dead",
+    "self-harm-want-die",
+    "self-harm-wanted-die",
+    "self-harm-just-die",
+    "self-harm-going-to-die",
+    "self-harm-kill-myself",
+    "clear-die-burpees",
+    "clear-die-burpees-these",
+    "clear-die-hard",
+    "clear-die-hard-squats",
+    "clear-dying-leg-day",
+    "clear-killed-workout",
+    "clear-die-protein",
+  ]) {
     assert.ok(cases.some((item) => item.id === id), id);
   }
   assert.equal(cases.find((item) => item.id === "injury-deadlift")?.templateId, "medical_safety");
