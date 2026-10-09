@@ -24,8 +24,21 @@ export type CannedPromptPayload = {
   signOff: string;
 };
 
+/** Drops the retrieval title and a leading question so the reply is the answer. */
+function quoteNote(snippet: string): string {
+  let text = snippet.trim();
+  const split = text.indexOf("\n");
+  if (split !== -1) text = text.slice(split + 1).trim();
+  const question = text.match(/^[^?\n]+\?\s+/);
+  if (question) {
+    const rest = text.slice(question[0].length).trim();
+    if (rest) return rest;
+  }
+  return text;
+}
+
 export function cannedDraft(snippets: string[], signOff: string): string {
-  const top = snippets.map((snippet) => snippet.trim()).find((snippet) => snippet.length > 0);
+  const top = snippets.map((snippet) => quoteNote(snippet)).find((snippet) => snippet.length > 0);
   const answer = top
     ? `From your coach's notes: ${top}`
     : "I do not have that in your coach's notes yet.";

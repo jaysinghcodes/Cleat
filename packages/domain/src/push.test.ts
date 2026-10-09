@@ -6,7 +6,7 @@ test("push delivery is deferred and does not send", async () => {
   const status = await deferredPushDelivery.sendNudge({
     clientId: "22222222-2222-2222-2222-222222222222",
     title: "Cleat",
-    body: "Alex sent a nudge. Open today and log your sets.",
+    body: "Alex sent a nudge. Open Today and catch up on a missed day.",
   });
   assert.equal(status, "deferred");
 });

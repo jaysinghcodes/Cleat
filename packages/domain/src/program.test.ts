@@ -269,7 +269,7 @@ test("the board sorts the client who needs a nudge ahead of a finished client", 
 
 test("nudge copy names the coach and does not use dash punctuation", () => {
   const body = nudgeBody("nudge", "Alex Rivera");
-  assert.equal(body, "Alex sent a nudge. Open today and log your sets.");
+  assert.equal(body, "Alex sent a nudge. Open Today and catch up on a missed day.");
   assert.equal(body.includes("—") || body.includes("–") || body.includes(" - "), false);
 });
 

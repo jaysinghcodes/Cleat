@@ -729,7 +729,7 @@ select public._rls_expect(
     select public.send_nudge(
       '22222222-2222-2222-2222-222222222222',
       'nudge',
-      'Alex sent a nudge. Open today and log your sets.'
+      'Alex sent a nudge. Open Today and catch up on a missed day.'
     ) is not null
   )
 );
@@ -742,7 +742,7 @@ select public._rls_expect(
   (
     select count(*) = 1
       and bool_and(kind = 'human')
-      and bool_and(body = 'Alex sent a nudge. Open today and log your sets.')
+      and bool_and(body = 'Alex sent a nudge. Open Today and catch up on a missed day.')
     from public.messages
     where sender_id = '11111111-1111-1111-1111-111111111111'
   )
