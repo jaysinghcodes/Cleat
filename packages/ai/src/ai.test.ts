@@ -13,7 +13,7 @@ import {
 import { applyTrainerDraftAction } from "./drafts";
 import { HASH_EMBEDDING_MODEL, hashEmbedder, hashEmbedding, type Embedder } from "./embeddings";
 import { evaluateMessage } from "./eval";
-import { CANNED_CHAT_MODEL, EMBEDDING_DIMS, cannedChatModel, type ChatModel } from "./models";
+import { CANNED_CHAT_MODEL, EMBEDDING_DIMS, cannedChatModel, cannedDraft, type ChatModel } from "./models";
 import { PROMPT_VERSION } from "./prompts";
 import {
   EMERGENCY_SELF_HARM_TEMPLATE,
@@ -25,7 +25,7 @@ import {
 } from "./refusals";
 import { chunkInScope, retrieve, type ChunkStore, type RetrievedChunk } from "./retrieve";
 import { cosineSimilarity } from "./text";
-import { gateClientMessage, planClientTurn } from "./turn";
+import { gateClientMessage, planClientTurn, sourcesFromChunks } from "./turn";
 
 const DASH = /[—–]| - /;
 
@@ -72,6 +72,40 @@ const throwingChat: ChatModel = {
     throw new Error("model was called");
   },
 };
+
+test("citations keep the best source and drop a weak match", () => {
+  const sources = sourcesFromChunks([
+    chunk({ id: "11111111-1111-4111-8111-111111111111", snippet: "program today", score: 0.8, title: "What is on my program today" }),
+    chunk({
+      id: "22222222-2222-4222-8222-222222222222",
+      snippet: "pain policy",
+      score: 0.05,
+      title: "Injury and pain policy",
+      articleId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    }),
+    chunk({
+      id: "33333333-3333-4333-8333-333333333333",
+      snippet: "Program: Hypertrophy",
+      score: 0.18,
+      source: "program",
+      articleId: null,
+      title: "Hypertrophy 4-day",
+    }),
+  ]);
+  assert.deepEqual(
+    sources.map((source) => source.title),
+    ["What is on my program today"],
+  );
+});
+
+test("offline reply quotes the answer and not the question", () => {
+  const text = cannedDraft(
+    ["What is on my program today\nWhat is on my program today? Open Today for the day name, sets, and reps."],
+    "",
+  );
+  assert.equal(text, "From your coach's notes: Open Today for the day name, sets, and reps.");
+  assert.equal(text.includes("What is on my program today"), false);
+});
 
 test("band boundaries at threshold 0.85", () => {
   assert.equal(bandFor(0.49, 0.85), "low");

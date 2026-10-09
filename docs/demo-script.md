@@ -2,7 +2,7 @@
 
 Two roles. The coach uses the web desk. The client uses the Expo app on a phone, a simulator, or an emulator. A fresh clone plus `pnpm seed` is the starting point. Push is not part of this demo.
 
-Local sign in code for every seeded address is `424242` (`packages/db/supabase/config.toml`). A hosted project sends a real email code instead. Mailpit on a local stack is [http://127.0.0.1:54324](http://127.0.0.1:54324).
+On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead.
 
 | Role | Email | What you should see |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Auto send is on for Rivera Strength only. Slots are 45 minutes. Leave `GOOGLE_CL
 ## Beat 1. Client logs a workout
 
 1. On the phone, open Cleat in Expo Go.
-2. Choose Log in. Email `riley.wong@cleat.demo`. Choose Email me a code. Enter `424242` on a local stack, or the code from the email on a hosted project.
+2. Choose Log in. Email `riley.wong@cleat.demo`. Choose Email me a code. Read the code in Mailpit at http://127.0.0.1:54324 on a local stack, or in the email on a hosted project.
 3. Open Today. The program is Hypertrophy 4-day.
 4. Choose Continue logging. Enter a weight and reps for each set. Choose Save sets.
 5. Repeat until every exercise on that day says Logged. Today shows the session as done.
@@ -38,7 +38,7 @@ The desk server needs `SUPABASE_SERVICE_ROLE` in `apps/web/.env.local` so it can
 
 1. On the phone, open Chat.
 2. Send `What is on my program today?`
-3. The reply is an AI message. It quotes the coach note and shows Sources: What is on my program today.
+3. The reply is an AI message. It quotes the coach note: Open Today for the day name, sets, and reps. It shows one source: What is on my program today.
 4. On the desk, open Chat for that client. The same reply is there.
 5. Open Audit log. The row is an auto send.
 
@@ -74,11 +74,11 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
 NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
 SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_SERVICE_ROLE=<SERVICE_ROLE from supabase status>
+SUPABASE_SERVICE_ROLE=<service_role key from supabase status>
 ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
 ```
 
-`SUPABASE_SERVICE_ROLE` and `ICS_FEED_SIGNING_SECRET` stay in this file. Do not prefix them with `NEXT_PUBLIC_`. Do not copy the service role into the Expo env.
+`supabase status` prints `service_role key`. Map that value to `SUPABASE_SERVICE_ROLE`. `cleat-demo-ics-secret` is a demo value. Change it before any use outside this local stack. Both stay in this file. Do not prefix them with `NEXT_PUBLIC_`. Do not copy the service role into the Expo env.
 
 4. `pnpm seed` from the repo root. Run it again. The printed counts stay the same.
 5. Start the desk so a phone can reach it: `pnpm --filter @cleat/web exec next dev -H 0.0.0.0`

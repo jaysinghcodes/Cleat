@@ -1,6 +1,6 @@
 # Cleat
 
-The product name is Cleat. The repo is named `coachloop`.
+The product name is Cleat. The GitHub repo is Cleat.
 
 A coach runs the web desk. A client uses the Expo app on iOS or Android. A fresh clone plus `pnpm seed` is a two role demo: the phone in Expo Go, the trainer desk in the browser.
 
@@ -16,7 +16,7 @@ apps/mobile     Expo client (iOS and Android, one project)
 packages/api    Typed Supabase helpers
 packages/db     SQL migrations and RLS notes
 packages/domain Zod schemas
-packages/ai     Retrieval, confidence, refusals (stubs)
+packages/ai     Retrieval, confidence, refusals
 packages/theme  @cleat/theme tokens
 ```
 
@@ -47,8 +47,39 @@ From a fresh clone, with Docker and the Supabase CLI installed:
 ```sh
 pnpm install
 cd packages/db && supabase start && supabase status && cd ../..
+```
+
+Write the env files before you start the desk. `supabase status` prints the anon key and the service_role key. Put the anon key in both apps. Map the service_role key to `SUPABASE_SERVICE_ROLE` in `apps/web/.env.local` only. Do not put that key in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`.
+
+`apps/web/.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE=<service_role key from supabase status>
+ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
+```
+
+`cleat-demo-ics-secret` is a demo value. Change it before any use outside this local stack.
+
+`apps/mobile/.env` for the iOS Simulator. A physical phone needs the computer LAN address in these URLs. The Android emulator uses `10.0.2.2`. The blocks are in [docs/demo-script.md](docs/demo-script.md).
+
+```
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+EXPO_PUBLIC_DESK_URL=http://127.0.0.1:3000
+EXPO_PUBLIC_WEB_URL=http://127.0.0.1:3000
+```
+
+Leave `OPENAI_API_KEY` unset so the seed and the desk share the offline embedder. Leave the Google vars empty. Beat 5 is ICS only.
+
+Then seed, and start the desk so a phone can reach it:
+
+```sh
 pnpm seed
-pnpm dev:web
+pnpm --filter @cleat/web exec next dev -H 0.0.0.0
 ```
 
 In a second terminal, from `apps/mobile`:
@@ -57,11 +88,11 @@ In a second terminal, from `apps/mobile`:
 npx expo start
 ```
 
-`supabase start` applies the migrations and `supabase/seed.sql`. `pnpm seed` runs that file again (it is idempotent) and writes the knowledge base embeddings. Run `pnpm seed` a second time. The printed counts stay the same.
+`supabase start` applies the migrations and `supabase/seed.sql`. `pnpm seed` runs that file again and writes the knowledge base embeddings. Run `pnpm seed` again after a rehearsal. It clears this demo org's sessions, messages, inbox items, drafts, audits, nudges, and workout logs, then restores the same counts.
 
-Copy `API_URL` and `ANON_KEY` from `supabase status` into the app env files below. Copy `SERVICE_ROLE` into `apps/web/.env.local` only. Leave `OPENAI_API_KEY` unset so the seed and the desk share the offline embedder. Leave the Google vars empty. Beat 5 is ICS only.
+From `packages/db`, `supabase db reset` drops the local database, reapplies the migrations, and runs `seed.sql`. Run `pnpm seed` after that so the embeddings exist. That is the fully clean slate.
 
-Sign in codes on a local stack are `424242` for the seeded addresses (`packages/db/supabase/config.toml`). The cast, the five beats, and the iOS, Android, and physical phone env blocks are in [docs/demo-script.md](docs/demo-script.md).
+On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead. The cast, the five beats, and the iOS, Android, and physical phone env blocks are in [docs/demo-script.md](docs/demo-script.md).
 
 `pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. It does not read `SUPABASE_SERVICE_ROLE`.
 
@@ -94,7 +125,7 @@ That starts Postgres, GoTrue, the API on port 54321, and Mailpit. The Mailpit UI
 supabase status
 ```
 
-Copy `API_URL` and `ANON_KEY` into both apps. Put `SERVICE_ROLE` only in `apps/web/.env.local`. That file is read by the Next.js server. Do not put the service role in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The anon key is the only Supabase key in the browser bundle and the Expo bundle.
+Copy the anon key into both apps. `supabase status` prints `service_role key`. Map that value to `SUPABASE_SERVICE_ROLE` in `apps/web/.env.local` only. That file is read by the Next.js server. Do not put the service role in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The anon key is the only Supabase key in the browser bundle and the Expo bundle. A phone needs the desk on all interfaces: `pnpm --filter @cleat/web exec next dev -H 0.0.0.0`.
 
 `apps/web/.env.local`:
 
@@ -103,9 +134,11 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
 NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
 SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_SERVICE_ROLE=<SERVICE_ROLE from supabase status>
+SUPABASE_SERVICE_ROLE=<service_role key from supabase status>
 ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
 ```
+
+`cleat-demo-ics-secret` is a demo value. Change it before any use outside this local stack.
 
 `apps/mobile/.env` for the iOS Simulator. Android and a physical phone use different hosts. See [docs/demo-script.md](docs/demo-script.md).
 
@@ -229,7 +262,7 @@ Not required to boot the empty screens. Sign-up, sign-in, and invites need a Sup
 
 There are no passwords. Both roles sign in with an email code or a magic link.
 
-1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `supabase start` when Docker is available. Local mail is captured by Inbucket (the CLI prints the URL, usually port 54324).
+1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `supabase start` when Docker is available. Local mail is captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324).
 2. Copy the project URL and anon key into `.env`:
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the trainer desk
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app

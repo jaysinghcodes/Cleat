@@ -22,6 +22,19 @@ test("seed copy has no dash punctuation and includes the demo articles", () => {
   assert.equal(sql.includes("Alex Rivera"), true);
   assert.equal(sql.includes("Foundation 3-day"), true);
   assert.equal(sql.includes("Hypertrophy 4-day"), true);
+  for (const table of [
+    "held_drafts",
+    "trainer_notices",
+    "inbox_items",
+    "audit_events",
+    "messages",
+    "sessions",
+    "nudge_events",
+    "log_operations",
+    "workout_logs",
+  ]) {
+    assert.equal(sql.includes(`delete from public.${table} where org_id = demo_org`), true, table);
+  }
 });
 
 test("eval set covers labels, emergency, and self harm, and the offline run passes", async () => {

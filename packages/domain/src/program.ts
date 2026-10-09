@@ -270,7 +270,7 @@ export function lastLoggedLabel(days: number | null): string {
 export function nudgeBody(kind: "soft" | "nudge", coachName: string): string {
   const coach = firstName(coachName);
   if (kind === "soft") return `${coach} sent a soft nudge. Log today when you can.`;
-  return `${coach} sent a nudge. Open today and log your sets.`;
+  return `${coach} sent a nudge. Open Today and catch up on a missed day.`;
 }
 
 export function todayStatusLabel(status: TodayStatus): string {

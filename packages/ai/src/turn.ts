@@ -77,11 +77,17 @@ function uniqueCodes(codes: ReasonCode[]): ReasonCode[] {
   return result;
 }
 
+/** Chunks this far below the best match are not cited. */
+const SOURCE_SCORE_GAP = 0.12;
+
 export function sourcesFromChunks(chunks: RetrievedChunk[]): TurnSource[] {
+  const ranked = [...chunks].sort((left, right) => right.score - left.score);
+  const best = ranked[0]?.score ?? 0;
+  const relevant = ranked.filter((chunk) => chunk.score + 1e-9 >= best - SOURCE_SCORE_GAP);
   const sources: TurnSource[] = [];
   const seen = new Set<string>();
   let program = false;
-  for (const chunk of chunks) {
+  for (const chunk of relevant) {
     if (chunk.source === "program") {
       program = true;
       continue;

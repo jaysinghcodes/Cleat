@@ -241,15 +241,6 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Local demo only. These codes are not used on a hosted project.
-[auth.email.test_otp]
-"alex.rivera@cleat.demo" = "424242"
-"sam.lee@cleat.demo" = "424242"
-"jordan.kim@cleat.demo" = "424242"
-"morgan.patel@cleat.demo" = "424242"
-"casey.torres@cleat.demo" = "424242"
-"riley.wong@cleat.demo" = "424242"
-
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

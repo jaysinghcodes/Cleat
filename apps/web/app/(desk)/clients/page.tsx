@@ -81,7 +81,8 @@ export default function ClientsPage() {
             return (
               <div className="list-row" key={invite.id}>
                 <div className="spacer" style={{ flex: 1 }}>
-                  <div className="name invite-link">{url}</div>
+                  <div className="name">{invite.acceptedAt ? "Used invite" : "Pending invite"}</div>
+                  <div className="meta invite-link">{url}</div>
                   <div className="meta">
                     {invite.acceptedAt ? "Used" : inviteExpiryLabel(invite.expiresAt)}
                   </div>

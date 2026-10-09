@@ -191,8 +191,7 @@ declare
   new_day uuid;
   new_exercise uuid;
   log_id uuid;
-  ai_body text := $ai$From your coach's notes: What is on my program today
-What is on my program today? Open Today for the day name, sets, and reps.$ai$;
+  ai_body text := $ai$From your coach's notes: Open Today for the day name, sets, and reps.$ai$;
   client_count int;
   invite_count int;
   done_count int;
@@ -282,6 +281,15 @@ begin
           client_id = excluded.client_id;
   end loop;
 
+  -- Reset rehearsal state for this org only, then rebuild the same demo rows.
+  delete from public.held_drafts where org_id = demo_org;
+  delete from public.trainer_notices where org_id = demo_org;
+  delete from public.inbox_items where org_id = demo_org;
+  delete from public.audit_events where org_id = demo_org;
+  delete from public.messages where org_id = demo_org;
+  delete from public.sessions where org_id = demo_org;
+  delete from public.nudge_events where org_id = demo_org;
+  delete from public.log_operations where org_id = demo_org;
   delete from public.set_logs where org_id = demo_org;
   delete from public.exercise_logs where org_id = demo_org;
   delete from public.workout_logs where org_id = demo_org;
