@@ -1,11 +1,11 @@
 "use client";
 
-import { CleatRequestError, listAuditEvents } from "@cleat/api";
-import { aiCopy, auditTimeline, decisionLabel, type AuditEvent } from "@cleat/domain";
+import { listAuditEvents } from "@cleat/api";
+import { aiCopy, auditTimeline, decisionLabel, screenCopy, userFacingError, type AuditEvent } from "@cleat/domain";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "../../../session";
-import { Banner } from "../../../ui";
+import { ScreenState } from "../../../screen-state";
 import { ConfidenceBar } from "../../confidence";
 
 function actionLabel(action: AuditEvent["trainerAction"]): string {
@@ -25,6 +25,8 @@ export function AuditDetail({ eventId }: { eventId: string }) {
   const { client } = useSession();
   const [event, setEvent] = useState<AuditEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!client) return;
@@ -34,14 +36,18 @@ export function AuditDetail({ eventId }: { eventId: string }) {
         if (cancelled) return;
         setEvent(rows.find((row) => row.id === eventId) ?? null);
         setError(null);
+        setStatus("ready");
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+        if (!cancelled) {
+          setError(userFacingError(err, screenCopy.loadFailed));
+          setStatus("error");
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [client, eventId]);
+  }, [client, eventId, attempt]);
 
   return (
     <div>
@@ -53,8 +59,22 @@ export function AuditDetail({ eventId }: { eventId: string }) {
           </p>
         </div>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
-      {!event && !error ? <p className="meta">{aiCopy.noAudits}</p> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingAudit} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            setAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {status === "ready" && !event ? (
+        <ScreenState kind="empty" title={screenCopy.emptyAuditDetailTitle} body={screenCopy.emptyAuditDetailBody} />
+      ) : null}
       {event ? (
         <div className="stack">
           <div className="card">

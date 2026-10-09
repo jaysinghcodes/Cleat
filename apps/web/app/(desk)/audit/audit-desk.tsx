@@ -1,16 +1,18 @@
 "use client";
 
-import { CleatRequestError, listAuditEvents, listClients } from "@cleat/api";
+import { listAuditEvents, listClients } from "@cleat/api";
 import {
   aiCopy,
   decisionLabel,
+  screenCopy,
+  userFacingError,
   type AuditEvent,
   type ClientRosterItem,
 } from "@cleat/domain";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
-import { Banner } from "../../ui";
 import { ConfidenceBar } from "../confidence";
 
 function when(value: string): string {
@@ -26,6 +28,8 @@ export function AuditDesk() {
   const [clientId, setClientId] = useState("");
   const [decision, setDecision] = useState<"" | AuditEvent["decision"]>("");
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!client) return;
@@ -42,14 +46,18 @@ export function AuditDesk() {
         setEvents(rows);
         setRoster(people);
         setError(null);
+        setStatus("ready");
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+        if (!cancelled) {
+          setError(userFacingError(err, screenCopy.loadFailed));
+          setStatus("error");
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [client, clientId, decision]);
+  }, [client, clientId, decision, attempt]);
 
   const names = useMemo(() => new Map(roster.map((person) => [person.userId, person.displayName])), [roster]);
 
@@ -74,7 +82,21 @@ export function AuditDesk() {
           {aiCopy.exportJson}
         </button>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingAudit} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            setAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {status === "ready" ? (
+      <>
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row">
           <div className="field" style={{ marginBottom: 0, flex: 1 }}>
@@ -105,9 +127,7 @@ export function AuditDesk() {
       </div>
       <div className="card" style={{ padding: 0 }}>
         {events.length === 0 ? (
-          <div className="list-row">
-            <div className="meta">{aiCopy.noAudits}</div>
-          </div>
+          <ScreenState kind="empty" title="No AI actions yet" body={aiCopy.noAudits} />
         ) : (
           events.map((event) => (
             <Link key={event.id} href={`/audit/${event.id}`} className="list-row article-row">
@@ -122,6 +142,8 @@ export function AuditDesk() {
           ))
         )}
       </div>
+      </>
+      ) : null}
     </div>
   );
 }

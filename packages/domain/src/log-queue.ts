@@ -1,4 +1,6 @@
 import { isOfflineError, logOperationSchema, type LogOperation } from "./log";
+import { userFacingError } from "./screen-state";
+import { programCopy } from "./program";
 
 export type LogFlushResult = {
   flushed: number;
@@ -71,7 +73,7 @@ export function createLogQueue(options: {
           error = null;
           break;
         }
-        error = err instanceof Error ? err.message : "Could not save the log.";
+        error = userFacingError(err, programCopy.couldNotLog);
         dropped = next.clientKey;
         break;
       }

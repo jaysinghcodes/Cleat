@@ -1,11 +1,21 @@
 "use client";
 
-import { CleatRequestError, createInvite, listClients, listInvites } from "@cleat/api";
-import { chatCopy, copy, initials, inviteExpiryLabel, type ClientRosterItem, type InviteRecord } from "@cleat/domain";
+import { createInvite, listClients, listInvites } from "@cleat/api";
+import {
+  chatCopy,
+  copy,
+  initials,
+  inviteExpiryLabel,
+  screenCopy,
+  userFacingError,
+  type ClientRosterItem,
+  type InviteRecord,
+} from "@cleat/domain";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "../../session";
 import { clientInviteUrl } from "../../supabase";
+import { ScreenState } from "../../screen-state";
 import { Banner } from "../../ui";
 
 export default function ClientsPage() {
@@ -15,17 +25,20 @@ export default function ClientsPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
     if (!client) return;
     const [roster, openInvites] = await Promise.all([listClients(client), listInvites(client)]);
     setClients(roster);
     setInvites(openInvites);
+    setStatus("ready");
   }, [client]);
 
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setStatus("error");
     });
   }, [load]);
 
@@ -37,7 +50,7 @@ export default function ClientsPage() {
       await createInvite(client, membership.orgId, session.userId);
       await load();
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -69,7 +82,25 @@ export default function ClientsPage() {
           Create invite link
         </button>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "error" ? null : error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingClients} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            void load().catch((err: unknown) => {
+              setError(userFacingError(err, screenCopy.loadFailed));
+              setStatus("error");
+            });
+          }}
+        />
+      ) : null}
+      {status === "ready" ? (
+      <>
       <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 16 }}>
         {invites.length === 0 ? (
           <div className="list-row">
@@ -97,13 +128,11 @@ export default function ClientsPage() {
           })
         )}
       </div>
+      {clients.length === 0 ? (
+        <ScreenState kind="empty" title="No clients yet" body={copy.noClients} />
+      ) : (
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        {clients.length === 0 ? (
-          <div className="list-row">
-            <div className="meta">{copy.noClients}</div>
-          </div>
-        ) : (
-          clients.map((person) => (
+          {clients.map((person) => (
             <div className="list-row" key={person.userId}>
               <div className="avatar">{initials(person.displayName)}</div>
               <div className="spacer" style={{ flex: 1 }}>
@@ -113,9 +142,11 @@ export default function ClientsPage() {
                 {chatCopy.openChat}
               </Link>
             </div>
-          ))
-        )}
+          ))}
       </div>
+      )}
+      </>
+      ) : null}
     </>
   );
 }

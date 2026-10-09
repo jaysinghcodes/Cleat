@@ -1,8 +1,9 @@
 "use client";
 
-import { CleatRequestError, fetchAiSettings, listAuditEvents, saveAiSettings } from "@cleat/api";
-import { aiCopy, auditCounts, DEFAULT_AI_SETTINGS } from "@cleat/domain";
+import { fetchAiSettings, listAuditEvents, saveAiSettings } from "@cleat/api";
+import { aiCopy, auditCounts, DEFAULT_AI_SETTINGS, screenCopy, userFacingError } from "@cleat/domain";
 import { useEffect, useState } from "react";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
 
@@ -27,11 +28,15 @@ export function SettingsDesk() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [hasRow, setHasRow] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!client) return;
     void Promise.all([fetchAiSettings(client), listAuditEvents(client)])
       .then(([settings, events]) => {
+        setHasRow(Boolean(settings));
         if (settings) {
           setAutoSend(settings.autoSend);
           setThreshold(settings.threshold);
@@ -39,11 +44,13 @@ export function SettingsDesk() {
           setToneNotes(settings.toneNotes);
         }
         setCounts(auditCounts(events));
+        setStatus("ready");
       })
       .catch((err: unknown) => {
-        setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+        setError(userFacingError(err, screenCopy.loadFailed));
+        setStatus("error");
       });
-  }, [client]);
+  }, [client, attempt]);
 
   async function onSave() {
     if (!client || !membership) return;
@@ -60,7 +67,7 @@ export function SettingsDesk() {
       });
       setNotice(aiCopy.settingsSaved);
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.settingsFailed);
+      setError(userFacingError(err, aiCopy.settingsFailed));
     } finally {
       setPending(false);
     }
@@ -77,8 +84,26 @@ export function SettingsDesk() {
           {aiCopy.saveSettings}
         </button>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "ready" && error ? <Banner tone="error">{error}</Banner> : null}
       {notice ? <Banner tone="ok">{notice}</Banner> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingSettings} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setError(null);
+            setStatus("loading");
+            setAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {status === "ready" && !hasRow ? (
+        <ScreenState kind="empty" title={screenCopy.emptySettingsTitle} body={screenCopy.emptySettingsBody} />
+      ) : null}
+      {status === "ready" ? (
+      <>
       <div className="card">
         <div className="row">
           <div className="spacer">
@@ -171,6 +196,8 @@ export function SettingsDesk() {
           <Stat label={aiCopy.statEdited} value={counts.trainerEdited} dot="partial" />
         </div>
       </div>
+      </>
+      ) : null}
     </div>
   );
 }

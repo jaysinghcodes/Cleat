@@ -1,12 +1,11 @@
 import {
-  CleatRequestError,
   applyClientLog,
   dismissNudge,
   fetchClientTraining,
   updateWeightUnit,
   type ClientTraining,
 } from "@cleat/api";
-import { copy, isOfflineError, programCopy, type LogOperation, type WeightUnit } from "@cleat/domain";
+import { copy, isOfflineError, programCopy, userFacingError, type LogOperation, type WeightUnit } from "@cleat/domain";
 import {
   createContext,
   useCallback,
@@ -18,7 +17,7 @@ import {
 } from "react";
 import { AppState } from "react-native";
 import { useSession } from "./session";
-import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchOnline } from "./log-queue";
+import { deviceOnline, enqueueLog, flushLogQueue, readLogQueue, watchNetwork } from "./log-queue";
 
 type TrainingContextValue = {
   ready: boolean;
@@ -26,6 +25,7 @@ type TrainingContextValue = {
   pendingCount: number;
   error: string | null;
   notice: string | null;
+  online: boolean;
   refresh: () => Promise<void>;
   saveOperation: (operation: LogOperation) => Promise<boolean>;
   setUnit: (unit: WeightUnit) => Promise<void>;
@@ -105,6 +105,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!client || !session) return;
@@ -120,7 +121,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
   const flush = useCallback(async () => {
     if (!client || !session) return;
     const result = await flushLogQueue((operation) => applyClientLog(client, operation));
-    if (result.error) setError(result.error);
+    if (result.error) setError(userFacingError(result.error, programCopy.couldNotLog));
     if (result.flushed > 0) {
       setNotice(programCopy.synced);
       await refresh();
@@ -137,14 +138,16 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         await refresh();
       } catch (err: unknown) {
         if (!alive) return;
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
         setReady(true);
       }
       if (!alive) return;
       await flush();
     })();
-    const watcher = watchOnline(() => {
-      void flush();
+    void deviceOnline().then(setOnline);
+    const watcher = watchNetwork((next) => {
+      setOnline(next);
+      if (next) void flush();
     });
     const appState = AppState.addEventListener("change", (next) => {
       if (next === "active") void flush();
@@ -180,7 +183,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
           return true;
         }
         setNotice(null);
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
         return false;
       }
     },
@@ -195,7 +198,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         await updateWeightUnit(client, session.userId, unit);
         await refresh();
       } catch (err) {
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
       }
     },
     [client, session, refresh],
@@ -208,7 +211,7 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
         await dismissNudge(client, nudgeId);
         await refresh();
       } catch (err) {
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, copy.generic));
       }
     },
     [client, refresh],
@@ -226,12 +229,13 @@ export function TrainingProvider({ children }: { children: ReactNode }) {
       pendingCount: queue.length,
       error,
       notice,
+      online,
       refresh,
       saveOperation,
       setUnit,
       dismiss,
     }),
-    [ready, training, queue.length, error, notice, refresh, saveOperation, setUnit, dismiss],
+    [ready, training, queue.length, error, notice, online, refresh, saveOperation, setUnit, dismiss],
   );
 
   return <TrainingContext.Provider value={value}>{children}</TrainingContext.Provider>;

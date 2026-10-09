@@ -1,18 +1,21 @@
 "use client";
 
-import { CleatRequestError, assignProgram, embedAssignedProgram, fetchOrgPrograms, listClients } from "@cleat/api";
+import { assignProgram, embedAssignedProgram, fetchOrgPrograms, listClients } from "@cleat/api";
 import {
   calendarDate,
   copy,
   initials,
   programCopy,
   programDraftMessage,
+  screenCopy,
+  userFacingError,
   type AssignedProgram,
   type ClientRosterItem,
   type ExerciseDraft,
   type ProgramDraft,
 } from "@cleat/domain";
 import { useCallback, useEffect, useState } from "react";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
 
@@ -91,12 +94,14 @@ export default function ProgramsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [ready, setReady] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     if (!client) return;
     const [roster, assigned] = await Promise.all([listClients(client), fetchOrgPrograms(client)]);
     setClients(roster);
     setPrograms(assigned);
+    setLoadFailed(false);
     setReady(true);
     return { roster, assigned };
   }, [client]);
@@ -113,7 +118,8 @@ export default function ProgramsPage() {
       })
       .catch((err: unknown) => {
         if (!alive) return;
-        setError(err instanceof CleatRequestError ? err.message : copy.generic);
+        setError(userFacingError(err, screenCopy.loadFailed));
+        setLoadFailed(true);
         setReady(true);
       });
     return () => {
@@ -171,7 +177,7 @@ export default function ProgramsPage() {
       setNotice(`Assigned to ${selected.displayName}.`);
       await load();
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -179,11 +185,42 @@ export default function ProgramsPage() {
 
   if (!ready) {
     return (
-      <div className="page-head">
-        <div>
-          <h1>Programs</h1>
-          <p>Loading programs</p>
+      <div data-testid="programs-page">
+        <div className="page-head">
+          <div>
+            <h1>Programs</h1>
+            <p>Build days, then assign them to one client.</p>
+          </div>
         </div>
+        <ScreenState kind="loading" title={screenCopy.loadingPrograms} />
+      </div>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <div data-testid="programs-page">
+        <div className="page-head">
+          <div>
+            <h1>Programs</h1>
+            <p>Build days, then assign them to one client.</p>
+          </div>
+        </div>
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setReady(false);
+            setLoadFailed(false);
+            setError(null);
+            void load().catch((err: unknown) => {
+              setError(userFacingError(err, screenCopy.loadFailed));
+              setLoadFailed(true);
+              setReady(true);
+            });
+          }}
+        />
       </div>
     );
   }
@@ -198,10 +235,7 @@ export default function ProgramsPage() {
           </div>
         </div>
         {error ? <Banner tone="error">{error}</Banner> : null}
-        <div className="card" data-testid="programs-empty">
-          <div className="name">No clients yet</div>
-          <p className="meta">{programCopy.emptyClients}</p>
-        </div>
+        <ScreenState kind="empty" title="No clients yet" body={programCopy.emptyClients} testId="programs-empty" />
       </div>
     );
   }
@@ -242,10 +276,7 @@ export default function ProgramsPage() {
       {error ? <Banner tone="error">{error}</Banner> : null}
       {notice ? <Banner tone="ok">{notice}</Banner> : null}
       {clients.length === 0 ? (
-        <div className="card" data-testid="programs-empty">
-          <div className="name">No clients yet</div>
-          <p className="meta">{programCopy.emptyClients}</p>
-        </div>
+        <ScreenState kind="empty" title="No clients yet" body={programCopy.emptyClients} testId="programs-empty" />
       ) : (
         <div className="program-cols">
           <div className="stack">

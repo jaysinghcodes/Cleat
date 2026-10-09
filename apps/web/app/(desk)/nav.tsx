@@ -1,9 +1,11 @@
 "use client";
 
-import type { Membership } from "@cleat/domain";
+import { screenCopy, type Membership } from "@cleat/domain";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { useOnline } from "../online";
+import { OfflineBanner } from "../screen-state";
 import { useSession } from "../session";
 import { ThemeCycle } from "../theme";
 
@@ -33,6 +35,7 @@ export function DeskShell({
   const pathname = activeHref ?? currentPath;
   const router = useRouter();
   const { signOut } = useSession();
+  const online = useOnline();
 
   return (
     <div className="desk">
@@ -43,24 +46,23 @@ export function DeskShell({
           </span>
           Cleat
         </Link>
-        <nav className="nav">
-          {DESK_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={
-                item.href === "/chat"
-                  ? pathname === "/chat" || pathname.startsWith("/chat/")
-                    ? "active"
-                    : undefined
-                  : pathname === item.href
-                    ? "active"
-                    : undefined
-              }
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="nav" aria-label="Desk">
+          {DESK_NAV.map((item) => {
+            const active =
+              item.href === "/chat"
+                ? pathname === "/chat" || pathname.startsWith("/chat/")
+                : pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? "active" : undefined}
+                aria-current={active ? "page" : undefined}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="side-foot">
           <div>
@@ -72,6 +74,7 @@ export function DeskShell({
           <button
             type="button"
             className="btn btn-ghost btn-sm"
+            aria-label="Log out"
             onClick={() => {
               void signOut().then(() => router.replace("/login"));
             }}
@@ -80,7 +83,10 @@ export function DeskShell({
           </button>
         </div>
       </aside>
-      <main className="main">{children}</main>
+      <main className="main">
+        {online ? null : <OfflineBanner message={screenCopy.offline} />}
+        {children}
+      </main>
     </div>
   );
 }

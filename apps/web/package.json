@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test lib/google.test.ts lib/actor.test.ts lib/pipeline.test.ts lib/draft-commit.test.ts \"app/(desk)/inbox/inbox-chrome.test.ts\" \"app/(desk)/inbox/inbox-window.test.ts\" && TSX_TSCONFIG_PATH=./tsconfig.test.json node --import tsx --test components/marketing/landing.test.tsx"
+    "test": "node --import tsx --test lib/google.test.ts lib/actor.test.ts lib/pipeline.test.ts lib/draft-commit.test.ts \"app/(desk)/inbox/inbox-chrome.test.ts\" \"app/(desk)/inbox/inbox-window.test.ts\" && TSX_TSCONFIG_PATH=./tsconfig.test.json node --import tsx --test components/marketing/landing.test.tsx app/screen-state.test.tsx"
   },
   "dependencies": {
     "@cleat/ai": "workspace:*",
@@ -20,9 +20,12 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.15.3",
     "@types/react": "~19.2.2",
     "@types/react-dom": "~19.2.2",
+    "axe-core": "^4.14.0",
+    "jsdom": "^30.1.2",
     "tsx": "^4.20.3",
     "typescript": "~6.0.3"
   }

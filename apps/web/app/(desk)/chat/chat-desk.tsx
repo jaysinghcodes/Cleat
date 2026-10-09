@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CleatRequestError,
   ensureThread,
   fetchOpenDraft,
   listAuditEvents,
@@ -23,7 +22,9 @@ import {
   mergeMessages,
   messagePreview,
   replyPlaceholder,
+  screenCopy,
   splitMessageBody,
+  userFacingError,
   upsertMessage,
   type AuditEvent,
   type HeldDraftMarker,
@@ -33,6 +34,8 @@ import {
 import type { ClientRosterItem } from "@cleat/domain";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useOnline } from "../../online";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
 import { ConfidenceBar } from "../confidence";
@@ -64,8 +67,12 @@ function notePreview(current: ThreadPreview[], clientId: string, threadId: strin
 
 export function ChatDesk({ clientId }: { clientId?: string }) {
   const { client, session, membership } = useSession();
+  const online = useOnline();
   const [roster, setRoster] = useState<ClientRosterItem[]>([]);
   const [rosterReady, setRosterReady] = useState(false);
+  const [rosterFailed, setRosterFailed] = useState(false);
+  const [rosterAttempt, setRosterAttempt] = useState(0);
+  const [threadAttempt, setThreadAttempt] = useState(0);
   const [previews, setPreviews] = useState<ThreadPreview[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -91,17 +98,19 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
         if (cancelled) return;
         setRoster(people);
         setPreviews(rows);
+        setRosterFailed(false);
         setRosterReady(true);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
+        setRosterFailed(true);
         setRosterReady(true);
-        setError(err instanceof CleatRequestError ? err.message : chatCopy.loadFailed);
+        setError(userFacingError(err, screenCopy.loadFailed));
       });
     return () => {
       cancelled = true;
     };
-  }, [client]);
+  }, [client, rosterAttempt]);
 
   useEffect(() => {
     if (!client || !clientId) {
@@ -145,7 +154,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
           setPreviews((current) => notePreview(current, clientId, id, incoming));
         });
       } catch (err: unknown) {
-        if (!cancelled) setError(err instanceof CleatRequestError ? err.message : chatCopy.loadFailed);
+        if (!cancelled) setError(userFacingError(err, chatCopy.loadFailed));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -155,7 +164,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
       cancelled = true;
       unsubscribe();
     };
-  }, [client, clientId, rosterReady, rosterKey]);
+  }, [client, clientId, rosterReady, rosterKey, threadAttempt]);
 
   useEffect(() => {
     if (!client || !clientId || !isUuid(clientId)) {
@@ -206,7 +215,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
       setHasMore(page.hasMore);
       setMessages((current) => mergeMessages(page.messages, current));
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : chatCopy.loadFailed);
+      setError(userFacingError(err, chatCopy.loadFailed));
     } finally {
       setLoadingEarlier(false);
     }
@@ -227,7 +236,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
       setPreviews((current) => notePreview(current, clientId, message.threadId, message));
       setThreadId(message.threadId);
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : chatCopy.sendFailed);
+      setError(userFacingError(err, chatCopy.sendFailed));
     } finally {
       setSending(false);
     }
@@ -241,12 +250,42 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
           <p>{chatCopy.trainerLede}</p>
         </div>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {!rosterFailed && error ? (
+        <>
+          <Banner tone="error">{error}</Banner>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setError(null);
+              if (clientId) setThreadAttempt((value) => value + 1);
+            }}
+          >
+            {screenCopy.retry}
+          </button>
+        </>
+      ) : null}
+      {!rosterReady ? <ScreenState kind="loading" title={screenCopy.loadingChat} /> : null}
+      {rosterFailed ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setRosterReady(false);
+            setRosterFailed(false);
+            setError(null);
+            setRosterAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {!online && rosterReady && !rosterFailed ? <p className="meta">{screenCopy.offlineAction}</p> : null}
+      {rosterReady && !rosterFailed ? (
       <div className={selected ? "chat-wrap has-context" : "chat-wrap"}>
         <div className="chat-list">
           <div className="panel-head">{chatCopy.threads}</div>
           <div className="thread-scroll">
-            {rosterReady && ordered.length === 0 ? (
+            {ordered.length === 0 ? (
               <div className="list-row">
                 <div>
                   <div className="meta">{chatCopy.emptyRoster}</div>
@@ -360,9 +399,9 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
                 placeholder={replyPlaceholder(membership.displayName)}
                 aria-label={chatCopy.writeMessage}
                 onChange={(event) => setDraft(event.target.value)}
-                disabled={sending || loading}
+                disabled={sending || loading || !online}
               />
-              <button className="btn btn-primary" type="submit" disabled={sending || loading || draft.trim().length === 0}>
+              <button className="btn btn-primary" type="submit" disabled={sending || loading || !online || draft.trim().length === 0}>
                 {chatCopy.send}
               </button>
             </form>
@@ -426,6 +465,7 @@ export function ChatDesk({ clientId }: { clientId?: string }) {
           </aside>
         ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

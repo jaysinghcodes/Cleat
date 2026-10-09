@@ -1,6 +1,8 @@
+import { screenCopy } from "@cleat/domain";
 import {
   THEME_STORAGE_KEY,
   cycleThemePreference,
+  dark,
   isThemePreference,
   resolveTheme,
   themes,
@@ -17,7 +19,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+import { Text, useColorScheme, View } from "react-native";
 
 type ThemeContextValue = {
   preference: ThemePreference;
@@ -71,7 +73,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [preference, resolved, cycle, ready],
   );
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: dark.page, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: dark.text, fontSize: 16, fontWeight: "600" }}>{screenCopy.loadingCleat}</Text>
+      </View>
+    );
+  }
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

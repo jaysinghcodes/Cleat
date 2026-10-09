@@ -1,5 +1,4 @@
 import {
-  CleatRequestError,
   ensureThread,
   listMessages,
   sendChatMessage,
@@ -8,10 +7,12 @@ import {
 import {
   chatCopy,
   clientAiPresentation,
+  screenCopy,
   initials,
   mergeMessages,
   messagePlaceholder,
   splitMessageBody,
+  userFacingError,
   upsertMessage,
   type Message,
 } from "@cleat/domain";
@@ -27,8 +28,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Banner } from "../../components/ui";
+import { OfflineBanner, OfflineReason, ScreenState } from "../../components/states";
 import { useSession } from "../../lib/session";
+import { useTraining } from "../../lib/training";
 import { useTheme } from "../../theme";
 
 function deskOrigin(): string {
@@ -71,6 +73,7 @@ function MessageBody({ body, mine }: { body: string; mine: boolean }) {
 
 export default function ChatScreen() {
   const { client, session, coach } = useSession();
+  const { online } = useTraining();
   const { tokens } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadId, setThreadId] = useState<string | null>(null);
@@ -95,11 +98,11 @@ export default function ChatScreen() {
       setHasMore(page.hasMore);
       setError(null);
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : chatCopy.loadFailed);
+      setError(userFacingError(err, chatCopy.loadFailed));
     } finally {
       setLoading(false);
     }
-  }, [client, session]);
+  }, [client, session, online]);
 
   useEffect(() => {
     void load();
@@ -129,14 +132,14 @@ export default function ChatScreen() {
       setHasMore(page.hasMore);
       setMessages((current) => mergeMessages(page.messages, current));
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : chatCopy.loadFailed);
+      setError(userFacingError(err, chatCopy.loadFailed));
     } finally {
       setLoadingEarlier(false);
     }
   }
 
   async function onSend() {
-    if (!client) return;
+    if (!client || !online) return;
     stick.current = true;
     setSending(true);
     setError(null);
@@ -148,7 +151,7 @@ export default function ChatScreen() {
       setMessages(page.messages);
       setHasMore(page.hasMore);
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : chatCopy.sendFailed);
+      setError(userFacingError(err, chatCopy.sendFailed));
     } finally {
       setSending(false);
     }
@@ -183,7 +186,10 @@ export default function ChatScreen() {
               <Text style={{ color: tokens.textSecondary, fontSize: 12, marginTop: 2 }}>{chatCopy.coachMeta}</Text>
             </View>
           </View>
-          {error ? <Banner message={error} /> : null}
+          <OfflineBanner />
+          {error ? (
+            <ScreenState kind="error" title={screenCopy.couldNotLoad} body={error} onRetry={() => void load()} />
+          ) : null}
           <ScrollView
             ref={scroller}
             style={{ flex: 1 }}
@@ -195,31 +201,19 @@ export default function ChatScreen() {
             {hasMore ? (
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={chatCopy.loadEarlier}
                 disabled={loadingEarlier}
                 onPress={() => void onEarlier()}
-                style={{ alignSelf: "center", paddingVertical: 8 }}
+                style={{ alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12 }}
               >
                 <Text style={{ color: tokens.accentText, fontWeight: "600", fontSize: 13 }}>
                   {chatCopy.loadEarlier}
                 </Text>
               </Pressable>
             ) : null}
-            {loading ? (
-              <Text style={{ color: tokens.textSecondary, textAlign: "center", marginTop: 24 }}>
-                {chatCopy.loading}
-              </Text>
-            ) : null}
-            {!loading && messages.length === 0 ? (
-              <Text
-                style={{
-                  color: tokens.textSecondary,
-                  textAlign: "center",
-                  marginTop: 24,
-                  lineHeight: 20,
-                }}
-              >
-                {chatCopy.clientEmpty}
-              </Text>
+            {loading && !error ? <ScreenState kind="loading" title={screenCopy.loadingChat} /> : null}
+            {!loading && !error && messages.length === 0 ? (
+              <ScreenState kind="empty" title={chatCopy.clientEmpty} />
             ) : null}
             {messages.map((message) => {
               const view = clientAiPresentation(message, coachName);
@@ -282,6 +276,7 @@ export default function ChatScreen() {
               );
             })}
           </ScrollView>
+          <OfflineReason />
           <View
             style={{
               flexDirection: "row",
@@ -300,6 +295,7 @@ export default function ChatScreen() {
               placeholderTextColor={tokens.textTertiary}
               accessibilityLabel={chatCopy.writeMessage}
               maxLength={4000}
+              editable={online}
               style={{
                 flex: 1,
                 color: tokens.text,
@@ -307,6 +303,7 @@ export default function ChatScreen() {
                 borderColor: tokens.border,
                 borderWidth: 1,
                 borderRadius: 14,
+                minHeight: 44,
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 fontSize: 14,
@@ -314,14 +311,20 @@ export default function ChatScreen() {
             />
             <Pressable
               accessibilityRole="button"
-              disabled={sending || draft.trim().length === 0}
+              accessibilityLabel={online ? chatCopy.send : screenCopy.offlineAction}
+              accessibilityState={{ disabled: sending || !online || draft.trim().length === 0 }}
+              disabled={sending || !online || draft.trim().length === 0}
               onPress={() => void onSend()}
               style={{
                 backgroundColor: tokens.accent,
                 borderRadius: 14,
+                minHeight: 44,
+                minWidth: 44,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
-                opacity: sending || draft.trim().length === 0 ? 0.6 : 1,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: sending || !online || draft.trim().length === 0 ? 0.6 : 1,
               }}
             >
               <Text style={{ color: tokens.onAccent, fontWeight: "600", fontSize: 14 }}>{chatCopy.send}</Text>

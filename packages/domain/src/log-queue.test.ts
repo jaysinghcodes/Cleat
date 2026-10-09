@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createLogQueue, type LogQueue } from "./log-queue";
 import type { LogOperation } from "./log";
+import { programCopy } from "./program";
 
 const EXERCISE_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const CLIENT_KEY = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -157,4 +158,21 @@ test("sentinel repro: enqueue during a network error stays with the failed set",
 
   const queued = (await q.read()).map((item) => item.clientKey);
   assert.deepEqual(queued, [KEY1, KEY2]);
+});
+
+test("a database failure on flush is a friendly message", async () => {
+  let raw: unknown = [];
+  const q = createLogQueue({
+    read: async () => raw,
+    write: async (items) => {
+      raw = JSON.parse(JSON.stringify(items)) as unknown;
+    },
+    online: async () => true,
+  });
+  await q.enqueue(operation());
+  const result = await q.flush(async () => {
+    throw new Error('duplicate key value violates unique constraint "set_logs_pkey"');
+  });
+  assert.equal(result.error, programCopy.couldNotLog);
+  assert.equal(result.error?.includes("set_logs_pkey"), false);
 });

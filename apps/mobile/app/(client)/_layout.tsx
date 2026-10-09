@@ -1,3 +1,4 @@
+import { screenCopy } from "@cleat/domain";
 import type { ThemeTokens } from "@cleat/theme";
 import { Redirect, Tabs } from "expo-router";
 import { Text, View } from "react-native";
@@ -44,7 +45,15 @@ export default function ClientLayout() {
   const { ready, membership } = useSession();
   const { tokens } = useTheme();
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: tokens.page, alignItems: "center", justifyContent: "center" }}>
+        <Text accessibilityRole="header" style={{ color: tokens.text, fontSize: 16, fontWeight: "600" }}>
+          {screenCopy.loadingCleat}
+        </Text>
+      </View>
+    );
+  }
   if (membership?.role !== "client") return <Redirect href="/login" />;
 
   return (
@@ -58,6 +67,10 @@ export default function ClientLayout() {
         tabBarStyle: {
           backgroundColor: tokens.card,
           borderTopColor: tokens.border,
+          minHeight: 56,
+        },
+        tabBarItemStyle: {
+          minHeight: 44,
         },
         tabBarLabelStyle: {
           fontSize: 10,

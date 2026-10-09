@@ -1,8 +1,9 @@
 "use client";
 
-import { CleatRequestError, listKbArticles, saveKbArticle } from "@cleat/api";
-import { aiCopy, categoryLabel, type KbArticle, type KbCategory } from "@cleat/domain";
+import { listKbArticles, saveKbArticle } from "@cleat/api";
+import { aiCopy, categoryLabel, screenCopy, userFacingError, type KbArticle, type KbCategory } from "@cleat/domain";
 import { useCallback, useEffect, useState } from "react";
+import { ScreenState } from "../../screen-state";
 import { useSession } from "../../session";
 import { Banner } from "../../ui";
 
@@ -18,17 +19,20 @@ export function KnowledgeDesk() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const load = useCallback(async () => {
     if (!client) return;
     const rows = await listKbArticles(client);
     setArticles(rows);
+    setStatus("ready");
   }, [client]);
 
   useEffect(() => {
     if (!client) return;
     void load().catch((err: unknown) => {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.loadFailed);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setStatus("error");
     });
   }, [client, load]);
 
@@ -66,7 +70,7 @@ export function KnowledgeDesk() {
       await load();
       setSelected(null);
     } catch (err: unknown) {
-      setError(err instanceof CleatRequestError ? err.message : aiCopy.articleFailed);
+      setError(userFacingError(err, aiCopy.articleFailed));
     } finally {
       setPending(false);
     }
@@ -83,14 +87,29 @@ export function KnowledgeDesk() {
           {aiCopy.newArticle}
         </button>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "ready" && error ? <Banner tone="error">{error}</Banner> : null}
       {notice ? <Banner tone="ok">{notice}</Banner> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingKnowledge} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            void load().catch((err: unknown) => {
+              setError(userFacingError(err, screenCopy.loadFailed));
+              setStatus("error");
+            });
+          }}
+        />
+      ) : null}
+      {status === "ready" ? (
       <div className="program-cols">
         <div className="card" style={{ padding: 0 }}>
           {articles.length === 0 ? (
-            <div className="list-row">
-              <div className="meta">{aiCopy.noArticles}</div>
-            </div>
+            <ScreenState kind="empty" title="No articles yet" body={aiCopy.noArticles} />
           ) : (
             articles.map((article) => (
               <button
@@ -155,6 +174,7 @@ export function KnowledgeDesk() {
           )}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

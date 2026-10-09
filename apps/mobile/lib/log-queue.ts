@@ -16,8 +16,14 @@ export async function deviceOnline(): Promise<boolean> {
 }
 
 export function watchOnline(onOnline: () => void): { remove: () => void } {
+  return watchNetwork((online) => {
+    if (online) onOnline();
+  });
+}
+
+export function watchNetwork(onChange: (online: boolean) => void): { remove: () => void } {
   const subscription = Network.addNetworkStateListener((state) => {
-    if (state.isConnected && state.isInternetReachable !== false) onOnline();
+    onChange(state.isConnected !== false && state.isInternetReachable !== false);
   });
   return { remove: () => subscription.remove() };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_NAME } from "@cleat/domain";
+import { APP_NAME, copy, userFacingError } from "@cleat/domain";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { ThemeCycle } from "./theme";
 
@@ -68,5 +68,10 @@ export function TextField({
 }
 
 export function Banner({ tone, children }: { tone: "error" | "ok"; children: ReactNode }) {
-  return <div className={tone === "error" ? "banner banner-error" : "banner banner-ok"}>{children}</div>;
+  const body = tone === "error" && typeof children === "string" ? userFacingError(children, copy.generic) : children;
+  return (
+    <div className={tone === "error" ? "banner banner-error" : "banner banner-ok"} role={tone === "error" ? "alert" : "status"}>
+      {body}
+    </div>
+  );
 }

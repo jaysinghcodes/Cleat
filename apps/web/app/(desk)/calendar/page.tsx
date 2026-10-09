@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CleatRequestError,
   accessToken,
   clearAvailabilityOverride,
   listClients,
@@ -18,6 +17,8 @@ import {
   blocksForDay,
   bookingCopy,
   civilToKey,
+  screenCopy,
+  userFacingError,
   copy,
   draftFromBlocks,
   firstName,
@@ -38,6 +39,7 @@ import {
 } from "@cleat/domain";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "../../session";
+import { ScreenState } from "../../screen-state";
 import { Banner } from "../../ui";
 
 const SLOT_CHOICES = [30, 45, 60, 90];
@@ -61,6 +63,8 @@ export default function CalendarPage() {
   const [overrideEnd, setOverrideEnd] = useState("20:00");
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -75,13 +79,15 @@ export default function CalendarPage() {
     setSlotMinutes(calendar.slotMinutes);
     setDraft(draftFromBlocks(calendar.blocks));
     setNames(new Map(roster.map((person) => [person.userId, person.displayName])));
+    setStatus("ready");
   }, [client, membership]);
 
   useEffect(() => {
     void load().catch((err: unknown) => {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, screenCopy.loadFailed));
+      setStatus("error");
     });
-  }, [load]);
+  }, [load, attempt]);
 
   const days = weekDays(weekStart);
   const weekStartInstant = zonedTimeToUtc(weekStart, 0, 0, timezone);
@@ -134,7 +140,7 @@ export default function CalendarPage() {
       setEditing(false);
       setNotice("Saved");
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -165,7 +171,7 @@ export default function CalendarPage() {
       setWeekStart(startOfWeekMonday(zonedTimeToUtc(keyToCivil(overrideDate), 12, 0, timezone), timezone));
       setNotice("Saved");
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -180,7 +186,7 @@ export default function CalendarPage() {
       await load();
       setNotice("Saved");
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -197,7 +203,7 @@ export default function CalendarPage() {
       setSyncing(true);
       setCopied(false);
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -223,7 +229,7 @@ export default function CalendarPage() {
       await load();
       setNotice("Session cancelled");
     } catch (err) {
-      setError(err instanceof CleatRequestError ? err.message : copy.generic);
+      setError(userFacingError(err, copy.generic));
     } finally {
       setPending(false);
     }
@@ -251,8 +257,26 @@ export default function CalendarPage() {
           </button>
         </div>
       </div>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {status === "ready" && error ? <Banner tone="error">{error}</Banner> : null}
       {notice ? <Banner tone="ok">{notice}</Banner> : null}
+      {status === "loading" ? <ScreenState kind="loading" title={screenCopy.loadingCalendar} /> : null}
+      {status === "error" ? (
+        <ScreenState
+          kind="error"
+          title={screenCopy.couldNotLoad}
+          body={error ?? screenCopy.loadFailed}
+          onRetry={() => {
+            setStatus("loading");
+            setError(null);
+            setAttempt((value) => value + 1);
+          }}
+        />
+      ) : null}
+      {status === "ready" && blocks.length === 0 && sessions.length === 0 ? (
+        <ScreenState kind="empty" title={screenCopy.emptyCalendarTitle} body={screenCopy.emptyCalendarBody} />
+      ) : null}
+      {status === "ready" ? (
+      <>
       <div className="grid-3">
         <div className="card stat-card">
           <div className="label">{bookingCopy.thisWeek}</div>
@@ -361,7 +385,7 @@ export default function CalendarPage() {
                 setSlotMinutes(minutes);
                 if (!client || !session) return;
                 void saveSlotMinutes(client, session.userId, minutes).catch((err: unknown) => {
-                  setError(err instanceof CleatRequestError ? err.message : copy.generic);
+                  setError(userFacingError(err, copy.generic));
                 });
               }}
             >
@@ -456,6 +480,8 @@ export default function CalendarPage() {
           </div>
           <p className="meta">{bookingCopy.regenerateHint}</p>
         </div>
+      ) : null}
+      </>
       ) : null}
     </div>
   );

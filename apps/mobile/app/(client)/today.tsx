@@ -7,6 +7,7 @@ import {
   prescription,
   programCopy,
   programDayForDate,
+  screenCopy,
   progressLabel,
   progressPercent,
   shortDate,
@@ -16,6 +17,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OfflineBanner, ScreenState } from "../../components/states";
 import { Banner } from "../../components/ui";
 import { useSession } from "../../lib/session";
 import { useTraining } from "../../lib/training";
@@ -24,7 +26,7 @@ import { useTheme } from "../../theme";
 export default function TodayScreen() {
   const router = useRouter();
   const { session, membership, coach } = useSession();
-  const { ready, training, pendingCount, error, notice, saveOperation, setUnit, dismiss } = useTraining();
+  const { ready, training, error, notice, saveOperation, setUnit, dismiss, refresh } = useTraining();
   const { tokens } = useTheme();
   const [skipping, setSkipping] = useState(false);
   const [skipNote, setSkipNote] = useState("");
@@ -107,13 +109,17 @@ export default function TodayScreen() {
           </View>
         </View>
         <UnitToggle unit={unit} onChange={(next) => void setUnit(next)} />
-        {error ? <Banner message={error} /> : null}
+        <OfflineBanner testID="today-offline" />
         {notice ? <Banner message={notice} tone="ok" /> : null}
-        {pendingCount > 0 ? (
-          <View testID="today-offline" style={{ marginBottom: 12 }}>
-            <Banner message={programCopy.savedOffline} tone="ok" />
-          </View>
+        {error ? (
+          <ScreenState
+            kind="error"
+            title={screenCopy.couldNotLoad}
+            body={error}
+            onRetry={() => void refresh()}
+          />
         ) : null}
+        {!ready && !error ? <ScreenState kind="loading" title={screenCopy.loadingToday} /> : null}
         {training?.nudge ? (
           <View
             testID="today-nudge"
@@ -127,16 +133,19 @@ export default function TodayScreen() {
             }}
           >
             <Text style={{ color: tokens.error, fontSize: 14, lineHeight: 20 }}>{training.nudge.body}</Text>
-            <Pressable onPress={() => void dismiss(training.nudge?.id ?? "")} style={{ marginTop: 8 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Got it"
+              onPress={() => void dismiss(training.nudge?.id ?? "")}
+              style={{ marginTop: 8, minHeight: 44, justifyContent: "center" }}
+            >
               <Text style={{ color: tokens.text, fontWeight: "600" }}>Got it</Text>
             </Pressable>
           </View>
         ) : null}
-        {!ready ? <Text style={{ color: tokens.textSecondary }}>Loading today</Text> : null}
-        {ready && !program ? (
-          <View testID="today-empty" style={cardStyle(tokens)}>
-            <Text style={{ color: tokens.text, fontWeight: "600", marginBottom: 6 }}>No program yet</Text>
-            <Text style={{ color: tokens.textSecondary, lineHeight: 20 }}>{programCopy.emptyToday}</Text>
+        {ready && !program && !error ? (
+          <View testID="today-empty">
+            <ScreenState kind="empty" title="No program yet" body={programCopy.emptyToday} />
           </View>
         ) : null}
         {ready && program && !day ? (
@@ -203,6 +212,8 @@ export default function TodayScreen() {
                   return (
                     <Pressable
                       key={exercise.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={exercise.name}
                       onPress={() => router.push({ pathname: "/log", params: { exerciseId: exercise.id } })}
                       style={[
                         cardStyle(tokens),
@@ -224,14 +235,18 @@ export default function TodayScreen() {
                 })}
                 <Pressable
                   testID="continue-logging"
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue logging"
                   onPress={() => {
                     if (nextExercise) router.push({ pathname: "/log", params: { exerciseId: nextExercise.id } });
                   }}
                   style={{
                     backgroundColor: tokens.accent,
                     borderRadius: 14,
+                    minHeight: 44,
                     paddingVertical: 14,
                     alignItems: "center",
+                    justifyContent: "center",
                     marginTop: 6,
                   }}
                 >
@@ -242,6 +257,7 @@ export default function TodayScreen() {
                     <Text style={{ color: tokens.textSecondary, marginBottom: 6 }}>Optional note</Text>
                     <TextInput
                       testID="skip-note"
+                      accessibilityLabel="Optional note"
                       value={skipNote}
                       onChangeText={setSkipNote}
                       placeholder="Travel, rest, or a short reason"
@@ -252,20 +268,25 @@ export default function TodayScreen() {
                         borderRadius: tokens.radiusSm,
                         color: tokens.text,
                         backgroundColor: tokens.input,
+                        minHeight: 44,
                         padding: 12,
                         marginBottom: 8,
                       }}
                     />
                     <Pressable
                       testID="confirm-skip"
+                      accessibilityRole="button"
+                      accessibilityLabel="Confirm skip"
                       disabled={pending}
                       onPress={() => void confirmSkip()}
                       style={{
                         borderWidth: 1,
                         borderColor: tokens.border,
                         borderRadius: 14,
+                        minHeight: 44,
                         paddingVertical: 14,
                         alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       <Text style={{ color: tokens.text, fontWeight: "600" }}>Confirm skip</Text>
@@ -274,13 +295,17 @@ export default function TodayScreen() {
                 ) : (
                   <Pressable
                     testID="skip-today"
+                    accessibilityRole="button"
+                    accessibilityLabel="Skip today"
                     onPress={() => setSkipping(true)}
                     style={{
                       borderWidth: 1,
                       borderColor: tokens.border,
                       borderRadius: 14,
+                      minHeight: 44,
                       paddingVertical: 14,
                       alignItems: "center",
+                      justifyContent: "center",
                       marginTop: 8,
                     }}
                   >
@@ -317,12 +342,19 @@ function UnitToggle({ unit, onChange }: { unit: "lb" | "kg"; onChange: (unit: "l
           <Pressable
             key={option}
             testID={`unit-${option}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Weight unit ${option}`}
+            accessibilityState={{ selected: active }}
             onPress={() => onChange(option)}
             style={{
-              paddingVertical: 6,
-              paddingHorizontal: 12,
+              minHeight: 44,
+              minWidth: 44,
+              paddingVertical: 10,
+              paddingHorizontal: 14,
               borderRadius: 999,
               borderWidth: 1,
+              alignItems: "center",
+              justifyContent: "center",
               borderColor: active ? tokens.borderStrong : tokens.border,
               backgroundColor: active ? tokens.raised : "transparent",
             }}

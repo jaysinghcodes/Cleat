@@ -112,6 +112,14 @@ export type { Log, LogOperation, SetEntry, WeightUnit } from "./log";
 export { createLogQueue } from "./log-queue";
 export type { LogFlushResult, LogQueue } from "./log-queue";
 
+export {
+  connectionMessage,
+  knownProductMessage,
+  offlineActionReason,
+  screenCopy,
+  userFacingError,
+} from "./screen-state";
+
 export { deferredPushDelivery } from "./push";
 export type { NudgePush, PushDelivery } from "./push";
 

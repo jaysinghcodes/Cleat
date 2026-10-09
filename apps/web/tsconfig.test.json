@@ -5,5 +5,12 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["components/marketing/landing.test.tsx", "components/marketing/landing.tsx", "app/theme.tsx"]
+  "include": [
+    "components/marketing/landing.test.tsx",
+    "components/marketing/landing.tsx",
+    "app/theme.tsx",
+    "app/screen-state.tsx",
+    "app/screen-state.test.tsx",
+    "app/state-gallery.tsx"
+  ]
 }
