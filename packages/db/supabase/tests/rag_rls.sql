@@ -539,4 +539,64 @@ select public._rls_expect_error(
 );
 rollback;
 
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon nologin nocreatedb nocreaterole;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin nocreatedb nocreaterole;
+  end if;
+end
+$$;
+
+select public._rls_expect(
+  'seed_inbox_tier is revoked from anon',
+  not has_function_privilege('anon', 'public.seed_inbox_tier(uuid, uuid, text)', 'execute')
+);
+select public._rls_expect(
+  'seed_inbox_tier is revoked from authenticated',
+  not has_function_privilege('authenticated', 'public.seed_inbox_tier(uuid, uuid, text)', 'execute')
+);
+select public._rls_expect(
+  'enable_demo_auto_send is revoked from anon',
+  not has_function_privilege('anon', 'public.enable_demo_auto_send()', 'execute')
+);
+select public._rls_expect(
+  'enable_demo_auto_send is revoked from authenticated',
+  not has_function_privilege('authenticated', 'public.enable_demo_auto_send()', 'execute')
+);
+
+-- Supabase grants execute on public functions to anon and authenticated directly.
+grant execute on function public.seed_inbox_tier(uuid, uuid, text) to anon, authenticated;
+grant execute on function public.enable_demo_auto_send() to anon, authenticated;
+
+begin;
+set local role anon;
+select public._rls_expect_error(
+  'anon cannot call the inbox seed hook',
+  $$select public.seed_inbox_tier('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'p0_emergency')$$,
+  'permission denied'
+);
+select public._rls_expect_error(
+  'anon cannot enable demo auto send',
+  $$select public.enable_demo_auto_send()$$,
+  'permission denied'
+);
+rollback;
+
+begin;
+set local role authenticated;
+select public._rls_expect_error(
+  'authenticated cannot call the inbox seed hook',
+  $$select public.seed_inbox_tier('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'p1')$$,
+  'permission denied'
+);
+select public._rls_expect_error(
+  'authenticated cannot enable demo auto send',
+  $$select public.enable_demo_auto_send()$$,
+  'permission denied'
+);
+rollback;
+
 \echo ALL RAG CHECKS PASSED

@@ -207,7 +207,7 @@ $$;
 
 -- Ticket 7 calls this to insert one open item of a tier.
 -- Tiers: p0, p0_injury, p0_emergency, p0_self_harm, p1, p2, p3.
--- Not granted to authenticated. The service role and the migration owner can run it.
+-- Executable by the owner and service_role only. Anon and authenticated are refused.
 create or replace function public.seed_inbox_tier(
   target_org uuid,
   target_client uuid,
@@ -238,6 +238,10 @@ declare
   message_body text;
   item_at timestamptz := now();
 begin
+  if current_setting('role') in ('anon', 'authenticated') then
+    raise exception 'permission denied';
+  end if;
+
   if tier not in ('p0', 'p0_injury', 'p0_emergency', 'p0_self_harm', 'p1', 'p2', 'p3') then
     raise exception 'Choose an inbox tier.';
   end if;
@@ -438,9 +442,43 @@ begin
 end;
 $$;
 
+-- Same exposure as seed_inbox_tier: Supabase grants execute to anon and authenticated.
+create or replace function public.enable_demo_auto_send()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if current_setting('role') in ('anon', 'authenticated') then
+    raise exception 'permission denied';
+  end if;
+
+  update public.ai_settings
+  set auto_send = true
+  where org_id = 'd1000000-0000-4000-8000-000000000001';
+end;
+$$;
+
 revoke all on function public.thread_heads() from public;
 revoke all on function public.resolve_inbox_item(uuid, text, text) from public;
-revoke all on function public.seed_inbox_tier(uuid, uuid, text) from public;
+
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon nologin nocreatedb nocreaterole;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin nocreatedb nocreaterole;
+  end if;
+end
+$$;
+
+-- Supabase grants these at create time. Grant, then revoke, so a missing revoke stays visible.
+grant execute on function public.seed_inbox_tier(uuid, uuid, text) to anon, authenticated;
+grant execute on function public.enable_demo_auto_send() to anon, authenticated;
+revoke all on function public.seed_inbox_tier(uuid, uuid, text) from public, anon, authenticated;
+revoke all on function public.enable_demo_auto_send() from public, anon, authenticated;
 
 grant execute on function public.thread_heads() to authenticated;
 grant execute on function public.resolve_inbox_item(uuid, text, text) to authenticated;

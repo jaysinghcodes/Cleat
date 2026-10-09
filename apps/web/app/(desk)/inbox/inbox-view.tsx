@@ -258,12 +258,14 @@ function InboxPanel({
         ) : null}
         {item.priority === "p1" && item.draft ? (
           <>
-            <div>
-              <div className="meta">{inboxCopy.why}</div>
-              {item.why.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
+            {item.why.length > 0 ? (
+              <div>
+                <div className="meta">{inboxCopy.why}</div>
+                {item.why.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+            ) : null}
             {item.confidence !== null && item.threshold !== null ? (
               <div>
                 <div className="meta">{inboxCopy.confidence}</div>

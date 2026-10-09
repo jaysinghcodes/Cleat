@@ -84,10 +84,10 @@ A client cannot read another client's profile. Helper functions are `security de
 | `save_google_credentials`, `disconnect_google`, `attach_google_event`, `clear_google_event` | `authenticated` | Optional Google path. Disconnect sets primary calendar back to `ics`. Credential rows stay unreadable |
 | `match_chunks(query_embedding, target_org, target_client, match_count)` | `authenticated` | Cosine search inside one org. Returns org knowledge chunks and that client's program chunks. Security invoker, so RLS still applies |
 | `create_ai_settings_for_org()` | not granted | Trigger on `orgs` insert. New orgs start with auto send off and threshold 0.85 |
-| `enable_demo_auto_send()` | not granted to `authenticated` | Turns auto send on only for the reserved demo org `d1000000-0000-4000-8000-000000000001` |
+| `enable_demo_auto_send()` | revoked from `anon` and `authenticated` | Turns auto send on only for the reserved demo org `d1000000-0000-4000-8000-000000000001`. The owner and `service_role` can run it |
 | `thread_heads()` | `authenticated` | Latest message per visible thread. Security invoker, so RLS still applies |
 | `resolve_inbox_item(item_id, action, reply_body)` | `authenticated` | Trainer replies to or dismisses an open P0, P2, or P3 item in their org. A reply is a coach chat message. Dismiss writes `trainer_action` on the audit row when there is one |
-| `seed_inbox_tier(target_org, target_client, tier)` | not granted to `authenticated` | Ticket 7 inserts one open inbox item. Tiers are `p0`, `p0_injury`, `p0_emergency`, `p0_self_harm`, `p1`, `p2`, and `p3` |
+| `seed_inbox_tier(target_org, target_client, tier)` | revoked from `anon` and `authenticated` | Ticket 7 inserts one open inbox item. Tiers are `p0`, `p0_injury`, `p0_emergency`, `p0_self_harm`, `p1`, `p2`, and `p3`. The owner and `service_role` can run it |
 
 User facing exceptions from these functions:
 

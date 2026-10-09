@@ -22,6 +22,7 @@ export const REASON_CODES = [
   "asks_for_coach",
   "program_swap",
   "auto_send_off",
+  "low_confidence",
 ] as const;
 
 export type ReasonCode = (typeof REASON_CODES)[number];

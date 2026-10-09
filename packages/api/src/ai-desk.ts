@@ -173,30 +173,32 @@ export type TrainerInbox = {
   notices: TrainerNotice[];
 };
 
+const INBOX_COLUMNS =
+  "id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, template_id, status, created_at";
+
+function coveredMessageIds(data: unknown): string[] {
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const id = (row as { message_id?: unknown }).message_id;
+    return typeof id === "string" && id.length > 0 ? [id] : [];
+  });
+}
+
 export async function loadTrainerInbox(
   supabase: CleatClient,
   input: { orgId: string; timeZone: string; now?: string },
 ): Promise<TrainerInbox> {
   const now = input.now ?? new Date().toISOString();
-  const [org, items, drafts, audits, heads, notices, clients, board] = await Promise.all([
+  const [org, items, covered, heads, notices, clients, board] = await Promise.all([
     supabase.from("orgs").select("unanswered_hours").eq("id", input.orgId).maybeSingle(),
     supabase
       .from("inbox_items")
-      .select(
-        "id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, template_id, status, created_at",
-      )
-      .order("created_at", { ascending: true })
-      .limit(300),
-    supabase
-      .from("held_drafts")
-      .select("id, inbox_item_id, draft_text, sources, status")
-      .eq("status", "held")
-      .limit(100),
-    supabase
-      .from("audit_events")
-      .select("id, confidence, threshold, template_id, reason_codes")
-      .order("created_at", { ascending: false })
-      .limit(200),
+      .select(INBOX_COLUMNS)
+      .eq("status", "open")
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase.from("inbox_items").select("message_id").neq("status", "open"),
     supabase.rpc("thread_heads"),
     supabase
       .from("trainer_notices")
@@ -208,10 +210,26 @@ export async function loadTrainerInbox(
   ]);
   if (org.error) fail(org.error.message, inboxCopy.title);
   if (items.error) fail(items.error.message, aiCopy.loadFailed);
-  if (drafts.error) fail(drafts.error.message, aiCopy.loadFailed);
-  if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
+  if (covered.error) fail(covered.error.message, aiCopy.loadFailed);
   if (heads.error) fail(heads.error.message, aiCopy.loadFailed);
   if (notices.error) fail(notices.error.message, aiCopy.loadFailed);
+  const stored = parseStoredInboxItems(items.data);
+  const itemIds = stored.map((item) => item.id);
+  const auditIds = [...new Set(stored.flatMap((item) => (item.auditId ? [item.auditId] : [])))];
+  const [drafts, audits] = await Promise.all([
+    itemIds.length === 0
+      ? Promise.resolve({ data: [], error: null })
+      : supabase
+          .from("held_drafts")
+          .select("id, inbox_item_id, draft_text, sources, status")
+          .eq("status", "held")
+          .in("inbox_item_id", itemIds),
+    auditIds.length === 0
+      ? Promise.resolve({ data: [], error: null })
+      : supabase.from("audit_events").select("id, confidence, threshold, template_id, reason_codes").in("id", auditIds),
+  ]);
+  if (drafts.error) fail(drafts.error.message, aiCopy.loadFailed);
+  if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
   const windowHours = unansweredHoursOrDefault(
     org.data && typeof org.data === "object" ? (org.data as { unanswered_hours?: unknown }).unanswered_hours : undefined,
   );
@@ -226,11 +244,12 @@ export async function loadTrainerInbox(
       now,
       windowHours,
       names,
-      stored: parseStoredInboxItems(items.data),
+      stored,
       drafts: parseInboxDrafts(drafts.data),
       audits: parseInboxAudits(audits.data),
       heads: parseThreadHeads(heads.data),
-      missed: missedCandidates(board.rows, today),
+      missed: missedCandidates(board.rows, today, input.timeZone),
+      coveredMessageIds: coveredMessageIds(covered.data),
     }),
   };
 }

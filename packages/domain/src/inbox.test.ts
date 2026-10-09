@@ -3,18 +3,23 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { keyToCivil, zonedTimeToUtc } from "./calendar";
 import {
   DEFAULT_UNANSWERED_HOURS,
   buildInboxQueue,
   filterInbox,
+  inboxAge,
   inboxCopy,
   inboxReasonCounts,
+  missedCandidates,
   parseUnansweredHours,
   selectInboxItem,
   sortInboxItems,
   unansweredHoursOrDefault,
+  whyEscalated,
   type StoredInboxItem,
 } from "./inbox";
+import type { BoardRow } from "./program";
 
 const DASH = /[—–]| - /;
 
@@ -270,6 +275,54 @@ test("a trainer reply covers an unanswered message and a sent item leaves the qu
     missed: [],
   });
   assert.equal(covered.length, 0);
+});
+
+test("a low confidence hold explains why it was held", () => {
+  assert.deepEqual(whyEscalated(["low_confidence"]), [inboxCopy.lowConfidence]);
+  assert.equal(inboxCopy.lowConfidence, "Confidence below your threshold");
+  const queue = buildInboxQueue({
+    orgId: ORG,
+    now: "2026-10-09T12:00:00.000Z",
+    windowHours: 4,
+    names: names(),
+    stored: [
+      stored({
+        id: "10000000-0000-4000-8000-000000000031",
+        priority: "p1",
+        createdAt: "2026-10-09T11:00:00.000Z",
+        reasonCodes: [],
+      }),
+    ],
+    drafts: [],
+    audits: [],
+    heads: [],
+    missed: [],
+  });
+  assert.deepEqual(queue[0]?.why, ["Confidence below your threshold"]);
+});
+
+test("missed age uses the client local day, not UTC midnight", () => {
+  const row: BoardRow = {
+    userId: JORDAN,
+    displayName: "Jordan Kim",
+    weightUnit: "lb",
+    today: "missed",
+    todayLabel: "Missed",
+    summary: "Lower A",
+    adherence: "0/1",
+    lastLogged: "Oct 7",
+    reasons: ["missed_yesterday"],
+    needsNudge: true,
+    action: "send",
+    urgency: 0,
+  };
+  const occurred = missedCandidates([row], "2026-10-09", "America/Chicago")[0]?.occurredAt;
+  const localStart = zonedTimeToUtc(keyToCivil("2026-10-08"), 0, 0, "America/Chicago").toISOString();
+  const nextLocalMidnight = zonedTimeToUtc(keyToCivil("2026-10-09"), 0, 0, "America/Chicago").toISOString();
+  assert.equal(occurred, localStart);
+  assert.notEqual(occurred, "2026-10-08T00:00:00.000Z");
+  assert.equal(inboxAge(occurred ?? "", nextLocalMidnight), "24h ago");
+  assert.notEqual(inboxAge("2026-10-08T00:00:00.000Z", nextLocalMidnight), "24h ago");
 });
 
 test("inbox copy has no dash punctuation", () => {

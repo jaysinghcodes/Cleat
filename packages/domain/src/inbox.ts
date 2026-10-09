@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { keyToCivil, zonedTimeToUtc } from "./calendar";
 import type { BoardRow, NudgeReason } from "./program";
 import { addDays } from "./program";
 
@@ -38,6 +39,7 @@ export const inboxCopy = {
   sendReply: "Send reply",
   dismiss: "Dismiss",
   why: "Why this was held",
+  lowConfidence: "Confidence below your threshold",
   confidence: "Confidence",
   threshold: "Threshold",
   sources: "Sources",
@@ -76,12 +78,19 @@ const WHY_LABEL: Record<string, string> = {
   asks_for_coach: "They asked for you",
   program_swap: "They asked to change programs",
   auto_send_off: "Auto send is off",
+  low_confidence: inboxCopy.lowConfidence,
   unanswered: "No reply yet",
   missed: "Missed workout or needs a nudge",
 };
 
 export function inboxReasonLabel(reason: InboxReason): string {
   return REASON_LABEL[reason];
+}
+
+function heldWhy(priority: InboxPriority, reasonCodes: string[]): string[] {
+  const lines = whyEscalated(reasonCodes);
+  if (priority === "p1" && lines.length === 0) return [inboxCopy.lowConfidence];
+  return lines;
 }
 
 export function whyEscalated(reasonCodes: string[]): string[] {
@@ -363,12 +372,12 @@ export function unansweredInboxId(messageId: string): string {
   return `unanswered:${messageId}`;
 }
 
-function missedOccurredAt(today: string, reasons: NudgeReason[]): string {
+function missedOccurredAt(today: string, reasons: NudgeReason[], timeZone: string): string {
   const date = reasons.includes("missed_yesterday") ? addDays(today, -1) : today;
-  return `${date}T00:00:00.000Z`;
+  return zonedTimeToUtc(keyToCivil(date), 0, 0, timeZone).toISOString();
 }
 
-export function missedCandidates(rows: BoardRow[], today: string): {
+export function missedCandidates(rows: BoardRow[], today: string, timeZone: string): {
   clientId: string;
   displayName: string;
   summary: string;
@@ -381,7 +390,7 @@ export function missedCandidates(rows: BoardRow[], today: string): {
       clientId: row.userId,
       displayName: row.displayName,
       summary: row.summary,
-      occurredAt: missedOccurredAt(today, row.reasons),
+      occurredAt: missedOccurredAt(today, row.reasons, timeZone),
       nudgeKind: row.action === "soft" ? "soft" : "nudge",
     }));
 }
@@ -410,13 +419,17 @@ export function buildInboxQueue(input: {
   audits: InboxAuditSlice[];
   heads: ThreadHead[];
   missed: { clientId: string; displayName: string; summary: string; occurredAt: string; nudgeKind: "soft" | "nudge" }[];
+  coveredMessageIds?: string[];
 }): InboxQueueItem[] {
   const hours = unansweredHoursOrDefault(input.windowHours);
   const audits = new Map(input.audits.map((audit) => [audit.id, audit]));
   const drafts = new Map(
     input.drafts.filter((draft) => draft.status === "held").map((draft) => [draft.inboxItemId, draft]),
   );
-  const coveredMessages = new Set(input.stored.flatMap((item) => (item.messageId ? [item.messageId] : [])));
+  const coveredMessages = new Set([
+    ...input.stored.flatMap((item) => (item.messageId ? [item.messageId] : [])),
+    ...(input.coveredMessageIds ?? []),
+  ]);
   const openP3 = new Set(
     input.stored.filter((item) => item.status === "open" && item.priority === "p3").map((item) => item.clientId),
   );
@@ -448,7 +461,7 @@ export function buildInboxQueue(input: {
         draft: draft
           ? { id: draft.id, text: draft.text, sources: draft.sources }
           : null,
-        why: whyEscalated(reasonCodes),
+        why: heldWhy(item.priority, reasonCodes),
         derived: false,
         nudgeKind: item.priority === "p3" ? "nudge" : null,
       };

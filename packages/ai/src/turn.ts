@@ -274,6 +274,7 @@ export async function planClientTurn(input: {
   ]);
   const forcedHold = refusal.kind === "hold";
   const autoSendOff = band === "high" && !input.settings.autoSend && !forcedHold;
+  if (band !== "high") reasonCodes.push("low_confidence");
   if (autoSendOff) reasonCodes.push("auto_send_off");
 
   const base = {

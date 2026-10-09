@@ -262,6 +262,25 @@ test("medium band is held and low band is held without a client reply", async ()
   assert.equal(low.audit.reasonCodes.includes("retrieval_gap"), true);
 });
 
+test("a below threshold hold records low confidence", async () => {
+  const held = await planClientTurn({
+    message: "What shoes should I wear for squats tomorrow?",
+    messageId: MESSAGE_ID,
+    orgId: ORG_A,
+    clientId: CLIENT_C,
+    threadId: THREAD_ID,
+    chunks: [chunk({ id: "11111111-1111-4111-8111-111111111111", snippet: "squats shoes", score: 0.8 })],
+    settings: { autoSend: false, threshold: 0.85, signOff: "", toneNotes: "" },
+    chat: cannedChatModel,
+    now: NOW,
+  });
+  assert.equal(held.band, "medium");
+  assert.equal(held.audit.decision, "escalate");
+  assert.equal(held.audit.reasonCodes.includes("low_confidence"), true);
+  assert.equal(held.inbox?.reasonCodes.includes("low_confidence"), true);
+  assert.equal(held.audit.reasonCodes.includes("auto_send_off"), false);
+});
+
 test("every AI plan writes one audit row with the required fields", async () => {
   const plan = await planClientTurn({
     message: "How many rest days are in the program?",

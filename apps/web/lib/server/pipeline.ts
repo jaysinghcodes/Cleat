@@ -172,7 +172,7 @@ function mapMatch(data: unknown): RetrievedChunk[] {
   });
 }
 
-async function commitPlan(
+export async function commitPlan(
   admin: SupabaseClient,
   event: ClientMessageEvent,
   plan: Awaited<ReturnType<typeof planClientTurn>>,
@@ -236,6 +236,8 @@ async function commitPlan(
       emergency: plan.inbox.emergency,
       reason_codes: plan.inbox.reasonCodes,
       title: plan.inbox.title,
+      preview: event.body.trim().slice(0, 500),
+      template_id: plan.audit.templateId,
     })
     .select("id")
     .single();
