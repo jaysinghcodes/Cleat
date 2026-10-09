@@ -154,6 +154,7 @@ cp .env.example .env
 - Supabase URL, anon key, and service role (service role is server-only)
 - `EXPO_PUBLIC_` and `NEXT_PUBLIC_` copies of the URL and anon key
 - `OPENAI_API_KEY` (server-only)
+- `INBOX_UNANSWERED_HOURS` (server-only, default 4, clamped from 1 to 168; an org setting overrides it)
 - `ICS_FEED_SIGNING_SECRET` (server-only)
 - optional `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
 

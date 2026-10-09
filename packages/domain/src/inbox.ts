@@ -124,6 +124,24 @@ export function unansweredHoursOrDefault(value: unknown): number {
   return parseUnansweredHours(value) ?? DEFAULT_UNANSWERED_HOURS;
 }
 
+/**
+ * Clamp a server env value into 1 to 168 hours.
+ * Non numeric values return null so the caller can fall back to 4.
+ */
+export function clampUnansweredHours(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value.trim()) : Number.NaN;
+  if (!Number.isFinite(numeric)) return null;
+  const whole = Math.round(numeric);
+  return Math.min(MAX_UNANSWERED_HOURS, Math.max(MIN_UNANSWERED_HOURS, whole));
+}
+
+/** A saved org window wins. Otherwise the env value is clamped, then 4. */
+export function resolveUnansweredHours(orgValue: unknown, envValue: unknown): number {
+  return parseUnansweredHours(orgValue) ?? clampUnansweredHours(envValue) ?? DEFAULT_UNANSWERED_HOURS;
+}
+
 export function isPastUnansweredWindow(messageAt: string, now: string, hours: number): boolean {
   const sent = Date.parse(messageAt);
   const current = Date.parse(now);
@@ -409,6 +427,18 @@ function parseSources(data: unknown): InboxSource[] {
   });
 }
 
+/**
+ * A reply that reached the client stops the P2 clock.
+ * A dismissed item does not. An open item with a still pending held draft does not.
+ * coveredMessageIds are sent replies whose rows are not in stored.
+ */
+function replyStopsUnansweredClock(item: StoredInboxItem, pendingDraftItems: Set<string>): boolean {
+  if (!item.messageId) return false;
+  if (item.status === "dismissed") return false;
+  if (item.status === "open" && pendingDraftItems.has(item.id)) return false;
+  return true;
+}
+
 export function buildInboxQueue(input: {
   orgId: string;
   now: string;
@@ -423,13 +453,15 @@ export function buildInboxQueue(input: {
 }): InboxQueueItem[] {
   const hours = unansweredHoursOrDefault(input.windowHours);
   const audits = new Map(input.audits.map((audit) => [audit.id, audit]));
-  const drafts = new Map(
-    input.drafts.filter((draft) => draft.status === "held").map((draft) => [draft.inboxItemId, draft]),
-  );
-  const coveredMessages = new Set([
-    ...input.stored.flatMap((item) => (item.messageId ? [item.messageId] : [])),
-    ...(input.coveredMessageIds ?? []),
-  ]);
+  const heldDrafts = input.drafts.filter((draft) => draft.status === "held");
+  const drafts = new Map(heldDrafts.map((draft) => [draft.inboxItemId, draft]));
+  const pendingDraftItems = new Set(heldDrafts.map((draft) => draft.inboxItemId));
+  const coveredMessages = new Set(input.coveredMessageIds ?? []);
+  for (const item of input.stored) {
+    if (replyStopsUnansweredClock(item, pendingDraftItems) && item.messageId) {
+      coveredMessages.add(item.messageId);
+    }
+  }
   const openP3 = new Set(
     input.stored.filter((item) => item.status === "open" && item.priority === "p3").map((item) => item.clientId),
   );

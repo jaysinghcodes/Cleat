@@ -26,7 +26,6 @@ export const TEMPLATE_TEXT: Record<TemplateId, string> = {
 };
 
 const SELF_HARM: RegExp[] = [
-  /hurt(?:ing)? myself/,
   /harm(?:ing)? myself/,
   /kill(?:ing)? myself/,
   /self[-\s]?harm/,
@@ -119,6 +118,23 @@ const MEDICAL: RegExp[] = [
   /\bnutrition\b/,
 ];
 
+/** Training words that make "hurt myself" or "injured myself" an injury, not self harm. */
+const TRAINING_CONTEXT =
+  /\b(?:lifting|lifts?|deadlifts?|squats?|squatting|lunges?|lunging|bench(?:es|ing)?|workouts?|gym|sets?|reps?|sessions?|press(?:es|ing)?|cleans?|snatches?|curls?|rowing|rows?|rdls?|pull-?ups?|push-?ups?|barbells?|dumbbells?|kettlebells?|overhead)\b/;
+
+/**
+ * Intent to cause the harm. "going to the gym" is not intent.
+ * "going to hurt" and "on purpose" are.
+ */
+const HARM_INTENT =
+  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
+
+const NEGATED_HARM_INTENT =
+  /\b(?:do not|don't|dont|never|not) want(?:ed|ing)? to (?:hurt|injur\w*)|\b(?:not|never) going to (?:hurt|injur\w*)|\bnot on purpose\b|\bnot deliberately\b/g;
+
+/** "hurt myself" and "injured myself", including hurting and will hurt. */
+const SELF_DIRECTED_INJURY = /\b(?:hurt(?:ing)?|injur(?:e|ed|ing)) myself\b/;
+
 const ASKS_FOR_COACH: RegExp[] = [
   /\btalk to (?:my )?(?:coach|trainer|alex)\b/,
   /\bspeak to (?:my )?(?:coach|trainer|alex)\b/,
@@ -164,13 +180,62 @@ function matches(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
+function hasHarmIntent(text: string): boolean {
+  return HARM_INTENT.test(text.replace(NEGATED_HARM_INTENT, " "));
+}
+
+function selfHarmRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "emergency_self_harm",
+    text: EMERGENCY_SELF_HARM_TEMPLATE,
+    reasonCodes: ["self_harm", "emergency"],
+    emergency: true,
+  };
+}
+
+function emergencyRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "emergency",
+    text: EMERGENCY_TEMPLATE,
+    reasonCodes: ["emergency"],
+    emergency: true,
+  };
+}
+
+function medicalRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "medical_safety",
+    text: MEDICAL_SAFETY_TEMPLATE,
+    reasonCodes: ["refusal_keyword"],
+    emergency: false,
+  };
+}
+
+/**
+ * "hurt myself" and "injured myself" are an injury only when the message names
+ * a training context and has no intent wording. Every other phrasing is self harm.
+ * A separate emergency symptom still wins over that injury path.
+ */
+function selfDirectedInjury(text: string): HardRefusal | null {
+  if (!SELF_DIRECTED_INJURY.test(text)) return null;
+  if (hasHarmIntent(text) || !TRAINING_CONTEXT.test(text)) return selfHarmRefusal();
+  if (matches(text, EMERGENCY)) return emergencyRefusal();
+  return medicalRefusal();
+}
+
 /**
  * Keyword and pattern rules. Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
  * Asks for the coach and program swaps are holds, not refusals.
+ * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
+  const directed = selfDirectedInjury(text);
+  if (directed) return directed;
   if (matches(text, SELF_HARM)) {
     return {
       kind: "hard_refuse",

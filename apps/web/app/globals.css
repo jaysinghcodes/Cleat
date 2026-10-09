@@ -1423,6 +1423,47 @@ button.pill {
   background: var(--chip-bg);
 }
 
+.pill-emergency {
+  background: var(--nudge);
+  color: var(--on-urgent);
+  border-color: var(--nudge);
+}
+
+.pill-injury {
+  background: var(--nudge-bg);
+  color: var(--text);
+  border-color: var(--nudge);
+}
+
+.inbox-alert {
+  display: block;
+  flex-shrink: 0;
+}
+
+.list-row.inbox-row-emergency,
+.list-row.inbox-row-emergency.is-current {
+  background: var(--nudge);
+  color: var(--on-urgent);
+  box-shadow: inset 3px 0 0 var(--on-urgent);
+}
+
+.list-row.inbox-row-emergency .name,
+.list-row.inbox-row-emergency .meta,
+.list-row.inbox-row-emergency .inbox-open {
+  color: var(--on-urgent);
+}
+
+.list-row.inbox-row-emergency .avatar {
+  background: var(--on-urgent);
+  color: var(--nudge);
+  border-color: transparent;
+}
+
+.list-row.inbox-row-injury {
+  background: var(--nudge-bg);
+  border: 1px solid var(--nudge);
+}
+
 .pill-urgent {
   background: var(--nudge-bg);
   color: var(--nudge);

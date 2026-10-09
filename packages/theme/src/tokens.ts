@@ -65,6 +65,7 @@ export type ThemeTokens = {
   track: string;
   codeBg: string;
   codeFg: string;
+  onUrgent: string;
   phoneStage1: string;
   phoneStage2: string;
   phoneBezel: string;
@@ -112,6 +113,7 @@ export const dark = {
   track: "rgba(255,255,255,0.08)",
   codeBg: "#211F1E",
   codeFg: "#F3F0EC",
+  onUrgent: onAccentColor,
   phoneStage1: "#211F1E",
   phoneStage2: "#262423",
   phoneBezel: "#141312",
@@ -153,6 +155,7 @@ export const light = {
   track: "rgba(24,24,27,0.08)",
   codeBg: onAccentColor,
   codeFg: "#F5F2EE",
+  onUrgent: "#FFFFFF",
   phoneStage1: "#E4E4E7",
   phoneStage2: "#F4F4F5",
   phoneBezel: onAccentColor,

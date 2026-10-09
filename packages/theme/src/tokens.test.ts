@@ -41,4 +41,50 @@ test("stylesheet follows the OS and lets data-theme override it", () => {
   assert.match(themeStylesheet, /--accent-text: #9A5B2F/);
   assert.match(themeStylesheet, /--on-accent: #1C1917/);
   assert.match(themeStylesheet, /--cta-text: #1C1917/);
+  assert.match(themeStylesheet, /--on-urgent: #1C1917/);
+  assert.match(themeStylesheet, /--on-urgent: #FFFFFF/);
+});
+
+function channel(value: number): number {
+  const scaled = value / 255;
+  return scaled <= 0.04045 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+}
+
+function luminance(hex: string): number {
+  const raw = hex.replace("#", "");
+  const r = channel(parseInt(raw.slice(0, 2), 16));
+  const g = channel(parseInt(raw.slice(2, 4), 16));
+  const b = channel(parseInt(raw.slice(4, 6), 16));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrast(left: string, right: string): number {
+  const a = luminance(left);
+  const b = luminance(right);
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+function blendOver(tint: string, background: string): string {
+  const match = tint.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)/);
+  assert.ok(match);
+  const alpha = Number(match[4]);
+  const bg = background.replace("#", "");
+  const parts = [0, 1, 2].map((index) => {
+    const fg = Number(match[index + 1]);
+    const base = parseInt(bg.slice(index * 2, index * 2 + 2), 16);
+    return Math.round(fg * alpha + base * (1 - alpha));
+  });
+  return `#${parts.map((part) => part.toString(16).padStart(2, "0")).join("")}`;
+}
+
+test("emergency solid fill and injury tint stay distinguishable in grayscale", () => {
+  for (const theme of [dark, light]) {
+    const injury = blendOver(theme.errorTint, theme.card);
+    assert.ok(contrast(theme.error, injury) >= 3, theme.colorScheme);
+    assert.ok(contrast(theme.onUrgent, theme.error) >= 4.5, theme.colorScheme);
+    assert.ok(contrast(theme.text, injury) >= 4.5, theme.colorScheme);
+    assert.ok(contrast(theme.textSecondary, injury) >= 4.5, theme.colorScheme);
+    assert.notEqual(theme.error.toLowerCase(), injury.toLowerCase());
+  }
 });

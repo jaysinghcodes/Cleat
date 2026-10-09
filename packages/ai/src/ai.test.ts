@@ -570,8 +570,95 @@ test("heart attack, racing heart, and end it all refusals", () => {
   }
   const deadlifts = checkRefusals("I hurt myself doing deadlifts");
   assert.equal(deadlifts.kind, "hard_refuse");
-  if (deadlifts.kind === "hard_refuse") assert.equal(deadlifts.templateId, "emergency_self_harm");
+  if (deadlifts.kind === "hard_refuse") {
+    assert.equal(deadlifts.templateId, "medical_safety");
+    assert.equal(deadlifts.text, MEDICAL_SAFETY_TEMPLATE);
+    assert.equal(deadlifts.emergency, false);
+  }
   const heartCondition = checkRefusals("I have a heart condition, is this program safe for me?");
   assert.equal(heartCondition.kind, "hard_refuse");
   if (heartCondition.kind === "hard_refuse") assert.equal(heartCondition.templateId, "medical_safety");
+});
+
+test("hurt or injured myself is an injury only with a training context and no intent", () => {
+  const injury = [
+    "I hurt myself doing deadlifts yesterday",
+    "i hurt myself doing deadlifts yesterday",
+    "I THINK I HURT MYSELF DOING DEADLIFTS YESTERDAY",
+    "I think I hurt myself doing deadlifts yesterday",
+    "I feel like I hurt myself lifting",
+    "I am hurting myself on this set",
+    "I will hurt myself if I add another rep",
+    "I injured myself in the gym",
+    "I injured myself during the workout",
+    "I will injure myself in this session",
+    "I am injuring myself on squats",
+    "I don't want to hurt myself doing deadlifts yesterday",
+  ];
+  for (const body of injury) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text, MEDICAL_SAFETY_TEMPLATE, body);
+    assert.equal(hit.text.includes("988"), false, body);
+    assert.equal(hit.emergency, false, body);
+  }
+
+  const selfHarm = [
+    "I want to hurt myself",
+    "i want to hurt myself",
+    "I hurt myself on purpose after the gym",
+    "I think I want to hurt myself",
+    "I feel like I am going to hurt myself",
+    "I will hurt myself",
+    "I am hurting myself",
+    "I injured myself",
+    "I deliberately hurt myself during the workout",
+    "I don't want to hurt myself",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+    assert.equal(hit.emergency, true, body);
+  }
+
+  const duringLift = checkRefusals("I hurt myself doing deadlifts and my chest hurts");
+  assert.equal(duringLift.kind, "hard_refuse");
+  if (duringLift.kind === "hard_refuse") assert.equal(duringLift.templateId, "emergency");
+});
+
+test("hurt myself refusals are classified before retrieval", async () => {
+  const cases = [
+    { message: "I hurt myself doing deadlifts yesterday", templateId: "medical_safety" as const },
+    { message: "I want to hurt myself", templateId: "emergency_self_harm" as const },
+    { message: "I hurt myself on purpose after the gym", templateId: "emergency_self_harm" as const },
+  ];
+  for (const item of cases) {
+    let calls = 0;
+    const plan = await gateClientMessage({
+      message: item.message,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      settings: gateSettings,
+      chat: throwingChat,
+      now: NOW,
+      loadChunks: async () => {
+        calls += 1;
+        return highChunks(item.message);
+      },
+    });
+    assert.equal(calls, 0, item.message);
+    assert.equal(plan.audit.decision, "hard_refuse", item.message);
+    assert.equal(plan.audit.templateId, item.templateId, item.message);
+    assert.equal(plan.clientMessage?.body, TEMPLATE_TEXT[item.templateId], item.message);
+    assert.equal(plan.holdDraft, null, item.message);
+    assert.equal(plan.inbox?.priority, "p0", item.message);
+  }
 });

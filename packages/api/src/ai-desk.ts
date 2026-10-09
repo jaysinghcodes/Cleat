@@ -16,7 +16,7 @@ import {
   parseTrainerNotices,
   parseUnansweredHours,
   productError,
-  unansweredHoursOrDefault,
+  resolveUnansweredHours,
   type AiSettings,
   type AuditEvent,
   type HeldDraftMarker,
@@ -176,6 +176,7 @@ export type TrainerInbox = {
 const INBOX_COLUMNS =
   "id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, template_id, status, created_at";
 
+/** Message ids for sent inbox rows. A sent row is a reply that reached the client. */
 function coveredMessageIds(data: unknown): string[] {
   if (!Array.isArray(data)) return [];
   return data.flatMap((row) => {
@@ -198,7 +199,7 @@ export async function loadTrainerInbox(
       .eq("status", "open")
       .order("priority", { ascending: true })
       .order("created_at", { ascending: true }),
-    supabase.from("inbox_items").select("message_id").neq("status", "open"),
+    supabase.from("inbox_items").select("message_id").eq("status", "sent"),
     supabase.rpc("thread_heads"),
     supabase
       .from("trainer_notices")
@@ -230,8 +231,9 @@ export async function loadTrainerInbox(
   ]);
   if (drafts.error) fail(drafts.error.message, aiCopy.loadFailed);
   if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
-  const windowHours = unansweredHoursOrDefault(
+  const windowHours = resolveUnansweredHours(
     org.data && typeof org.data === "object" ? (org.data as { unanswered_hours?: unknown }).unanswered_hours : undefined,
+    process.env.INBOX_UNANSWERED_HOURS,
   );
   const names: Record<string, string> = {};
   for (const client of clients) names[client.userId] = client.displayName;
