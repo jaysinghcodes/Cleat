@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadTrainerInbox, type CleatClient } from "@cleat/api";
+import { resolveUnansweredHours } from "@cleat/domain";
 import { serverInboxWindowHours } from "./inbox-window";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -104,6 +105,16 @@ test("the inbox server resolves INBOX_UNANSWERED_HOURS and passes that number to
     assert.equal(helper.includes("INBOX_UNANSWERED_HOURS"), false);
     assert.equal(api.includes("INBOX_UNANSWERED_HOURS"), false);
     assert.equal(api.includes("process.env"), false);
+
+    const orgPage = readFileSync(join(here, "../org/page.tsx"), "utf8");
+    const orgDesk = readFileSync(join(here, "../org/org-desk.tsx"), "utf8");
+    assert.equal(orgPage.includes("use client"), false);
+    assert.match(orgPage, /serverInboxWindowHours\(process\.env\.INBOX_UNANSWERED_HOURS\)/);
+    assert.match(orgPage, /<OrgDesk defaultWindowHours=\{defaultWindowHours\} \/>/);
+    assert.equal(orgDesk.includes("INBOX_UNANSWERED_HOURS"), false);
+    assert.match(orgDesk, /resolveUnansweredHours\(row\.unanswered_hours, defaultWindowHours\)/);
+    assert.equal(resolveUnansweredHours(null, serverInboxWindowHours("1")), 1);
+    assert.equal(resolveUnansweredHours(4, serverInboxWindowHours("1")), 4);
   } finally {
     if (previous === undefined) delete process.env.INBOX_UNANSWERED_HOURS;
     else process.env.INBOX_UNANSWERED_HOURS = previous;

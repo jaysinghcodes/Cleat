@@ -47,7 +47,7 @@ export const inboxCopy = {
   audit: "Audit log",
   notices: "Notices",
   windowLabel: "Unanswered window",
-  windowHint: "Hours before an unanswered client message shows in the inbox. The default is 4.",
+  windowHint: "Hours before an unanswered client message shows in the inbox. Saving stores this window for the org.",
   windowInvalid: "Enter a window from 1 to 168 hours.",
   signIn: "Sign in before replying.",
   emptyReply: "Write a reply first.",

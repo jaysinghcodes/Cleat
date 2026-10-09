@@ -636,6 +636,48 @@ test("hurt or injured myself is an injury only with a training context and no in
   if (duringLift.kind === "hard_refuse") assert.equal(duringLift.templateId, "emergency");
 });
 
+test("training words never hide self harm", () => {
+  const injury = checkRefusals("I hurt myself doing deadlifts yesterday");
+  assert.equal(injury.kind, "hard_refuse");
+  if (injury.kind === "hard_refuse") {
+    assert.equal(injury.templateId, "medical_safety");
+    assert.equal(injury.text.includes("988"), false);
+  }
+  const selfHarm = [
+    "I hurt myself doing squats and I want to die",
+    "I hurt myself doing squats and honestly I'm suicidal",
+    "I hurt myself doing squats, better off dead",
+    "I hurt myself doing squats and want to end my life",
+    "I hurt myself doing squats and don't want to be here anymore",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
+test("ending it and end it are self harm with the 988 line", () => {
+  const selfHarm = [
+    "I feel like ending it all",
+    "thinking about ending it all",
+    "I feel like ending my life",
+    "I want to end it",
+    "i'm going to end it tonight",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
 test("hurt myself refusals are classified before retrieval", async () => {
   const cases = [
     { message: "I hurt myself doing deadlifts yesterday", templateId: "medical_safety" as const },

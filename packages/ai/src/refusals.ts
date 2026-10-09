@@ -30,7 +30,7 @@ const SELF_HARM: RegExp[] = [
   /kill(?:ing)? myself/,
   /self[-\s]?harm/,
   /suicid/,
-  /end my life/,
+  /end(?:ing)? my life/,
   /want to die/,
   /wanna die/,
   /do not want to live/,
@@ -38,7 +38,7 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
-  /end it all/,
+  /\bend(?:ing)? it\b/,
   /don'?t want to be here/,
   /do not want to be here/,
   /dont want to be here/,
@@ -217,35 +217,29 @@ function medicalRefusal(): HardRefusal {
 
 /**
  * "hurt myself" and "injured myself" are an injury only when the message names
- * a training context and has no intent wording. Every other phrasing is self harm.
- * A separate emergency symptom still wins over that injury path.
+ * a training context and has no self harm wording and no intent wording.
+ * A self harm phrase wins first, including when the message also names a lift.
+ * A separate emergency symptom still wins over the remaining injury path.
  */
 function selfDirectedInjury(text: string): HardRefusal | null {
   if (!SELF_DIRECTED_INJURY.test(text)) return null;
-  if (hasHarmIntent(text) || !TRAINING_CONTEXT.test(text)) return selfHarmRefusal();
+  if (matches(text, SELF_HARM) || hasHarmIntent(text) || !TRAINING_CONTEXT.test(text)) return selfHarmRefusal();
   if (matches(text, EMERGENCY)) return emergencyRefusal();
   return medicalRefusal();
 }
 
 /**
- * Keyword and pattern rules. Emergency is checked before medical.
+ * Keyword and pattern rules. Self harm is checked before injury and emergency.
+ * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
+  if (matches(text, SELF_HARM)) return selfHarmRefusal();
   const directed = selfDirectedInjury(text);
   if (directed) return directed;
-  if (matches(text, SELF_HARM)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "emergency_self_harm",
-      text: EMERGENCY_SELF_HARM_TEMPLATE,
-      reasonCodes: ["self_harm", "emergency"],
-      emergency: true,
-    };
-  }
   if (matches(text, EMERGENCY)) {
     return {
       kind: "hard_refuse",
