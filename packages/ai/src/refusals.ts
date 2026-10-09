@@ -427,6 +427,8 @@ function distressHold(text: string): DraftHold {
  * marker in the same clause, is a coach hold. A subject that is not a person is clear.
  * A bare "going to die" stays self harm. Explicit self harm wording still wins.
  * "end it" plus training talk in the same clause is a hold, not a refusal.
+ * Those holds run only after emergency and injury. A medical emergency plus a
+ * die hold still gets the emergency template and the 988 line.
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
@@ -437,27 +439,15 @@ export function checkRefusals(message: string): RefusalCheck {
   if (die === "self_harm") return selfHarmRefusal();
   const endIt = endItClass(text);
   if (endIt === "self_harm") return selfHarmRefusal();
-  if (die === "hold" || endIt === "hold") return distressHold(text);
   const directed = selfDirectedInjury(text);
+  if (directed?.templateId === "emergency" && die === "hold") return selfHarmRefusal();
   if (directed) return directed;
   if (matches(text, EMERGENCY)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "emergency",
-      text: EMERGENCY_TEMPLATE,
-      reasonCodes: ["emergency"],
-      emergency: true,
-    };
+    if (die === "hold") return selfHarmRefusal();
+    return emergencyRefusal();
   }
-  if (matches(text, MEDICAL)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "medical_safety",
-      text: MEDICAL_SAFETY_TEMPLATE,
-      reasonCodes: ["refusal_keyword"],
-      emergency: false,
-    };
-  }
+  if (matches(text, MEDICAL)) return medicalRefusal();
+  if (die === "hold" || endIt === "hold") return distressHold(text);
   const reasonCodes: HoldReason[] = [];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
   if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");

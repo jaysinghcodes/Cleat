@@ -111,6 +111,11 @@ test("eval set covers labels, emergency, and self harm, and the offline run pass
     "self-harm-kill-burpees-lol",
     "clear-ill-end-sets",
     "hold-need-end-sets",
+    "emergency-die-chest-run",
+    "emergency-die-heart-attack",
+    "injury-die-deadlifts",
+    "injury-die-knee",
+    "emergency-end-it-chest",
   ]) {
     assert.ok(cases.some((item) => item.id === id), id);
   }
