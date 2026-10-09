@@ -667,6 +667,8 @@ test("ending it and end it are self harm with the 988 line", () => {
     "I feel like ending my life",
     "I want to end it",
     "i'm going to end it tonight",
+    "I want it to end",
+    "I want it all to end",
   ];
   for (const body of selfHarm) {
     const hit = checkRefusals(body);
@@ -674,6 +676,74 @@ test("ending it and end it are self harm with the 988 line", () => {
     if (hit.kind !== "hard_refuse") continue;
     assert.equal(hit.templateId, "emergency_self_harm", body);
     assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
+test("end it is self harm only with an intent or feeling phrase", () => {
+  const clear = [
+    "Can we end it at 3 sets today?",
+    "I'll end it with a cooldown walk",
+    "Ending it early today, gym closes at 8",
+    "how do I end it on a good set",
+    "I'll send it tonight",
+    "spend it on new shoes",
+    "the weekend it rained",
+    "let's end on a high note",
+    "when does the program end?",
+  ];
+  for (const body of clear) {
+    assert.equal(checkRefusals(body).kind, "none", body);
+  }
+
+  const knee = checkRefusals("Should I end it after the warmup if my knee feels off?");
+  assert.equal(knee.kind, "hard_refuse");
+  if (knee.kind === "hard_refuse") {
+    assert.equal(knee.templateId, "medical_safety");
+    assert.equal(knee.text.includes("988"), false);
+  }
+
+  const injury = [
+    "I hurt myself on the last rep so I had to end it early",
+    "I hurt myself doing deadlifts yesterday",
+    "injured myself doing squats",
+  ];
+  for (const body of injury) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text.includes("988"), false, body);
+  }
+
+  const selfHarm = [
+    "I feel like ending it all",
+    "thinking about ending it all",
+    "I feel like ending my life",
+    "I want to end it",
+    "i'm going to end it tonight",
+    "I hurt myself benching, honestly I don't want to be here anymore",
+    "hurt myself at the gym lol want to die",
+    "I hurt myself doing squats and I want to die",
+    "I injured myself at the gym, honestly I'm suicidal",
+    "hurt myself on deadlifts and i dont want to be alive anymore",
+    "I hurt myself in the gym and I'm better off dead",
+    "I hurt myself lifting and I want to end my life",
+    "I hurt myself doing squats and honestly I'm suicidal",
+    "I hurt myself doing squats, better off dead",
+    "I hurt myself doing squats and want to end my life",
+    "I hurt myself doing squats and don't want to be here anymore",
+    "I want to hurt myself",
+    "I hurt myself on purpose after the gym",
+    "I hurt myself at the gym and want to end it",
+    "hurt myself lifting, kill myself lol",
+    "i hurt myself",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
     assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
   }
 });

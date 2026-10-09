@@ -38,7 +38,9 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
-  /\bend(?:ing)? it\b/,
+  /\bend(?:ing)? it all\b/,
+  /\b(?:want to|going to|gonna|feel like|thinking about|ready to)\s+end(?:ing)? it\b/,
+  /\bwant it(?: all)? to end\b/,
   /don'?t want to be here/,
   /do not want to be here/,
   /dont want to be here/,
@@ -124,11 +126,12 @@ const TRAINING_CONTEXT =
 
 /**
  * Intent to cause the harm. "going to the gym" is not intent.
- * "going to hurt", "on purpose", "end it", and "kill myself" are.
+ * "going to hurt", "on purpose", and "kill myself" are.
+ * "end it" is self harm only with an intent or feeling phrase in front of it.
  * Intent wins even when the message also names a training context.
  */
 const HARM_INTENT =
-  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\b(?:kill(?:ing)? myself|end it)\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
+  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\bkill(?:ing)? myself\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
 
 const NEGATED_HARM_INTENT =
   /\b(?:do not|don't|dont|never|not) want(?:ed|ing)? to (?:hurt|injur\w*)|\b(?:not|never) going to (?:hurt|injur\w*)|\bnot on purpose\b|\bnot deliberately\b/g;
