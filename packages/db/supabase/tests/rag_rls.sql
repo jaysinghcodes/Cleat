@@ -259,8 +259,8 @@ select public._rls_expect(
   (select count(*) = 0 from public.inbox_items where org_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
 );
 select public._rls_expect(
-  'the unanswered window defaults to 4 hours',
-  (select unanswered_hours = 4 from public.orgs where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+  'a new org leaves the unanswered window unset',
+  (select unanswered_hours is null from public.orgs where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
 );
 update public.orgs
 set unanswered_hours = 2

@@ -26,12 +26,11 @@ export const TEMPLATE_TEXT: Record<TemplateId, string> = {
 };
 
 const SELF_HARM: RegExp[] = [
-  /hurt(?:ing)? myself/,
   /harm(?:ing)? myself/,
   /kill(?:ing)? myself/,
   /self[-\s]?harm/,
   /suicid/,
-  /end my life/,
+  /end(?:ing)? my life/,
   /want to die/,
   /wanna die/,
   /do not want to live/,
@@ -39,7 +38,10 @@ const SELF_HARM: RegExp[] = [
   /dont want to live/,
   /better off dead/,
   /no reason to live/,
-  /end it all/,
+  /\bdie\b/,
+  /\bend(?:ing)? it all\b/,
+  /\bwant it(?: all)? (?:to|2) end\b/,
+  /\bwant it (?:to|2) be over\b/,
   /don'?t want to be here/,
   /do not want to be here/,
   /dont want to be here/,
@@ -119,6 +121,26 @@ const MEDICAL: RegExp[] = [
   /\bnutrition\b/,
 ];
 
+/** Training words that make "hurt myself" or "injured myself" an injury, not self harm. */
+const TRAINING_CONTEXT =
+  /\b(?:lifting|lifts?|deadlifts?|squats?|squatting|lunges?|lunging|bench(?:es|ing)?|workouts?|gym|sets?|reps?|sessions?|press(?:es|ing)?|cleans?|snatches?|curls?|rowing|rows?|rdls?|pull-?ups?|push-?ups?|barbells?|dumbbells?|kettlebells?|overhead)\b/;
+
+/**
+ * Intent to cause the harm. "going to the gym" is not intent.
+ * "going to hurt", "on purpose", and "kill myself" are.
+ * "end it" is handled separately: an intent or feeling verb in front of it is
+ * self harm, unless the same clause continues with training talk.
+ * Intent wins even when the message also names a training context.
+ */
+const HARM_INTENT =
+  /\b(?:on purpose|deliberately|intentionally|purposely)\b|\bkill(?:ing)? myself\b|\b(?:want(?:ed|ing)? to|going to|gonna|intend(?:ed|ing)? to|plan(?:ned|ning)? to|try(?:ing)? to|tried to|about to)\s+(?:hurt|injur)/;
+
+const NEGATED_HARM_INTENT =
+  /\b(?:do not|don't|dont|never|not) want(?:ed|ing)? to (?:hurt|injur\w*)|\b(?:not|never) going to (?:hurt|injur\w*)|\bnot on purpose\b|\bnot deliberately\b/g;
+
+/** "hurt myself" and "injured myself", including hurting and will hurt. */
+const SELF_DIRECTED_INJURY = /\b(?:hurt(?:ing)?|injur(?:e|ed|ing)) myself\b/;
+
 const ASKS_FOR_COACH: RegExp[] = [
   /\btalk to (?:my )?(?:coach|trainer|alex)\b/,
   /\bspeak to (?:my )?(?:coach|trainer|alex)\b/,
@@ -153,9 +175,11 @@ export type HardRefusal = {
   emergency: boolean;
 };
 
+export type HoldReason = "asks_for_coach" | "program_swap" | "distress_wording";
+
 export type DraftHold = {
   kind: "hold";
-  reasonCodes: Array<"asks_for_coach" | "program_swap">;
+  reasonCodes: HoldReason[];
 };
 
 export type RefusalCheck = HardRefusal | DraftHold | { kind: "none" };
@@ -164,22 +188,113 @@ function matches(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
 
+function hasHarmIntent(text: string): boolean {
+  return HARM_INTENT.test(text.replace(NEGATED_HARM_INTENT, " "));
+}
+
+function selfHarmRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "emergency_self_harm",
+    text: EMERGENCY_SELF_HARM_TEMPLATE,
+    reasonCodes: ["self_harm", "emergency"],
+    emergency: true,
+  };
+}
+
+function emergencyRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "emergency",
+    text: EMERGENCY_TEMPLATE,
+    reasonCodes: ["emergency"],
+    emergency: true,
+  };
+}
+
+function medicalRefusal(): HardRefusal {
+  return {
+    kind: "hard_refuse",
+    templateId: "medical_safety",
+    text: MEDICAL_SAFETY_TEMPLATE,
+    reasonCodes: ["refusal_keyword"],
+    emergency: false,
+  };
+}
+
 /**
- * Keyword and pattern rules. Emergency is checked before medical.
+ * "hurt myself" and "injured myself" are an injury only when the message names
+ * a training context and has no self harm wording and no intent wording.
+ * A self harm phrase wins first, including when the message also names a lift.
+ * A separate emergency symptom still wins over the remaining injury path.
+ */
+function selfDirectedInjury(text: string): HardRefusal | null {
+  if (!SELF_DIRECTED_INJURY.test(text)) return null;
+  if (matches(text, SELF_HARM) || hasHarmIntent(text) || !TRAINING_CONTEXT.test(text)) return selfHarmRefusal();
+  if (matches(text, EMERGENCY)) return emergencyRefusal();
+  return medicalRefusal();
+}
+
+/**
+ * Intent or feeling in front of "end it" or "ending it".
+ * "2" stands in for "to". Other words may come before the verb.
+ * Tense and casual forms stay inside this phrase, which sits against "end it".
+ */
+const END_IT_INTENT =
+  /\b(?:want(?:s|ed|ing)?\s+(?:to|2)|wanna|plan(?:s|ned|ning)?\s+(?:to|2)|about\s+(?:to|2)|tried\s+(?:to|2)|try(?:ing|s)?\s+(?:to|2)|thought\s+about|think(?:s|ing)?\s+about|felt\s+like|feel(?:s|ing)?\s+like|going\s+(?:to|2)|gonna|ready\s+(?:to|2))\s+end(?:ing)?\s+it\b/;
+
+/**
+ * Training talk that comes right after "end it" in the same clause.
+ * That continuation is a coach review, not a 988 refusal.
+ */
+const TRAINING_AFTER_END_IT =
+  /^(?:at\s+\d+\s+(?:sets?|reps?)|with\s+a\s+(?:cooldown|warmup)|early\b|after\s+this\s+set\b|the\s+(?:gym|session|workout)\b)/;
+
+function sameClauseAfter(text: string, end: number): string {
+  const rest = text.slice(end);
+  const cut = rest.search(/[.,!?;:\n]/);
+  return (cut === -1 ? rest : rest.slice(0, cut)).trim();
+}
+
+/**
+ * "end it" with an intent or feeling verb is self harm.
+ * When the same clause continues with training talk, it is a hold instead.
+ * A later bare "end it" in the same message still counts as self harm.
+ */
+function endItClass(text: string): "self_harm" | "hold" | null {
+  const pattern = new RegExp(END_IT_INTENT.source, "g");
+  let hold = false;
+  for (const match of text.matchAll(pattern)) {
+    const after = sameClauseAfter(text, (match.index ?? 0) + match[0].length);
+    if (!TRAINING_AFTER_END_IT.test(after)) return "self_harm";
+    hold = true;
+  }
+  return hold ? "hold" : null;
+}
+
+function distressHold(text: string): DraftHold {
+  const reasonCodes: HoldReason[] = ["distress_wording"];
+  if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
+  if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
+  return { kind: "hold", reasonCodes };
+}
+
+/**
+ * Keyword and pattern rules. Self harm is checked before injury and emergency.
+ * Emergency is checked before medical.
  * When a message could be an emergency, this returns the emergency template.
+ * "end it" plus training talk in the same clause is a hold, not a refusal.
  * Asks for the coach and program swaps are holds, not refusals.
+ * This runs on the raw message, before retrieval.
  */
 export function checkRefusals(message: string): RefusalCheck {
   const text = normalizeText(message);
-  if (matches(text, SELF_HARM)) {
-    return {
-      kind: "hard_refuse",
-      templateId: "emergency_self_harm",
-      text: EMERGENCY_SELF_HARM_TEMPLATE,
-      reasonCodes: ["self_harm", "emergency"],
-      emergency: true,
-    };
-  }
+  if (matches(text, SELF_HARM)) return selfHarmRefusal();
+  const endIt = endItClass(text);
+  if (endIt === "self_harm") return selfHarmRefusal();
+  if (endIt === "hold") return distressHold(text);
+  const directed = selfDirectedInjury(text);
+  if (directed) return directed;
   if (matches(text, EMERGENCY)) {
     return {
       kind: "hard_refuse",
@@ -198,7 +313,7 @@ export function checkRefusals(message: string): RefusalCheck {
       emergency: false,
     };
   }
-  const reasonCodes: Array<"asks_for_coach" | "program_swap"> = [];
+  const reasonCodes: HoldReason[] = [];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
   if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
   if (reasonCodes.length > 0) return { kind: "hold", reasonCodes };

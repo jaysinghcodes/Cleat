@@ -16,21 +16,32 @@ import {
 } from "@cleat/domain";
 import Link from "next/link";
 import { ConfidenceBar } from "../confidence";
+import { inboxRowChrome } from "./inbox-chrome";
 
 const FILTERS: (InboxReason | "all")[] = ["all", ...(["emergency", "injury", "ai_escalate", "unanswered", "missed"] as const)];
 
-function chipClass(reason: InboxReason): string {
-  if (reason === "emergency" || reason === "injury") return "pill pill-urgent";
-  if (reason === "ai_escalate") return "pill pill-partial";
-  if (reason === "unanswered") return "pill pill-skip";
-  return "pill pill-nudge";
+function AlertIcon() {
+  return (
+    <svg
+      className="inbox-alert"
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      data-testid="inbox-alert-icon"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M8.87 1.8a1 1 0 0 0-1.74 0L1.2 13.1A1 1 0 0 0 2.06 14.6h11.88a1 1 0 0 0 .87-1.5L8.87 1.8zM8 6.1c.36 0 .65.29.65.65v3.1a.65.65 0 0 1-1.3 0v-3.1c0-.36.29-.65.65-.65zm0 6.55a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5z"
+      />
+    </svg>
+  );
 }
 
 function rowClass(item: InboxQueueItem, selected: boolean): string {
-  const urgent = item.reason === "emergency" || item.reason === "injury";
-  return ["list-row", "inbox-row", urgent ? "rail-urgent row-urgent" : "", selected ? "is-current" : ""]
-    .filter(Boolean)
-    .join(" ");
+  const chrome = inboxRowChrome(item.reason);
+  return [chrome.rowClass, selected ? "is-current" : ""].filter(Boolean).join(" ");
 }
 
 function templateBody(templateId: InboxQueueItem["templateId"]): string | null {
@@ -130,42 +141,49 @@ export function InboxScreen({
                 <div className="meta">{inboxCopy.filterEmpty}</div>
               </div>
             ) : (
-              visible.map((item) => (
-                <div
-                  key={item.id}
-                  className={rowClass(item, item.id === selected?.id)}
-                  data-testid={`inbox-row-${item.reason}`}
-                >
-                  <button type="button" className="inbox-open" onClick={() => onSelect(item.id)}>
-                    <span className={item.reason === "emergency" || item.reason === "injury" || item.reason === "missed" ? "avatar nudge" : "avatar"}>
-                      {initials(item.clientName)}
-                    </span>
-                    <span className="spacer">
-                      <span className="name">{item.clientName}</span>
-                      <span className="meta inbox-preview">{item.preview}</span>
-                    </span>
-                  </button>
-                  <span className={chipClass(item.reason)}>{inboxReasonLabel(item.reason)}</span>
-                  <span className="meta inbox-age">{inboxAge(item.createdAt, now)}</span>
-                  {item.priority === "p3" ? (
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      disabled={pending}
-                      onClick={() => onNudge(item)}
-                    >
-                      {inboxCopy.nudge}
+              visible.map((item) => {
+                const chrome = inboxRowChrome(item.reason);
+                return (
+                  <div
+                    key={item.id}
+                    className={rowClass(item, item.id === selected?.id)}
+                    data-testid={`inbox-row-${item.reason}`}
+                    data-urgency={chrome.urgency}
+                  >
+                    <button type="button" className="inbox-open" onClick={() => onSelect(item.id)}>
+                      <span className={item.reason === "emergency" || item.reason === "injury" || item.reason === "missed" ? "avatar nudge" : "avatar"}>
+                        {initials(item.clientName)}
+                      </span>
+                      <span className="spacer">
+                        <span className="name">{item.clientName}</span>
+                        <span className="meta inbox-preview">{item.preview}</span>
+                      </span>
                     </button>
-                  ) : (
-                    <button type="button" className="btn btn-soft btn-sm" onClick={() => onSelect(item.id)}>
-                      {item.priority === "p1" ? inboxCopy.editDraft : inboxCopy.review}
-                      {item.priority === "p1" && item.confidence !== null ? (
-                        <span className="meta">{item.confidence.toFixed(2)}</span>
-                      ) : null}
-                    </button>
-                  )}
-                </div>
-              ))
+                    <span className={chrome.chipClass}>
+                      {chrome.alert ? <AlertIcon /> : null}
+                      {inboxReasonLabel(item.reason)}
+                    </span>
+                    <span className="meta inbox-age">{inboxAge(item.createdAt, now)}</span>
+                    {item.priority === "p3" ? (
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        disabled={pending}
+                        onClick={() => onNudge(item)}
+                      >
+                        {inboxCopy.nudge}
+                      </button>
+                    ) : (
+                      <button type="button" className="btn btn-soft btn-sm" onClick={() => onSelect(item.id)}>
+                        {item.priority === "p1" ? inboxCopy.editDraft : inboxCopy.review}
+                        {item.priority === "p1" && item.confidence !== null ? (
+                          <span className="meta">{item.confidence.toFixed(2)}</span>
+                        ) : null}
+                      </button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
           {selected ? (

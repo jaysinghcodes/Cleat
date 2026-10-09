@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { clampUnansweredHours } from "@cleat/domain";
 import type { CleatClient } from "./supabase";
 import { loadTrainerInbox } from "./ai-desk";
 
@@ -123,4 +124,161 @@ test("an open emergency stays visible after more than 300 resolved items", async
   assert.equal(openQuery.limit, null);
   assert.equal(inbox.items.some((item) => item.id === EMERGENCY && item.priority === "p0" && item.emergency), true);
   assert.equal(inbox.items.some((item) => item.preview === "old note"), false);
+  assert.equal(
+    queries.some(
+      (query) =>
+        query.table === "inbox_items" &&
+        query.filters.some((filter) => filter.op === "eq" && filter.column === "status" && filter.value === "sent"),
+    ),
+    false,
+  );
+});
+
+test("loadTrainerInbox uses the passed default unless the org saved a window", async () => {
+  const messageId = "30000000-0000-4000-8000-0000000000aa";
+  const head = {
+    thread_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    client_id: CLIENT,
+    message_id: messageId,
+    sender_id: CLIENT,
+    body: "Did you see my note?",
+    created_at: "2026-10-09T14:30:00.000Z",
+  };
+
+  function desk(unansweredHours: unknown) {
+    const queries: Query[] = [];
+    const supabase = {
+      from(table: string) {
+        const query: Query = { table, filters: [], limit: null };
+        queries.push(query);
+        const api = {
+          select() {
+            return api;
+          },
+          eq(column: string, value: unknown) {
+            query.filters.push({ op: "eq", column, value });
+            return api;
+          },
+          neq(column: string, value: unknown) {
+            query.filters.push({ op: "neq", column, value });
+            return api;
+          },
+          in() {
+            return api;
+          },
+          order() {
+            return api;
+          },
+          limit(value: number) {
+            query.limit = value;
+            return api;
+          },
+          maybeSingle() {
+            if (table === "orgs") return Promise.resolve({ data: { unanswered_hours: unansweredHours }, error: null });
+            return Promise.resolve({ data: null, error: null });
+          },
+          then(resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) {
+            return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+          },
+        };
+        return api;
+      },
+      rpc() {
+        return Promise.resolve({ data: [head], error: null });
+      },
+    };
+    return supabase as unknown as CleatClient;
+  }
+
+  async function hours(unansweredHours: unknown, defaultWindowHours?: number) {
+    return loadTrainerInbox(desk(unansweredHours), {
+      orgId: ORG,
+      timeZone: "America/Chicago",
+      now: "2026-10-09T16:00:00.000Z",
+      defaultWindowHours,
+    });
+  }
+
+  const fromDefault = await hours(null, 1);
+  assert.equal(fromDefault.windowHours, 1);
+  assert.equal(fromDefault.items.some((item) => item.reason === "unanswered" && item.messageId === messageId), true);
+
+  const orgWins = await hours(4, 1);
+  assert.equal(orgWins.windowHours, 4);
+  assert.equal(orgWins.items.some((item) => item.reason === "unanswered"), false);
+
+  const fallback = await hours(null, undefined);
+  assert.equal(fallback.windowHours, 4);
+  assert.equal(fallback.items.some((item) => item.reason === "unanswered"), false);
+});
+
+test("a null org row with env 1 shows a 2 hour old message as P2 and a saved org value wins", async () => {
+  const messageId = "30000000-0000-4000-8000-0000000000bb";
+  const envWindow = clampUnansweredHours("1");
+  assert.equal(envWindow, 1);
+  const head = {
+    thread_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    client_id: CLIENT,
+    message_id: messageId,
+    sender_id: CLIENT,
+    body: "Still waiting on Friday",
+    created_at: "2026-10-09T14:00:00.000Z",
+  };
+
+  function row(unansweredHours: unknown) {
+    const supabase = {
+      from(table: string) {
+        const api = {
+          select() {
+            return api;
+          },
+          eq() {
+            return api;
+          },
+          neq() {
+            return api;
+          },
+          in() {
+            return api;
+          },
+          order() {
+            return api;
+          },
+          limit() {
+            return api;
+          },
+          maybeSingle() {
+            if (table === "orgs") return Promise.resolve({ data: { unanswered_hours: unansweredHours }, error: null });
+            return Promise.resolve({ data: null, error: null });
+          },
+          then(resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) {
+            return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+          },
+        };
+        return api;
+      },
+      rpc() {
+        return Promise.resolve({ data: [head], error: null });
+      },
+    };
+    return supabase as unknown as CleatClient;
+  }
+
+  const open = await loadTrainerInbox(row(null), {
+    orgId: ORG,
+    timeZone: "America/Chicago",
+    now: "2026-10-09T16:00:00.000Z",
+    defaultWindowHours: envWindow ?? undefined,
+  });
+  assert.equal(open.windowHours, 1);
+  assert.equal(open.items.some((item) => item.reason === "unanswered" && item.priority === "p2" && item.messageId === messageId), true);
+
+  const saved = await loadTrainerInbox(row(4), {
+    orgId: ORG,
+    timeZone: "America/Chicago",
+    now: "2026-10-09T16:00:00.000Z",
+    defaultWindowHours: envWindow ?? undefined,
+  });
+  assert.equal(saved.windowHours, 4);
+  assert.equal(saved.items.some((item) => item.reason === "unanswered"), false);
 });

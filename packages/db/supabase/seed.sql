@@ -226,10 +226,11 @@ begin
     set display_name = excluded.display_name,
         timezone = excluded.timezone;
 
-  insert into public.orgs (id, name, created_by)
-  values (demo_org, 'Rivera Strength', demo_trainer)
+  insert into public.orgs (id, name, created_by, unanswered_hours)
+  values (demo_org, 'Rivera Strength', demo_trainer, null)
   on conflict (id) do update
-    set name = excluded.name;
+    set name = excluded.name,
+        unanswered_hours = null;
 
   insert into public.memberships (org_id, user_id, role)
   values
@@ -689,6 +690,15 @@ begin
   select count(*) into message_count from public.messages where org_id = demo_org;
   if message_count <> 9 then
     raise exception 'demo message count is %', message_count;
+  end if;
+
+  if exists (
+    select 1
+    from public.orgs
+    where id = demo_org
+      and unanswered_hours is not null
+  ) then
+    raise exception 'demo unanswered hours must stay unset';
   end if;
 
   if not exists (

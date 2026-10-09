@@ -23,7 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "../../session";
 import { InboxScreen } from "./inbox-view";
 
-export function InboxDesk() {
+export function InboxDesk({ defaultWindowHours }: { defaultWindowHours: number }) {
   const params = useSearchParams();
   const { client, membership } = useSession();
   const [items, setItems] = useState<InboxQueueItem[]>([]);
@@ -39,11 +39,15 @@ export function InboxDesk() {
 
   const load = useCallback(async () => {
     if (!client || !membership) return;
-    const snapshot = await loadTrainerInbox(client, { orgId: membership.orgId, timeZone: membership.timezone });
+    const snapshot = await loadTrainerInbox(client, {
+      orgId: membership.orgId,
+      timeZone: membership.timezone,
+      defaultWindowHours,
+    });
     setItems(snapshot.items);
     setNotices(snapshot.notices);
     setNow(new Date().toISOString());
-  }, [client, membership]);
+  }, [client, membership, defaultWindowHours]);
 
   useEffect(() => {
     let alive = true;

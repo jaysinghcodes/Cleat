@@ -40,6 +40,7 @@ export const inboxCopy = {
   dismiss: "Dismiss",
   why: "Why this was held",
   lowConfidence: "Confidence below your threshold",
+  distressWhy: "Possible distress wording, coach review",
   confidence: "Confidence",
   threshold: "Threshold",
   sources: "Sources",
@@ -47,7 +48,7 @@ export const inboxCopy = {
   audit: "Audit log",
   notices: "Notices",
   windowLabel: "Unanswered window",
-  windowHint: "Hours before an unanswered client message shows in the inbox. The default is 4.",
+  windowHint: "Hours before an unanswered client message shows in the inbox. Saving stores this window for the org.",
   windowInvalid: "Enter a window from 1 to 168 hours.",
   signIn: "Sign in before replying.",
   emptyReply: "Write a reply first.",
@@ -77,6 +78,7 @@ const WHY_LABEL: Record<string, string> = {
   self_harm: "Self harm wording",
   asks_for_coach: "They asked for you",
   program_swap: "They asked to change programs",
+  distress_wording: inboxCopy.distressWhy,
   auto_send_off: "Auto send is off",
   low_confidence: inboxCopy.lowConfidence,
   unanswered: "No reply yet",
@@ -122,6 +124,24 @@ export function parseUnansweredHours(value: unknown): number | null {
 
 export function unansweredHoursOrDefault(value: unknown): number {
   return parseUnansweredHours(value) ?? DEFAULT_UNANSWERED_HOURS;
+}
+
+/**
+ * Clamp a server env value into 1 to 168 hours.
+ * Non numeric values return null so the caller can fall back to 4.
+ */
+export function clampUnansweredHours(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value.trim()) : Number.NaN;
+  if (!Number.isFinite(numeric)) return null;
+  const whole = Math.round(numeric);
+  return Math.min(MAX_UNANSWERED_HOURS, Math.max(MIN_UNANSWERED_HOURS, whole));
+}
+
+/** A saved org window wins. Otherwise the env value is clamped, then 4. */
+export function resolveUnansweredHours(orgValue: unknown, envValue: unknown): number {
+  return parseUnansweredHours(orgValue) ?? clampUnansweredHours(envValue) ?? DEFAULT_UNANSWERED_HOURS;
 }
 
 export function isPastUnansweredWindow(messageAt: string, now: string, hours: number): boolean {
@@ -419,17 +439,16 @@ export function buildInboxQueue(input: {
   audits: InboxAuditSlice[];
   heads: ThreadHead[];
   missed: { clientId: string; displayName: string; summary: string; occurredAt: string; nudgeKind: "soft" | "nudge" }[];
-  coveredMessageIds?: string[];
 }): InboxQueueItem[] {
   const hours = unansweredHoursOrDefault(input.windowHours);
   const audits = new Map(input.audits.map((audit) => [audit.id, audit]));
-  const drafts = new Map(
-    input.drafts.filter((draft) => draft.status === "held").map((draft) => [draft.inboxItemId, draft]),
+  const heldDrafts = input.drafts.filter((draft) => draft.status === "held");
+  const drafts = new Map(heldDrafts.map((draft) => [draft.inboxItemId, draft]));
+  const openUnansweredMessages = new Set(
+    input.stored
+      .filter((item) => item.status === "open" && item.priority === "p2" && item.messageId)
+      .map((item) => item.messageId as string),
   );
-  const coveredMessages = new Set([
-    ...input.stored.flatMap((item) => (item.messageId ? [item.messageId] : [])),
-    ...(input.coveredMessageIds ?? []),
-  ]);
   const openP3 = new Set(
     input.stored.filter((item) => item.status === "open" && item.priority === "p3").map((item) => item.clientId),
   );
@@ -468,8 +487,9 @@ export function buildInboxQueue(input: {
     });
 
   for (const head of input.heads) {
+    // The clock stops only when a later coach reply is the message the client has.
     if (head.senderId !== head.clientId) continue;
-    if (coveredMessages.has(head.messageId)) continue;
+    if (openUnansweredMessages.has(head.messageId)) continue;
     if (!isPastUnansweredWindow(head.createdAt, input.now, hours)) continue;
     queue.push({
       id: unansweredInboxId(head.messageId),

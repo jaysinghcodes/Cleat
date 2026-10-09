@@ -24,6 +24,8 @@ test("seed copy has no dash punctuation and includes the demo articles", () => {
   assert.equal(sql.includes("Hypertrophy 4-day"), true);
   assert.equal(sql.includes("Still waiting on a reply about Friday."), true);
   assert.equal(sql.includes("Riley is not a stale unanswered client"), true);
+  assert.equal(sql.includes("unanswered_hours = null"), true);
+  assert.equal(sql.includes("demo unanswered hours must stay unset"), true);
   for (const table of [
     "held_drafts",
     "trainer_notices",
@@ -62,18 +64,7 @@ test("eval set covers labels, emergency, and self harm, and the offline run pass
   delete process.env.OPENAI_API_KEY;
   try {
     const result = await runEval(cases);
-    const deadlift = result.lines.find((line) => line.includes("injury-deadlift"));
-    assert.ok(deadlift, result.lines.join("\n"));
-    const otherFailed = result.lines.filter((line) => line.startsWith("FAIL") && !line.includes("injury-deadlift"));
-    assert.deepEqual(otherFailed, [], result.lines.join("\n"));
-    if (deadlift.startsWith("PASS")) {
-      assert.match(deadlift, /medical_safety/);
-      assert.equal(result.failed, 0);
-    } else {
-      assert.match(deadlift, /emergency_self_harm/);
-      assert.match(deadlift, /medical_safety/);
-      assert.equal(result.failed, 1);
-    }
+    assert.equal(result.failed, 0, result.lines.join("\n"));
   } finally {
     if (previous === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previous;

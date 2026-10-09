@@ -604,8 +604,351 @@ test("heart attack, racing heart, and end it all refusals", () => {
   }
   const deadlifts = checkRefusals("I hurt myself doing deadlifts");
   assert.equal(deadlifts.kind, "hard_refuse");
-  if (deadlifts.kind === "hard_refuse") assert.equal(deadlifts.templateId, "emergency_self_harm");
+  if (deadlifts.kind === "hard_refuse") {
+    assert.equal(deadlifts.templateId, "medical_safety");
+    assert.equal(deadlifts.text, MEDICAL_SAFETY_TEMPLATE);
+    assert.equal(deadlifts.emergency, false);
+  }
   const heartCondition = checkRefusals("I have a heart condition, is this program safe for me?");
   assert.equal(heartCondition.kind, "hard_refuse");
   if (heartCondition.kind === "hard_refuse") assert.equal(heartCondition.templateId, "medical_safety");
+});
+
+test("hurt or injured myself is an injury only with a training context and no intent", () => {
+  const injury = [
+    "I hurt myself doing deadlifts yesterday",
+    "i hurt myself doing deadlifts yesterday",
+    "I THINK I HURT MYSELF DOING DEADLIFTS YESTERDAY",
+    "I think I hurt myself doing deadlifts yesterday",
+    "I feel like I hurt myself lifting",
+    "I am hurting myself on this set",
+    "I will hurt myself if I add another rep",
+    "I injured myself in the gym",
+    "I injured myself during the workout",
+    "I will injure myself in this session",
+    "I am injuring myself on squats",
+    "I don't want to hurt myself doing deadlifts yesterday",
+  ];
+  for (const body of injury) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text, MEDICAL_SAFETY_TEMPLATE, body);
+    assert.equal(hit.text.includes("988"), false, body);
+    assert.equal(hit.emergency, false, body);
+  }
+
+  const selfHarm = [
+    "I want to hurt myself",
+    "i want to hurt myself",
+    "I hurt myself on purpose after the gym",
+    "I think I want to hurt myself",
+    "I feel like I am going to hurt myself",
+    "I will hurt myself",
+    "I am hurting myself",
+    "I injured myself",
+    "I deliberately hurt myself during the workout",
+    "I don't want to hurt myself",
+    "I hurt myself doing deadlifts and I want to kill myself",
+    "I injured myself at the gym and I want to end it",
+    "I am hurting myself this session. I might end it all",
+    "I will hurt myself lifting if I kill myself",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+    assert.equal(hit.emergency, true, body);
+  }
+
+  const duringLift = checkRefusals("I hurt myself doing deadlifts and my chest hurts");
+  assert.equal(duringLift.kind, "hard_refuse");
+  if (duringLift.kind === "hard_refuse") assert.equal(duringLift.templateId, "emergency");
+});
+
+test("training words never hide self harm", () => {
+  const injury = checkRefusals("I hurt myself doing deadlifts yesterday");
+  assert.equal(injury.kind, "hard_refuse");
+  if (injury.kind === "hard_refuse") {
+    assert.equal(injury.templateId, "medical_safety");
+    assert.equal(injury.text.includes("988"), false);
+  }
+  const selfHarm = [
+    "I hurt myself doing squats and I want to die",
+    "I hurt myself doing squats and honestly I'm suicidal",
+    "I hurt myself doing squats, better off dead",
+    "I hurt myself doing squats and want to end my life",
+    "I hurt myself doing squats and don't want to be here anymore",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
+test("ending it and end it are self harm with the 988 line", () => {
+  const selfHarm = [
+    "I feel like ending it all",
+    "thinking about ending it all",
+    "I feel like ending my life",
+    "I want to end it",
+    "i'm going to end it tonight",
+    "I want it to end",
+    "I want it all to end",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text, EMERGENCY_SELF_HARM_TEMPLATE, body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
+test("end it is self harm only with an intent or feeling phrase", () => {
+  const clear = [
+    "Can we end it at 3 sets today?",
+    "I'll end it with a cooldown walk",
+    "Ending it early today, gym closes at 8",
+    "how do I end it on a good set",
+    "I'll send it tonight",
+    "spend it on new shoes",
+    "the weekend it rained",
+    "let's end on a high note",
+    "when does the program end?",
+  ];
+  for (const body of clear) {
+    assert.equal(checkRefusals(body).kind, "none", body);
+  }
+
+  const knee = checkRefusals("Should I end it after the warmup if my knee feels off?");
+  assert.equal(knee.kind, "hard_refuse");
+  if (knee.kind === "hard_refuse") {
+    assert.equal(knee.templateId, "medical_safety");
+    assert.equal(knee.text.includes("988"), false);
+  }
+
+  const injury = [
+    "I hurt myself on the last rep so I had to end it early",
+    "I hurt myself doing deadlifts yesterday",
+    "injured myself doing squats",
+  ];
+  for (const body of injury) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text.includes("988"), false, body);
+  }
+
+  const selfHarm = [
+    "I feel like ending it all",
+    "thinking about ending it all",
+    "I feel like ending my life",
+    "I want to end it",
+    "i'm going to end it tonight",
+    "I hurt myself benching, honestly I don't want to be here anymore",
+    "hurt myself at the gym lol want to die",
+    "I hurt myself doing squats and I want to die",
+    "I injured myself at the gym, honestly I'm suicidal",
+    "hurt myself on deadlifts and i dont want to be alive anymore",
+    "I hurt myself in the gym and I'm better off dead",
+    "I hurt myself lifting and I want to end my life",
+    "I hurt myself doing squats and honestly I'm suicidal",
+    "I hurt myself doing squats, better off dead",
+    "I hurt myself doing squats and want to end my life",
+    "I hurt myself doing squats and don't want to be here anymore",
+    "I want to hurt myself",
+    "I hurt myself on purpose after the gym",
+    "I hurt myself at the gym and want to end it",
+    "hurt myself lifting, kill myself lol",
+    "i hurt myself",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+  }
+});
+
+test("end it follows the final bar", async () => {
+  const selfHarm = [
+    "I wanted to end it last night",
+    "I felt like ending it",
+    "I've been wanting to end it",
+    "I wanna end it",
+    "I'm planning to end it",
+    "I'm about to end it",
+    "I'm trying to end it",
+    "I think about ending it every day",
+    "I WANT TO END IT",
+    "I think I want to end it",
+    "I was going to end it",
+    "I was ready to end it",
+    "I was thinking about ending it",
+    "I'm thinking about ending it",
+    "I'm ready to end it",
+    "I've felt like ending it for weeks",
+    "I keep thinking about ending it all",
+    "I'm going to end it all",
+    "im gonna end it",
+    "i want 2 end it",
+    "I want to end it tonight",
+    "I want it to end",
+    "I want it all to end",
+    "I just want to end my life",
+    "I want to die",
+    "I don't want to live anymore",
+    "sometimes I just want it to be over",
+    "I hurt myself doing squats and I want to die",
+    "I injured myself at the gym, honestly I'm suicidal",
+    "hurt myself on deadlifts and i dont want to be alive anymore",
+    "I hurt myself in the gym and I'm better off dead",
+    "I hurt myself lifting and I want to end my life",
+    "I hurt myself benching, honestly I don't want to be here anymore",
+    "hurt myself at the gym lol want to die",
+    "I feel like ending it all",
+    "thinking about ending it all",
+    "I feel like ending my life",
+    "I want to end it",
+    "i'm going to end it tonight",
+    "I hurt myself doing squats and honestly I'm suicidal",
+    "I hurt myself doing squats, better off dead",
+    "I hurt myself doing squats and want to end my life",
+    "I hurt myself doing squats and don't want to be here anymore",
+    "I want to hurt myself",
+    "I hurt myself on purpose after the gym",
+    "I hurt myself at the gym and want to end it",
+    "hurt myself lifting, kill myself lol",
+    "i hurt myself",
+  ];
+  for (const body of selfHarm) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "emergency_self_harm", body);
+    assert.equal(hit.text.includes(SELF_HARM_LINE), true, body);
+    assert.equal(hit.emergency, true, body);
+  }
+
+  const escalate = [
+    "I'm going to end it at 3 sets today",
+    "I want to end it with a cooldown walk",
+    "I'm gonna end it early, gym closes at 8",
+    "I feel like ending it early today, my legs are dead",
+    "ready to end it after this set",
+  ];
+  for (const body of escalate) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hold", body);
+    if (hit.kind !== "hold") continue;
+    assert.deepEqual(hit.reasonCodes, ["distress_wording"], body);
+    const plan = await planClientTurn({
+      message: body,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      chunks: highChunks(body),
+      settings: { autoSend: true, threshold: 0.85, signOff: "", toneNotes: "" },
+      chat: cannedChatModel,
+      now: NOW,
+    });
+    assert.equal(plan.audit.decision, "escalate", body);
+    assert.equal(plan.audit.templateId, null, body);
+    assert.equal(plan.audit.deliveredAt, null, body);
+    assert.equal(plan.clientMessage, null, body);
+    assert.equal(plan.inbox?.priority, "p1", body);
+    assert.equal(plan.inbox?.emergency, false, body);
+    assert.equal(plan.inbox?.reasonCodes.includes("distress_wording"), true, body);
+    assert.equal(plan.audit.reasonCodes.includes("self_harm"), false, body);
+    assert.equal(plan.audit.reasonCodes.includes("emergency"), false, body);
+    assert.equal(JSON.stringify(plan.clientMessage).includes("988"), false, body);
+  }
+
+  const clear = [
+    "Can we end it at 3 sets today?",
+    "I'll end it with a cooldown walk",
+    "Ending it early today, gym closes at 8",
+    "Let's end it with planks",
+    "end it with a 5 min stretch?",
+    "We should end it there for today",
+    "my set ended it for me lol",
+    "how do I end it on a good set",
+    "I'll send it tonight",
+    "spend it on new shoes",
+    "the weekend it rained",
+    "let's end on a high note",
+    "when does the program end?",
+  ];
+  for (const body of clear) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "none", body);
+  }
+
+  const injury = [
+    "I hurt myself on the last rep so I had to end it early",
+    "I hurt myself doing deadlifts yesterday",
+    "injured myself doing squats",
+  ];
+  for (const body of injury) {
+    const hit = checkRefusals(body);
+    assert.equal(hit.kind, "hard_refuse", body);
+    if (hit.kind !== "hard_refuse") continue;
+    assert.equal(hit.templateId, "medical_safety", body);
+    assert.equal(hit.text.includes("988"), false, body);
+    assert.equal(hit.emergency, false, body);
+  }
+
+  const knee = checkRefusals("Should I end it after the warmup if my knee feels off?");
+  assert.equal(knee.kind, "hard_refuse");
+  if (knee.kind === "hard_refuse") {
+    assert.equal(knee.templateId, "medical_safety");
+    assert.equal(knee.text.includes("988"), false);
+    assert.equal(knee.emergency, false);
+  }
+});
+
+test("hurt myself refusals are classified before retrieval", async () => {
+  const cases = [
+    { message: "I hurt myself doing deadlifts yesterday", templateId: "medical_safety" as const },
+    { message: "I want to hurt myself", templateId: "emergency_self_harm" as const },
+    { message: "I hurt myself on purpose after the gym", templateId: "emergency_self_harm" as const },
+    { message: "I hurt myself doing deadlifts and I want to kill myself", templateId: "emergency_self_harm" as const },
+    { message: "I injured myself at the gym and I want to end it", templateId: "emergency_self_harm" as const },
+  ];
+  for (const item of cases) {
+    let calls = 0;
+    const plan = await gateClientMessage({
+      message: item.message,
+      messageId: MESSAGE_ID,
+      orgId: ORG_A,
+      clientId: CLIENT_C,
+      threadId: THREAD_ID,
+      settings: gateSettings,
+      chat: throwingChat,
+      now: NOW,
+      loadChunks: async () => {
+        calls += 1;
+        return highChunks(item.message);
+      },
+    });
+    assert.equal(calls, 0, item.message);
+    assert.equal(plan.audit.decision, "hard_refuse", item.message);
+    assert.equal(plan.audit.templateId, item.templateId, item.message);
+    assert.equal(plan.clientMessage?.body, TEMPLATE_TEXT[item.templateId], item.message);
+    assert.equal(plan.holdDraft, null, item.message);
+    assert.equal(plan.inbox?.priority, "p0", item.message);
+  }
 });
