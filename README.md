@@ -2,7 +2,7 @@
 
 Cleat. Repo [jaysinghcodes/Cleat](https://github.com/jaysinghcodes/Cleat) (formerly coachloop).
 
-A coach runs the web desk. A client uses the Expo app on iOS or Android. A fresh clone plus `pnpm seed` is a two role demo: the phone in Expo Go, the trainer desk in the browser.
+A coach runs the web desk. A client uses the Expo app on iOS or Android. A fresh clone, `pnpm run setup`, and `pnpm dev` is a two role demo: the phone in Expo Go, the trainer desk in the browser.
 
 Expo (iOS and Android) plus Next.js trainer web on Vercel. Supabase (Auth, Postgres, Realtime, Storage, pgvector) is the backend. OpenAI is optional for the LLM. Calendar is ICS subscribe and export, with optional Google Calendar OAuth.
 
@@ -40,76 +40,41 @@ Cleat is not Everfit and it is not Trainerize. Those products ship nutrition pla
 
 v1 leaves out nutrition, wearables, white label apps, a payments marketplace, gamification, camera form checks, and franchise roles. The loop that ships is logging, a who needs a nudge board, and a confidence gated reply that refuses injury, medication, and emergencies.
 
-## Ten minute cold demo
+## Quickstart
 
-> **Before you start**
->
-> 1. Command Line Tools: check first. Run `xcode-select -p`, then `brew doctor` or `softwareupdate --list`. Only when brew reports that the Command Line Tools are missing or outdated, run `sudo rm -rf /Library/Developer/CommandLineTools && sudo xcode-select --install`, finish the installer, and verify with `xcode-select -p`. It should print a path. Outdated tools make brew refuse to install the Supabase CLI. If brew does not report that problem, leave the tools installed.
-> 2. Docker Desktop: run `brew install --cask docker && open -a Docker`, wait until it says running, then verify with `docker info`. It should print server details. Docker must stay running while you use the local stack.
-
-From a fresh clone, with Docker and the Supabase CLI installed:
+A new clone on a Mac uses two commands. `pnpm setup` without `run` is a built in pnpm command and does not set up Cleat.
 
 ```sh
-pnpm install
-docker info
-cd packages/db && supabase start && supabase status && cd ../..
+pnpm run setup
+pnpm dev
 ```
 
-Write the env files before you start the desk. `supabase status` prints the anon key and the service_role key. Put the anon key in both apps. Map the service_role key to `SUPABASE_SERVICE_ROLE` in `apps/web/.env.local` only. Do not put that key in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`.
-
-`apps/web/.env.local`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
-NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_SERVICE_ROLE=<service_role key from supabase status>
-ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
-```
-
-`cleat-demo-ics-secret` is a demo value. Change it before any use outside this local stack.
-
-`apps/mobile/.env` for the iOS Simulator. A physical phone needs the computer LAN address in these URLs. The Android emulator uses `10.0.2.2`. The blocks are in [docs/demo-script.md](docs/demo-script.md).
-
-```
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
-EXPO_PUBLIC_DESK_URL=http://127.0.0.1:3000
-EXPO_PUBLIC_WEB_URL=http://127.0.0.1:3000
-```
-
-Leave `OPENAI_API_KEY` unset so the seed and the desk share the offline embedder. Leave the Google vars empty. Beat 5 is ICS only.
-
-Then seed, and start the desk so a phone can reach it:
+Stop the desk and Expo with:
 
 ```sh
-pnpm seed
-pnpm --filter @cleat/web exec next dev -H 0.0.0.0
+pnpm stop
 ```
 
-In a second terminal, from `apps/mobile`:
+`make setup`, `make dev`, and `make stop` run the same scripts.
 
-```sh
-npx expo start
-```
+`pnpm run setup` checks Command Line Tools, Node.js 22, pnpm via Corepack, Docker, and the Supabase CLI. It prints the exact fix command for anything missing. Then it installs dependencies, starts Supabase in `packages/db`, writes `apps/web/.env.local` and `apps/mobile/.env`, migrates, and seeds. The mobile Supabase URL uses this computer's LAN address so Expo Go on the same Wi-Fi can reach it. Set `CLEAT_LAN_IP` to force that host (`10.0.2.2` for the Android emulator, `127.0.0.1` for the iOS Simulator). Run `pnpm run setup` again any time. It is safe to repeat.
 
-`supabase start` applies the migrations and `supabase/seed.sql`. `pnpm seed` runs that file again and writes the knowledge base embeddings. Run `pnpm seed` again after a rehearsal. It clears this demo org's sessions, messages, inbox items, drafts, audits, nudges, and workout logs, then restores the same counts.
+`pnpm dev` starts the trainer desk and Expo in this terminal. Scan the QR code with Expo Go. The desk listens on all interfaces. If port 3000 is taken, the desk uses the next free port and prints that port.
 
-From `packages/db`, `supabase db reset` drops the local database, reapplies the migrations, and runs `seed.sql`. Run `pnpm seed` after that so the embeddings exist. That is the fully clean slate.
+No Supabase project, Vercel project, Expo account, or API key is required. Leave `OPENAI_API_KEY` unset. The manual steps are in [docs/local-setup.md](docs/local-setup.md). The phone plus desk beats are in [docs/demo-script.md](docs/demo-script.md).
 
-On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead. The cast, the five beats, and the iOS, Android, and physical phone env blocks are in [docs/demo-script.md](docs/demo-script.md).
-
-`pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Docker is required only for that default local URL (`127.0.0.1:54322` or `localhost:54322`). A hosted database or another port does not need Docker. If Docker is required and it is not running, seed exits and tells you to open Docker Desktop. It does not read `SUPABASE_SERVICE_ROLE`.
+On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead.
 
 ## Prerequisites
 
 - Node.js 22 or newer (`.nvmrc`). Vercel's default Node 24 is fine.
-- pnpm 10 (`packageManager` in the root `package.json`; Corepack will pick it up)
+- pnpm 10 (`packageManager` in the root `package.json`; Corepack will pick it up). `pnpm run setup` checks this, plus Command Line Tools, Docker, and the Supabase CLI.
 
 No Supabase project, Vercel project, Expo account, or API keys are required to clone and run.
 
 ## Install
+
+`pnpm run setup` installs dependencies. To install only:
 
 ```sh
 pnpm install
@@ -117,46 +82,15 @@ pnpm install
 
 ## Run locally
 
-Install Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started). From `packages/db`:
+Use the [Quickstart](#quickstart). By hand, from `packages/db`, run `docker info`, then `supabase start`.
 
-```sh
-docker info
-supabase start
-```
+The manual steps, env files, and device hosts are in [docs/local-setup.md](docs/local-setup.md).
 
-That starts Postgres, GoTrue, the API on port 54321, and Mailpit. The Mailpit UI is [http://127.0.0.1:54324](http://127.0.0.1:54324). It applies `supabase/migrations`, then `supabase/seed.sql`. The Magic Link template in `packages/db/supabase/templates/magic_link.html` includes `{{ .Token }}`, so the message shows the 6-digit code.
+`supabase start` applies `supabase/migrations`, then `supabase/seed.sql`. Mailpit is [http://127.0.0.1:54324](http://127.0.0.1:54324). The Magic Link template in `packages/db/supabase/templates/magic_link.html` includes `{{ .Token }}`, so the message shows the 6-digit code.
+
+`pnpm seed` reads `DATABASE_URL` when it is set. Otherwise it uses `postgresql://postgres:postgres@127.0.0.1:54322/postgres`. Docker is required only for that default local URL (`127.0.0.1:54322` or `localhost:54322`). A hosted database or another port does not need Docker. If Docker is required and it is not running, seed exits and tells you to open Docker Desktop. It does not read `SUPABASE_SERVICE_ROLE`.
 
 `0001_init.sql` runs `create extension vector`. The Supabase database image already includes pgvector. On plain Postgres 16, install `postgresql-16-pgvector` before `pnpm --filter @cleat/db test:rls`.
-
-```sh
-supabase status
-```
-
-Copy the anon key into both apps. `supabase status` prints `service_role key`. Map that value to `SUPABASE_SERVICE_ROLE` in `apps/web/.env.local` only. That file is read by the Next.js server. Do not put the service role in `apps/mobile/.env`, and do not prefix it with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`. The anon key is the only Supabase key in the browser bundle and the Expo bundle. A phone needs the desk on all interfaces: `pnpm --filter @cleat/web exec next dev -H 0.0.0.0`.
-
-`apps/web/.env.local`:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
-NEXT_PUBLIC_CLIENT_APP_URL=http://localhost:8081
-SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_SERVICE_ROLE=<service_role key from supabase status>
-ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
-```
-
-`cleat-demo-ics-secret` is a demo value. Change it before any use outside this local stack.
-
-`apps/mobile/.env` for the iOS Simulator. Android and a physical phone use different hosts. See [docs/demo-script.md](docs/demo-script.md).
-
-```
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>
-EXPO_PUBLIC_DESK_URL=http://127.0.0.1:3000
-EXPO_PUBLIC_WEB_URL=http://127.0.0.1:3000
-```
-
-Then, from the repo root, `pnpm seed`. Leave `OPENAI_API_KEY` unset.
 
 The auth redirect allow list is `additional_redirect_urls` in `packages/db/supabase/config.toml`. A hosted project needs the same entries:
 
@@ -169,21 +103,7 @@ The auth redirect allow list is `additional_redirect_urls` in `packages/db/supab
 
 A hosted project also needs `{{ .Token }}` in the Magic Link email template.
 
-Trainer desk, from the repo root:
-
-```sh
-pnpm dev:web
-```
-
-Open [http://localhost:3000/signup](http://localhost:3000/signup).
-
-Expo web, from `apps/mobile`:
-
-```sh
-npx expo start --web --port 8081
-```
-
-Open [http://localhost:8081](http://localhost:8081).
+`pnpm dev` starts the desk and Expo together. The desk alone is `pnpm dev:web`. Expo alone is `pnpm dev:mobile`.
 
 ## Trainer web
 
@@ -270,7 +190,7 @@ Not required to boot the empty screens. Sign-up, sign-in, and invites need a Sup
 
 There are no passwords. Both roles sign in with an email code or a magic link.
 
-1. Create a free project at [supabase.com](https://supabase.com), or from `packages/db` run `docker info`, then `supabase start`. Local mail is captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324).
+1. Create a free project at [supabase.com](https://supabase.com), or run `pnpm run setup`. By hand, from `packages/db` run `docker info`, then `supabase start`. Local mail is captured by Mailpit at [http://127.0.0.1:54324](http://127.0.0.1:54324).
 2. Copy the project URL and anon key into `.env`:
    - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for the trainer desk
    - `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` for the client app
@@ -308,7 +228,7 @@ pnpm --filter @cleat/db test:rls
 
 `test:rls` needs the pgvector extension. `0001_init.sql` runs `create extension vector`. On Postgres 16 install `postgresql-16-pgvector`. Supabase and the Supabase CLI image already include it.
 
-This applies the migrations with psql and asserts that a trainer cannot read another org, a client cannot read another client's profile, and booking rows stay inside the org. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps follow [Run locally](#run-locally): `docker info`, then `supabase start`, which runs real GoTrue.
+This applies the migrations with psql and asserts that a trainer cannot read another org, a client cannot read another client's profile, and booking rows stay inside the org. The script stubs `auth.uid()` with `tests/plain_postgres_auth_stub.sql` so the assertions do not call GoTrue. The apps follow [Run locally](#run-locally): `pnpm run setup`, or from `packages/db` run `docker info`, then `supabase start`, which runs real GoTrue.
 
 ## Vercel (hobby)
 
@@ -324,7 +244,7 @@ Not required to run locally. To deploy the trainer web app:
 
 ## Try it in Expo Go
 
-The client stays compatible with Expo Go. It does not use a custom native module or a dev build, and it does not register for push notifications.
+The client stays compatible with Expo Go. It does not use a custom native module or a dev build, and it does not register for push notifications. Local Expo Go does not need a hosted project. Use the [Quickstart](#quickstart). The steps below are a hosted free project.
 
 1. Create a free Supabase project. Enable the email provider. In the Magic Link email template, keep `{{ .Token }}` so the message includes the code, and `{{ .ConfirmationURL }}` if you also want the link. Add these redirect URLs to the Supabase auth redirect allow list:
    - `http://localhost:3000/auth/callback`
