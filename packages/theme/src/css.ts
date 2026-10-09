@@ -34,6 +34,7 @@ const cssVar = {
   track: "--track",
   codeBg: "--code-bg",
   codeFg: "--code-fg",
+  onUrgent: "--on-urgent",
   phoneStage1: "--phone-stage-1",
   phoneStage2: "--phone-stage-2",
   phoneBezel: "--phone-bezel",

@@ -16,7 +16,7 @@ import {
   parseTrainerNotices,
   parseUnansweredHours,
   productError,
-  unansweredHoursOrDefault,
+  resolveUnansweredHours,
   type AiSettings,
   type AuditEvent,
   type HeldDraftMarker,
@@ -176,21 +176,12 @@ export type TrainerInbox = {
 const INBOX_COLUMNS =
   "id, org_id, client_id, audit_id, message_id, priority, emergency, reason_codes, title, preview, template_id, status, created_at";
 
-function coveredMessageIds(data: unknown): string[] {
-  if (!Array.isArray(data)) return [];
-  return data.flatMap((row) => {
-    if (!row || typeof row !== "object") return [];
-    const id = (row as { message_id?: unknown }).message_id;
-    return typeof id === "string" && id.length > 0 ? [id] : [];
-  });
-}
-
 export async function loadTrainerInbox(
   supabase: CleatClient,
-  input: { orgId: string; timeZone: string; now?: string },
+  input: { orgId: string; timeZone: string; now?: string; defaultWindowHours?: number },
 ): Promise<TrainerInbox> {
   const now = input.now ?? new Date().toISOString();
-  const [org, items, covered, heads, notices, clients, board] = await Promise.all([
+  const [org, items, heads, notices, clients, board] = await Promise.all([
     supabase.from("orgs").select("unanswered_hours").eq("id", input.orgId).maybeSingle(),
     supabase
       .from("inbox_items")
@@ -198,7 +189,6 @@ export async function loadTrainerInbox(
       .eq("status", "open")
       .order("priority", { ascending: true })
       .order("created_at", { ascending: true }),
-    supabase.from("inbox_items").select("message_id").neq("status", "open"),
     supabase.rpc("thread_heads"),
     supabase
       .from("trainer_notices")
@@ -210,7 +200,6 @@ export async function loadTrainerInbox(
   ]);
   if (org.error) fail(org.error.message, inboxCopy.title);
   if (items.error) fail(items.error.message, aiCopy.loadFailed);
-  if (covered.error) fail(covered.error.message, aiCopy.loadFailed);
   if (heads.error) fail(heads.error.message, aiCopy.loadFailed);
   if (notices.error) fail(notices.error.message, aiCopy.loadFailed);
   const stored = parseStoredInboxItems(items.data);
@@ -230,8 +219,9 @@ export async function loadTrainerInbox(
   ]);
   if (drafts.error) fail(drafts.error.message, aiCopy.loadFailed);
   if (audits.error) fail(audits.error.message, aiCopy.loadFailed);
-  const windowHours = unansweredHoursOrDefault(
+  const windowHours = resolveUnansweredHours(
     org.data && typeof org.data === "object" ? (org.data as { unanswered_hours?: unknown }).unanswered_hours : undefined,
+    input.defaultWindowHours,
   );
   const names: Record<string, string> = {};
   for (const client of clients) names[client.userId] = client.displayName;
@@ -249,7 +239,6 @@ export async function loadTrainerInbox(
       audits: parseInboxAudits(audits.data),
       heads: parseThreadHeads(heads.data),
       missed: missedCandidates(board.rows, today, input.timeZone),
-      coveredMessageIds: coveredMessageIds(covered.data),
     }),
   };
 }
