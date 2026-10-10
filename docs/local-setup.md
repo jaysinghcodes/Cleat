@@ -8,7 +8,7 @@ No Supabase project, Vercel project, Expo account, or API key is required. Leave
 
 ## What setup checks
 
-`pnpm run setup` checks these and prints a `Fix:` command for anything missing. It stops before install when a check fails. Run the fix, then run `pnpm run setup` again.
+`pnpm run setup` checks these and prints a `Fix:` command for anything missing. It stops before install when a check fails. Run the fix, then run `pnpm run setup` again. Docker and the Supabase CLI are checked only when setup will start local Supabase. When `DATABASE_URL` is set and that database answers, those two checks are skipped.
 
 | Check | Fix |
 | --- | --- |
@@ -27,21 +27,29 @@ The destructive Command Line Tools reinstall runs only when `brew doctor` report
 
 ## What setup runs
 
-After the checks pass, setup:
+Setup chooses one path. It never replaces a `DATABASE_URL`, Supabase URL, or anon key that is already in the environment or in the env files.
+
+**Nothing set.** Docker and the Supabase CLI are required. After the checks pass, setup:
 
 1. Runs `pnpm install`.
 2. Runs `supabase start` in `packages/db`. If the stack is already up, it keeps going.
 3. Runs `supabase migration up --local` so pending migrations apply. It does not run `supabase db reset`.
 4. Reads `supabase status -o env` and writes `apps/web/.env.local` and `apps/mobile/.env`.
-5. Runs `pnpm seed`, passing `DB_URL` from that status as `DATABASE_URL` when it is present.
+5. Runs `pnpm seed`. Seed uses `DB_URL` from that status only when `DATABASE_URL` is not already set.
 
-The web file keeps `127.0.0.1` for the API URL. The service role is written only there, as `SUPABASE_SERVICE_ROLE`. It is not written to `apps/mobile/.env`, and it is not prefixed with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`.
+**Database already set.** If `DATABASE_URL` is set in the environment or in an env file and `psql` can run `select 1`, setup skips Docker and the Supabase CLI. It migrates that database and seeds it. An existing Supabase URL is checked at `/auth/v1/health`. A Supabase URL that is not on this computer, together with an anon key and no `DATABASE_URL`, stops setup so a local stack cannot replace it. A loopback URL written for local Supabase stays on the local path. Env files that already exist are left as they are. Missing files are written from the values already set.
 
-The mobile Supabase URL swaps a loopback host for this computer's LAN address so a phone on the same Wi-Fi can reach the API. Desk URLs in the mobile file use that same address and port 3000. Set `CLEAT_LAN_IP` to force the host: `10.0.2.2` for the Android emulator, or `127.0.0.1` for the iOS Simulator.
+**Plain Postgres.** If `DATABASE_URL` is set and answers, and no Supabase URL is set, setup still migrates and seeds. It applies `packages/db/supabase/tests/plain_postgres_auth_stub.sql` first, because the migrations expect `auth.users` and `auth.uid()`. Do not apply that stub to a real Supabase project. Setup does not apply it when a Supabase URL is set. It then prints one line: sign in needs Supabase, local or hosted. For a local stack, unset `DATABASE_URL` and run `pnpm run setup` with Docker and the Supabase CLI. For a hosted project, create one at https://supabase.com and set its URL and anon key.
+
+If `DATABASE_URL` uses the local Supabase port `54322` and nothing is listening, setup starts local Supabase instead of stopping. A different database URL that does not answer stops setup and does not ask for Docker.
+
+The web file keeps `127.0.0.1` for a local API URL. The service role is written only there, as `SUPABASE_SERVICE_ROLE`. It is not written to `apps/mobile/.env`, and it is not prefixed with `NEXT_PUBLIC_` or `EXPO_PUBLIC_`.
+
+The mobile Supabase URL swaps a loopback host for this computer's LAN address so a phone on the same Wi-Fi can reach the API. That swap happens when the mobile URL is not set yet. An existing mobile Supabase URL is kept. Desk URLs in a new mobile file use that same address and port 3000. Set `CLEAT_LAN_IP` before the first write to force the host: `10.0.2.2` for the Android emulator, or `127.0.0.1` for the iOS Simulator. To change a URL that is already written, edit the env file or remove that line and run setup again.
 
 Local secrets already in `apps/web/.env.local` are kept: `ICS_FEED_SIGNING_SECRET`, `OPENAI_API_KEY`, `INBOX_UNANSWERED_HOURS`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXT_PUBLIC_CLIENT_APP_URL`. A missing ICS secret becomes `cleat-demo-ics-secret`. That is a demo value. Change it before any use outside this local stack.
 
-Running setup again is safe. It refreshes Supabase keys, reapplies pending migrations, and seeds again. `pnpm seed` clears this demo org's sessions, messages, inbox items, drafts, audits, nudges, and workout logs, then restores the same counts.
+Running setup again is safe. It keeps an existing database URL, Supabase URL, and anon key. It reapplies pending migrations and seeds again. `pnpm seed` clears this demo org's sessions, messages, inbox items, drafts, audits, nudges, and workout logs, then restores the same counts.
 
 ## What dev and stop do
 

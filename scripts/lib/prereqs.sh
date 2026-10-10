@@ -153,11 +153,16 @@ cleat_check_supabase() {
 
 cleat_check_prereqs() {
   local root="$1"
+  local stack="${2:-}"
   local failed=0
   cleat_check_clt || failed=1
   cleat_check_node || failed=1
   cleat_check_pnpm "$root" || failed=1
-  cleat_check_docker "$root" || failed=1
-  cleat_check_supabase || failed=1
+  if [ "$stack" = "skip-stack" ]; then
+    echo "Docker and the Supabase CLI: skipped."
+  else
+    cleat_check_docker "$root" || failed=1
+    cleat_check_supabase || failed=1
+  fi
   return "$failed"
 }

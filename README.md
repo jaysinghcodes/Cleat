@@ -57,7 +57,7 @@ pnpm stop
 
 `make setup`, `make dev`, and `make stop` run the same scripts.
 
-`pnpm run setup` checks Command Line Tools, Node.js 22, pnpm via Corepack, Docker, and the Supabase CLI. It prints the exact fix command for anything missing. Then it installs dependencies, starts Supabase in `packages/db`, writes `apps/web/.env.local` and `apps/mobile/.env`, migrates, and seeds. The mobile Supabase URL uses this computer's LAN address so Expo Go on the same Wi-Fi can reach it. Set `CLEAT_LAN_IP` to force that host (`10.0.2.2` for the Android emulator, `127.0.0.1` for the iOS Simulator). Run `pnpm run setup` again any time. It is safe to repeat.
+`pnpm run setup` checks Command Line Tools, Node.js 22, and pnpm via Corepack. It prints the exact fix command for anything missing. When `DATABASE_URL` is already set and that database answers, setup skips Docker and the Supabase CLI, migrates, and seeds that database. It does not replace an existing database URL, Supabase URL, or anon key. A database URL with no Supabase URL still migrates and seeds, then prints how to add Supabase for sign in. With nothing set, setup also checks Docker and the Supabase CLI, starts Supabase in `packages/db`, writes `apps/web/.env.local` and `apps/mobile/.env`, migrates, and seeds. The mobile Supabase URL uses this computer's LAN address so Expo Go on the same Wi-Fi can reach it. Set `CLEAT_LAN_IP` to force that host (`10.0.2.2` for the Android emulator, `127.0.0.1` for the iOS Simulator). Run `pnpm run setup` again any time. It is safe to repeat.
 
 `pnpm dev` starts the trainer desk and Expo in this terminal. Scan the QR code with Expo Go. The desk listens on all interfaces. If port 3000 is taken, the desk uses the next free port and prints that port.
 
@@ -68,7 +68,7 @@ On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. 
 ## Prerequisites
 
 - Node.js 22 or newer (`.nvmrc`). Vercel's default Node 24 is fine.
-- pnpm 10 (`packageManager` in the root `package.json`; Corepack will pick it up). `pnpm run setup` checks this, plus Command Line Tools, Docker, and the Supabase CLI.
+- pnpm 10 (`packageManager` in the root `package.json`; Corepack will pick it up). `pnpm run setup` checks this and Command Line Tools. Docker and the Supabase CLI are checked when setup starts local Supabase. They are skipped when `DATABASE_URL` already points at a database that answers.
 
 No Supabase project, Vercel project, Expo account, or API keys are required to clone and run.
 
