@@ -7,7 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/dev.sh",
+    "stop": "bash scripts/stop.sh",
     "dev:web": "pnpm --filter @cleat/web dev",
     "dev:mobile": "pnpm --filter @cleat/mobile start",
     "seed": "pnpm --filter @cleat/db seed",
@@ -15,7 +17,7 @@
     "build": "pnpm --filter @cleat/web build",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test && node --test scripts/onboarding.test.mjs"
   },
   "devDependencies": {
     "eslint": "^10.12.0",
