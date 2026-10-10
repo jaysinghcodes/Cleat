@@ -5,6 +5,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { DEMO_ARTICLES } from "../../db/src/demo-copy";
 import { loadEvalCases, runEval } from "./eval-batch";
+import { checkRefusals } from "./refusals";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const DASH = /[—–]| - /;
@@ -116,12 +117,71 @@ test("eval set covers labels, emergency, and self harm, and the offline run pass
     "injury-die-deadlifts",
     "injury-die-knee",
     "emergency-end-it-chest",
+    "injury-tore-hamstring",
+    "injury-pulled-hamstring",
+    "injury-tore-acl",
+    "injury-strained-calf",
+    "injury-tweaked-quad",
+    "injury-torn-groin",
+    "injury-tore-hamstring-die",
+    "injury-pulled-hamstring-die",
+    "injury-tore-acl-die",
+    "injury-strained-calf-die",
+    "injury-tweaked-quad-die",
+    "injury-torn-groin-die",
+    "clear-die-on-this-hill",
+    "clear-hill-to-die-on",
+    "self-harm-hill-want-die",
+    "self-harm-die-hard-explicit",
+    "self-harm-to-die-for-want",
+    "self-harm-hamstring-want-die",
   ]) {
     assert.ok(cases.some((item) => item.id === id), id);
   }
   assert.equal(cases.find((item) => item.id === "injury-deadlift")?.templateId, "medical_safety");
   assert.equal(cases.find((item) => item.id === "self-harm-want")?.templateId, "emergency_self_harm");
   assert.equal(cases.find((item) => item.id === "self-harm-purpose")?.templateId, "emergency_self_harm");
+  assert.equal(cases.find((item) => item.id === "emergency-die-chest-run")?.templateId, "emergency_self_harm");
+  assert.equal(cases.find((item) => item.id === "emergency-die-heart-attack")?.templateId, "emergency_self_harm");
+  assert.equal(cases.find((item) => item.id === "clear-phone-die")?.gate, "none");
+  assert.equal(cases.find((item) => item.id === "hold-die-run")?.gate, "p1");
+  assert.equal(cases.find((item) => item.id === "clear-ill-end-sets")?.gate, "none");
+  assert.equal(cases.find((item) => item.id === "hold-need-end-sets")?.gate, "p1");
+  assert.equal(cases.find((item) => item.id === "clear-die-hard")?.gate, "none");
+  assert.equal(cases.find((item) => item.id === "clear-to-die-for")?.gate, "none");
+  assert.equal(cases.find((item) => item.id === "clear-die-on-this-hill")?.gate, "none");
+  assert.equal(cases.find((item) => item.id === "clear-hill-to-die-on")?.gate, "none");
+  for (const id of [
+    "injury-tore-hamstring",
+    "injury-pulled-hamstring",
+    "injury-tore-acl",
+    "injury-strained-calf",
+    "injury-tweaked-quad",
+    "injury-torn-groin",
+    "injury-tore-hamstring-die",
+    "injury-pulled-hamstring-die",
+    "injury-tore-acl-die",
+    "injury-strained-calf-die",
+    "injury-tweaked-quad-die",
+    "injury-torn-groin-die",
+  ]) {
+    assert.equal(cases.find((item) => item.id === id)?.templateId, "medical_safety", id);
+    assert.equal(cases.find((item) => item.id === id)?.expected, "refuse", id);
+  }
+  for (const id of ["self-harm-hill-want-die", "self-harm-die-hard-explicit", "self-harm-to-die-for-want", "self-harm-hamstring-want-die"]) {
+    assert.equal(cases.find((item) => item.id === id)?.templateId, "emergency_self_harm", id);
+  }
+  const noneGates = cases.filter((item) => item.gate === "none");
+  const p1Gates = cases.filter((item) => item.gate === "p1");
+  assert.ok(noneGates.length >= 1);
+  assert.ok(p1Gates.length >= 1);
+  for (const item of cases) {
+    if (item.gate === "none") assert.equal(checkRefusals(item.message).kind, "none", item.id);
+    if (item.gate === "p1") assert.equal(checkRefusals(item.message).kind, "hold", item.id);
+    if (item.gate == null) continue;
+    assert.equal(item.expected, "escalate", item.id);
+    assert.equal(item.templateId, null, item.id);
+  }
   const previous = process.env.OPENAI_API_KEY;
   delete process.env.OPENAI_API_KEY;
   try {
