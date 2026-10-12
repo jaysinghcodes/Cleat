@@ -16,5 +16,6 @@ apps/mobile/android/
 !.env.example
 
 *.log
+.cleat/
 .DS_Store
 .vercel

@@ -1,6 +1,6 @@
 # Cleat demo script
 
-Two roles. The coach uses the web desk. The client uses the Expo app on a phone, a simulator, or an emulator. A fresh clone plus `pnpm seed` is the starting point. Push is not part of this demo.
+Two roles. The coach uses the web desk. The client uses the Expo app on a phone, a simulator, or an emulator. A fresh clone plus `pnpm run setup` is the starting point. `pnpm dev` starts the desk and Expo together. Push is not part of this demo.
 
 On a local stack, read the sign-in code from Mailpit at http://127.0.0.1:54324. A hosted project sends a real email code instead.
 
@@ -66,6 +66,10 @@ Do this with Google env vars empty. Booking must not call Google.
 
 Use these on iOS and again on Android. The desk stays on the computer.
 
+The short path from a fresh clone is `pnpm run setup`, then `pnpm dev`. Setup writes `apps/web/.env.local` and `apps/mobile/.env` from `supabase status -o env`. The mobile Supabase URL uses the computer LAN address. `pnpm dev` starts the desk and Expo in one terminal and prints a QR code for Expo Go. `pnpm stop` stops both. If port 3000 is taken, dev picks another port and prints it. The long manual steps are in [local-setup.md](./local-setup.md).
+
+The numbered steps below are the same work by hand. Use them when you need a different host.
+
 1. `pnpm install`
 2. From `packages/db`, run `docker info`, then `supabase start`, then `supabase status`.
 3. `apps/web/.env.local` (browser and server on the computer):
@@ -83,7 +87,7 @@ ICS_FEED_SIGNING_SECRET=cleat-demo-ics-secret
 
 4. `pnpm seed` from the repo root. Run it again. The printed counts stay the same.
 5. Start the desk so a phone can reach it: `pnpm --filter @cleat/web exec next dev -H 0.0.0.0`
-6. `apps/mobile/.env` depends on the target.
+6. `apps/mobile/.env` depends on the target. `pnpm run setup` writes the physical phone block. Set `CLEAT_LAN_IP` and run setup again for the simulator (`127.0.0.1`) or the Android emulator (`10.0.2.2`).
 
 iOS Simulator (localhost works):
 
