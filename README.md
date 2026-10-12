@@ -8,6 +8,38 @@ Expo (iOS and Android) plus Next.js trainer web on Vercel. Supabase (Auth, Postg
 
 Full stack notes are in [docs/architecture.md](docs/architecture.md). The phone plus desk beats are in [docs/demo-script.md](docs/demo-script.md).
 
+## Hosted demo
+
+The trainer desk is live at [https://cleat-cyan.vercel.app](https://cleat-cyan.vercel.app).
+
+Expo Go loads a published update. From `apps/mobile`, run `pnpm eas-update`. The command and the build profiles are in [EAS dev builds](#eas-dev-builds-optional).
+
+## Screenshots
+
+These frames are the seeded Rivera Strength demo. The desk is the Next.js app. The phone frames are the Expo client rendered on the web, signed in as Sam Lee. A local run is `pnpm run setup`, then `pnpm dev`.
+
+### Trainer desk
+
+| Screen | Light | Dark |
+| --- | --- | --- |
+| Landing | ![Landing in the light theme](docs/screenshots/web-landing-light.webp) | ![Landing in the dark theme](docs/screenshots/web-landing-dark.webp) |
+| Priority inbox | ![Priority inbox in the light theme](docs/screenshots/web-inbox-light.webp) | ![Priority inbox in the dark theme](docs/screenshots/web-inbox-dark.webp) |
+| Client thread | ![Sam Lee thread with the AI confidence draft, light theme](docs/screenshots/web-thread-light.webp) | ![Sam Lee thread with the AI confidence draft, dark theme](docs/screenshots/web-thread-dark.webp) |
+| Programs | ![Programs in the light theme](docs/screenshots/web-programs-light.webp) | ![Programs in the dark theme](docs/screenshots/web-programs-dark.webp) |
+| Calendar | ![Calendar in the light theme](docs/screenshots/web-calendar-light.webp) | ![Calendar in the dark theme](docs/screenshots/web-calendar-dark.webp) |
+| Settings | ![Settings in the light theme](docs/screenshots/web-settings-light.webp) | ![Settings in the dark theme](docs/screenshots/web-settings-dark.webp) |
+| AI settings | ![AI settings in the light theme](docs/screenshots/web-ai-settings-light.webp) | ![AI settings in the dark theme](docs/screenshots/web-ai-settings-dark.webp) |
+
+### Expo client
+
+| Screen | Light | Dark |
+| --- | --- | --- |
+| Today | ![Today in the light theme](docs/screenshots/mobile-today-light.webp) | ![Today in the dark theme](docs/screenshots/mobile-today-dark.webp) |
+| Program | ![Program in the light theme](docs/screenshots/mobile-program-light.webp) | ![Program in the dark theme](docs/screenshots/mobile-program-dark.webp) |
+| Chat | ![Chat in the light theme](docs/screenshots/mobile-chat-light.webp) | ![Chat in the dark theme](docs/screenshots/mobile-chat-dark.webp) |
+| Book | ![Book in the light theme](docs/screenshots/mobile-book-light.webp) | ![Book in the dark theme](docs/screenshots/mobile-book-dark.webp) |
+| Me | ![Me in the light theme](docs/screenshots/mobile-me-light.webp) | ![Me in the dark theme](docs/screenshots/mobile-me-dark.webp) |
+
 ## Layout
 
 ```
