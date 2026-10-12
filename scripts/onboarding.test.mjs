@@ -356,7 +356,9 @@ test("node, pnpm, and supabase checks print fix commands", () => {
 });
 
 test("setup stops before install when docker and supabase are missing", () => {
-  const bin = hermeticBin({ link: ["node", "pnpm", "corepack"] });
+  const bin = hermeticBin({
+    fakes: { node: fakeNodeOk, pnpm: fakePnpm, corepack: fakeCorepack },
+  });
   for (const name of ["node", "pnpm", "corepack"]) requireTool(bin, name);
   assert.equal(existsSync(join(bin, "docker")), false);
   assert.equal(existsSync(join(bin, "supabase")), false);
@@ -530,8 +532,7 @@ test("desk port falls back when 3000 is taken and says so", async () => {
 });
 
 test("lan detection prints an address", () => {
-  const bin = hermeticBin({ link: ["node"] });
-  requireTool(bin, "node");
+  const bin = hermeticBin();
   const result = bash(["-c", "source scripts/lib/lan.sh && cleat_lan_ip"], hermeticEnv(bin));
   assert.equal(result.status, 0, result.stderr + result.stdout);
   assert.match(result.stdout.trim(), /^\d+\.\d+\.\d+\.\d+$/);
