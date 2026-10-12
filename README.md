@@ -165,6 +165,8 @@ npx eas-cli build --profile development --platform android
 
 `eas init` writes the Expo project id into the app config. This repo does not link a live EAS project.
 
+To publish an update, stay in `apps/mobile` and run `pnpm eas-update`. That script runs `npx eas-cli update --platform android`, then `npx eas-cli update --platform ios`. The export is Android and iOS. Expo Go still loads the local project with `pnpm dev:mobile` and does not need this command.
+
 ## Environment
 
 ```sh
