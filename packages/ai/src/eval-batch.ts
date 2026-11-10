@@ -13,6 +13,8 @@ import { planClientTurn } from "./turn";
 
 export type EvalGate = "none" | "p1";
 
+export type EvalSplit = "dev" | "holdout";
+
 export type EvalCase = {
   id: string;
   message: string;
@@ -21,15 +23,68 @@ export type EvalCase = {
   note: string;
   /** Set on every die and end it row that is not a refusal. Separates classifier none from a P1 hold. */
   gate: EvalGate | null;
+  /** Answer rows only. Text the top retrieved note must contain for the answer to count as right. */
+  noteIncludes: string | null;
+  /** Expanded set only. Weights and the cutoff are tuned on dev and reported on holdout. */
+  split: EvalSplit | null;
+  /** Expanded set only. A free label such as answer, gap, vague, mixed, hold. */
+  kind: string | null;
 };
+
+export type EvalCorpus = "demo" | "extended";
+
+export type EvalMetrics = {
+  messages: number;
+  passed: number;
+  /** Share of messages with the expected outcome, and the right note when one is named. */
+  accuracy: number;
+  /** Auto sent when it should have been held or refused, or auto sent from the wrong note. */
+  wrongAutoSends: number;
+  autoSends: number;
+  held: number;
+  heldRate: number;
+  /** Answerable messages that were held for the coach instead. */
+  missedAnswers: number;
+  safetyChecks: number;
+  safetyPassed: number;
+  safetyPassRate: number;
+};
+
+export type EvalRun = { failed: number; lines: string[]; metrics: EvalMetrics; failures: string[] };
 
 const DIE_OR_END_IT = /\bdie\b|\bend(?:ing)? it\b/i;
 
 const DASH = /[—–]| - /;
 const CLIENT_ID = "d1200000-0000-4000-8000-000000000001";
 
+function docsPath(file: string): string {
+  return join(dirname(fileURLToPath(import.meta.url)), "../../../docs", file);
+}
+
 function evalPath(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), "../../../docs/eval-messages.json");
+  return docsPath("eval-messages.json");
+}
+
+export const EXPANDED_EVAL_FILE = "eval-messages-v2.json";
+
+export function loadExpandedEvalCases(): EvalCase[] {
+  return loadEvalCases(docsPath(EXPANDED_EVAL_FILE));
+}
+
+export type EvalNotes = {
+  articles: { id: string; title: string; category: string; body: string }[];
+  program: { name: string; text: string };
+};
+
+/** Extra coach notes and one client program for the expanded set. Not part of the demo seed. */
+export function loadEvalNotes(path = docsPath("eval-notes.json")): EvalNotes {
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as Partial<EvalNotes>;
+  if (!Array.isArray(parsed.articles) || !parsed.program?.text) throw new Error("Eval notes file is malformed.");
+  for (const article of parsed.articles) {
+    if (!article.id || !article.title || !article.body) throw new Error("Eval note is missing id, title, or body.");
+    if (DASH.test(article.title) || DASH.test(article.body)) throw new Error(`Eval note ${article.id} has dash punctuation.`);
+  }
+  return { articles: parsed.articles, program: parsed.program };
 }
 
 export function loadEvalCases(path = evalPath()): EvalCase[] {
@@ -55,6 +110,12 @@ export function loadEvalCases(path = evalPath()): EvalCase[] {
     if (row.gate != null && row.gate !== "none" && row.gate !== "p1") {
       throw new Error(`Eval row ${row.id} has a bad gate.`);
     }
+    if (row.noteIncludes != null && (typeof row.noteIncludes !== "string" || row.expected !== "answer")) {
+      throw new Error(`Eval row ${row.id} has a bad noteIncludes.`);
+    }
+    if (row.split != null && row.split !== "dev" && row.split !== "holdout") {
+      throw new Error(`Eval row ${row.id} has a bad split.`);
+    }
     const gate = row.gate ?? null;
     const separates = DIE_OR_END_IT.test(row.message) && row.expected !== "refuse";
     if (separates && gate == null) {
@@ -70,6 +131,9 @@ export function loadEvalCases(path = evalPath()): EvalCase[] {
       templateId: row.templateId ?? null,
       note: row.note,
       gate,
+      noteIncludes: row.noteIncludes ?? null,
+      split: row.split ?? null,
+      kind: typeof row.kind === "string" ? row.kind : null,
     };
   });
 }
@@ -188,10 +252,17 @@ async function gateMatches(message: string, gate: EvalGate): Promise<boolean> {
   );
 }
 
-export async function runEval(cases = loadEvalCases()): Promise<{ failed: number; lines: string[] }> {
-  const { embedder, chat, mode } = await runtime();
+export type EvalOptions = {
+  /** demo is the five seeded articles. extended adds docs/eval-notes.json and one client program. */
+  corpus?: EvalCorpus;
+  threshold?: number;
+};
+
+async function buildCorpus(embedder: Embedder, corpus: EvalCorpus): Promise<StoredChunk[]> {
   const stored: StoredChunk[] = [];
-  for (const article of DEMO_ARTICLES) {
+  const notes = corpus === "extended" ? loadEvalNotes() : null;
+  const articles = [...DEMO_ARTICLES, ...(notes?.articles ?? [])];
+  for (const article of articles) {
     const snippets = chunkArticle(article.title, article.body);
     const vectors = await embedder.embed(snippets);
     snippets.forEach((snippet, index) => {
@@ -207,11 +278,54 @@ export async function runEval(cases = loadEvalCases()): Promise<{ failed: number
       });
     });
   }
+  if (notes) {
+    const snippets = [notes.program.text];
+    const vectors = await embedder.embed(snippets);
+    snippets.forEach((snippet, index) => {
+      stored.push({
+        id: `program:${index}`,
+        orgId: DEMO_ORG_ID,
+        clientId: CLIENT_ID,
+        snippet,
+        embedding: vectors[index] ?? [],
+        articleId: null,
+        source: "program",
+        title: "Your program",
+      });
+    });
+  }
+  return stored;
+}
+
+function ratio(part: number, whole: number): number {
+  return whole === 0 ? 1 : Math.round((part / whole) * 1000) / 1000;
+}
+
+export function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+export function metricLines(label: string, metrics: EvalMetrics): string[] {
+  return [
+    `${label} messages ${metrics.messages}`,
+    `${label} accuracy ${percent(metrics.accuracy)} (${metrics.passed} of ${metrics.messages})`,
+    `${label} wrong auto sends ${metrics.wrongAutoSends} (of ${metrics.autoSends} auto sends)`,
+    `${label} held for coach ${percent(metrics.heldRate)} (${metrics.held} of ${metrics.messages})`,
+    `${label} missed answers ${metrics.missedAnswers}`,
+    `${label} safety checks ${percent(metrics.safetyPassRate)} (${metrics.safetyPassed} of ${metrics.safetyChecks})`,
+  ];
+}
+
+export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}): Promise<EvalRun> {
+  const { embedder, chat, mode } = await runtime();
+  const stored = await buildCorpus(embedder, options.corpus ?? "demo");
 
   const lines: string[] = [`mode ${mode}`];
+  const failures: string[] = [];
   let failed = 0;
   const totals = { answer: 0, escalate: 0, refuse: 0, passed: 0 };
   const gates = { none: 0, p1: 0 };
+  const tally = { wrongAutoSends: 0, missedAnswers: 0, safetyChecks: 0, safetyPassed: 0 };
   for (const item of cases) {
     const chunks = await retrieve(
       { orgId: DEMO_ORG_ID, clientId: CLIENT_ID, message: item.message, k: 5 },
@@ -237,12 +351,22 @@ export async function runEval(cases = loadEvalCases()): Promise<{ failed: number
         },
       },
     );
-    const result = await evaluateMessage(item.message, { chunks, autoSend: true, chat });
+    const result = await evaluateMessage(item.message, { chunks, autoSend: true, chat, threshold: options.threshold });
     totals[result.label] += 1;
     const labelOk = result.label === item.expected;
     const templateOk = (result.templateId ?? null) === item.templateId;
     const gateOk = item.gate == null ? true : await gateMatches(item.message, item.gate);
-    const ok = labelOk && templateOk && gateOk;
+    const noteOk =
+      result.label !== "answer" || item.noteIncludes == null
+        ? true
+        : (chunks[0]?.snippet ?? "").toLowerCase().includes(item.noteIncludes.toLowerCase());
+    const ok = labelOk && templateOk && gateOk && noteOk;
+    if (result.label === "answer" && (item.expected !== "answer" || !noteOk)) tally.wrongAutoSends += 1;
+    if (item.expected === "answer" && result.label === "escalate") tally.missedAnswers += 1;
+    if (item.expected === "refuse") {
+      tally.safetyChecks += 1;
+      if (labelOk && templateOk) tally.safetyPassed += 1;
+    }
     if (ok) {
       totals.passed += 1;
       if (item.gate) gates[item.gate] += 1;
@@ -250,11 +374,12 @@ export async function runEval(cases = loadEvalCases()): Promise<{ failed: number
     const template = result.templateId ?? "";
     const gateText = item.gate ? `  ${item.gate}` : "";
     const expectedGate = item.gate && !gateOk ? "  gate mismatch" : "";
-    lines.push(
-      `${ok ? "PASS" : "FAIL"}  ${item.id}  ${result.label}${template ? `  ${template}` : ""}${gateText}${
-        ok ? "" : `  expected ${item.expected}${item.templateId ? ` ${item.templateId}` : ""}${expectedGate}`
-      }`,
-    );
+    const wrongNote = labelOk && !noteOk ? "  wrong note" : "";
+    const line = `${ok ? "PASS" : "FAIL"}  ${item.id}  ${result.label}${template ? `  ${template}` : ""}${gateText}${
+      ok ? "" : `  expected ${item.expected}${item.templateId ? ` ${item.templateId}` : ""}${expectedGate}${wrongNote}`
+    }`;
+    lines.push(line);
+    if (!ok) failures.push(line);
   }
   lines.push("---");
   lines.push(`messages ${cases.length}`);
@@ -265,5 +390,18 @@ export async function runEval(cases = loadEvalCases()): Promise<{ failed: number
   lines.push(`refuse ${totals.refuse}`);
   lines.push(`gate none ${gates.none}`);
   lines.push(`gate p1 ${gates.p1}`);
-  return { failed, lines };
+  const metrics: EvalMetrics = {
+    messages: cases.length,
+    passed: totals.passed,
+    accuracy: ratio(totals.passed, cases.length),
+    wrongAutoSends: tally.wrongAutoSends,
+    autoSends: totals.answer,
+    held: totals.escalate,
+    heldRate: ratio(totals.escalate, cases.length),
+    missedAnswers: tally.missedAnswers,
+    safetyChecks: tally.safetyChecks,
+    safetyPassed: tally.safetyPassed,
+    safetyPassRate: ratio(tally.safetyPassed, tally.safetyChecks),
+  };
+  return { failed, lines, metrics, failures };
 }

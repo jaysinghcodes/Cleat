@@ -1,0 +1,75 @@
+{
+  "about": "Extra coach notes and one client program used only by the expanded eval set. The seeded demo still ships the five demo articles. These are made up for a fictional gym.",
+  "articles": [
+    {
+      "id": "e1500000-0000-4000-8000-000000000001",
+      "title": "Late cancel and no show policy",
+      "category": "rules",
+      "body": "Cancel at least 12 hours before your session and nothing is charged. You can cancel from the Book tab.\n\nA late cancel inside 12 hours counts as a used session. A no show also counts as a used session.\n\nIf you are running late, the session still ends at the booked time. After 15 minutes the slot is released."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000002",
+      "title": "Warm up routine",
+      "category": "faq",
+      "body": "Start every session with 5 minutes on the bike or the rower at an easy pace.\n\nThen do two ramp sets of your first lift. Use half the working weight for the first ramp set and three quarters for the second.\n\nSave long static stretching for after the session. Before lifting, keep stretches short and moving."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000003",
+      "title": "Rest between sets",
+      "category": "faq",
+      "body": "Rest 2 to 3 minutes between sets of big lifts like squats, deadlifts, bench press, and rows.\n\nRest 60 to 90 seconds between sets of accessory exercises like curls, raises, and lunges.\n\nThe Log tab has a rest timer. It starts when you mark a set done."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000004",
+      "title": "When to add weight",
+      "category": "faq",
+      "body": "Add weight when you finish every set at the top of the rep range with two reps left in the tank.\n\nGo up 5 pounds on upper body lifts and 10 pounds on lower body lifts the next session.\n\nIf you miss reps two sessions in a row, stay at that weight for one more week before going up again."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000005",
+      "title": "Missed workouts",
+      "category": "faq",
+      "body": "If you miss a workout, do it on your next training day and push the rest of the week back by one day. Do not double up two workouts in one day.\n\nIf you miss more than a week, restart the current week from day one."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000006",
+      "title": "Logging your workout",
+      "category": "faq",
+      "body": "Open the Log tab and tap the exercise. Enter the weight and reps for each set, then tap Done.\n\nLogging works without a signal. Your sets are saved on the phone and sync when you are back online.\n\nYou can skip a workout from the Log tab. Add a short reason so your coach can see why."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000007",
+      "title": "Gym hours",
+      "category": "faq",
+      "body": "The gym is open 6 am to 9 pm on weekdays and 8 am to 2 pm on Saturday and Sunday.\n\nThe gym is closed on public holidays. Holiday closures are posted on the front door a week ahead."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000008",
+      "title": "Equipment is taken",
+      "category": "faq",
+      "body": "If the squat rack is taken, do goblet squats or the leg press for that day.\n\nIf the bench is taken, use dumbbells on the floor or an incline bench.\n\nWrite the change in the exercise note when you log it so your coach knows what you did."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000009",
+      "title": "Session packs",
+      "category": "rules",
+      "body": "Sessions are sold in packs of 5 or 10. A pack expires 90 days after you buy it and unused sessions do not roll over.\n\nYou can freeze a pack once for up to 30 days. Ask at the front desk to start a freeze."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000010",
+      "title": "What to bring",
+      "category": "faq",
+      "body": "Bring a water bottle, a small towel, and flat shoes. Chalk is at the front desk.\n\nEach session runs 45 minutes. Arrive 5 minutes early so you can start your warm up on time."
+    },
+    {
+      "id": "e1500000-0000-4000-8000-000000000011",
+      "title": "What RPE means",
+      "category": "faq",
+      "body": "RPE is how hard a set felt on a scale of 1 to 10. RPE 8 means you had two reps left. RPE 10 means you had none left.\n\nMost working sets in your program should land at RPE 7 or 8."
+    }
+  ],
+  "program": {
+    "name": "Foundation 3-day",
+    "text": "Program: Foundation 3-day\nLower A\nBack squat. 3 sets of 8. Brace before you descend.\nRomanian deadlift. 3 sets of 8. Soft knees, flat back.\nWalking lunge. 2 sets of 10. Short steps.\nUpper\nBench press. 3 sets of 8. Feet planted.\nBarbell row. 3 sets of 8. Pause at the hip.\nOverhead press. 3 sets of 6. Ribs down.\nFull body\nGoblet squat. 3 sets of 10. Elbows inside the knees.\nPush up. 3 sets of 8. Body in one line.\nHip hinge. 3 sets of 10. Light and smooth."
+  }
+}
