@@ -74,28 +74,38 @@ export type ProgramDay = {
   exercises: ProgramExercise[];
 };
 
+/** "8" and "8 to 10" are rep counts. "30 seconds" and "AMRAP" already say what they are. */
+const PLAIN_REPS = /^\d+(?:\s*(?:to|-)\s*\d+)?$/;
+
+/**
+ * The text the assistant searches for a client's program.
+ * Days are numbered and plain rep counts end with the word reps, because clients
+ * ask about "day 2" and "how many reps" and the search matches on words.
+ */
 export function programSourceText(program: {
   name: string;
   days: ProgramDay[];
 }): string {
   const lines = [`Program: ${program.name}`];
   const days = [...program.days].sort((left, right) => left.position - right.position);
-  for (const day of days) {
+  days.forEach((day, index) => {
     if (day.rest) {
-      lines.push(`${day.name}: rest`);
-      continue;
+      lines.push(`Day ${index + 1}: ${day.name}. Rest day.`);
+      return;
     }
-    lines.push(day.name);
+    lines.push(`Day ${index + 1}: ${day.name}`);
     const exercises = [...day.exercises].sort((left, right) => left.position - right.position);
     for (const exercise of exercises) {
       const notes = exercise.notes.trim();
+      const reps = exercise.reps.trim();
+      const count = PLAIN_REPS.test(reps) ? `${reps} reps` : reps;
       lines.push(
         notes
-          ? `${exercise.name}. ${exercise.sets} sets of ${exercise.reps}. ${notes}`
-          : `${exercise.name}. ${exercise.sets} sets of ${exercise.reps}.`,
+          ? `${exercise.name}. ${exercise.sets} sets of ${count}. ${notes}`
+          : `${exercise.name}. ${exercise.sets} sets of ${count}.`,
       );
     }
-  }
+  });
   return lines.join("\n");
 }
 

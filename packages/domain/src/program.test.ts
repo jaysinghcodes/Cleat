@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  programSourceText,
   adherenceLabel,
   buildAccountability,
   dayStatus,
@@ -309,5 +310,37 @@ test("today with no log on a training day is missed, and a full log is done", ()
       sets: [],
     }),
     "done",
+  );
+});
+
+test("program search text numbers the days and names plain rep counts", () => {
+  const exercise = { id: "e", position: 0, name: "Back squat", sets: 3, reps: "8", notes: "Brace.", videoUrl: null };
+  const text = programSourceText({
+    name: "Foundation 3-day",
+    days: [
+      { id: "b", position: 1, name: "Recovery", rest: true, exercises: [] },
+      {
+        id: "a",
+        position: 0,
+        name: "Lower A",
+        rest: false,
+        exercises: [
+          exercise,
+          { ...exercise, id: "f", position: 1, name: "Plank", sets: 2, reps: "30 seconds", notes: "" },
+          { ...exercise, id: "g", position: 2, name: "Curl", sets: 3, reps: "8 to 10", notes: "" },
+        ],
+      },
+    ],
+  });
+  assert.equal(
+    text,
+    [
+      "Program: Foundation 3-day",
+      "Day 1: Lower A",
+      "Back squat. 3 sets of 8 reps. Brace.",
+      "Plank. 2 sets of 30 seconds.",
+      "Curl. 3 sets of 8 to 10 reps.",
+      "Day 2: Recovery. Rest day.",
+    ].join("\n"),
   );
 });
