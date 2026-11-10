@@ -18,6 +18,9 @@ export type EvalContext = {
 export type EvalResult = {
   label: EvalLabel;
   templateId: TemplateId | null;
+};
+
+export type EvalDetailResult = EvalResult & {
   /** The heuristic score behind the decision. Not a probability. */
   confidence: number;
   reasonCodes: ReasonCode[];
@@ -25,6 +28,12 @@ export type EvalResult = {
 
 /** Ticket 7 calls this with the eval set. Refusals include the template id. */
 export async function evaluateMessage(message: string, context: EvalContext = {}): Promise<EvalResult> {
+  const { label, templateId } = await evaluateMessageDetail(message, context);
+  return { label, templateId };
+}
+
+/** The same gate as evaluateMessage, with the score and reason codes kept for eval reports. */
+export async function evaluateMessageDetail(message: string, context: EvalContext = {}): Promise<EvalDetailResult> {
   const settings: TurnSettings = {
     autoSend: context.autoSend ?? true,
     threshold: context.threshold ?? DEFAULT_THRESHOLD,

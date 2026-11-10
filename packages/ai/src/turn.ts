@@ -217,7 +217,7 @@ export async function planClientTurn(input: {
   const refusal = checkRefusals(input.message);
   const retrieval = scoreRetrieval(
     input.message,
-    input.chunks.map((chunk) => ({ snippet: chunk.snippet, score: chunk.score })),
+    input.chunks.map((chunk) => ({ snippet: chunk.snippet, score: chunk.vectorScore ?? chunk.score })),
   );
   const sources = sourcesFromChunks(input.chunks);
   const auditChunks: AuditChunk[] = input.chunks.map((chunk) => ({

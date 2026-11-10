@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEMO_ARTICLES, DEMO_ORG_ID } from "../../db/src/demo-copy";
-import { chunkArticle } from "./chunk";
+import { chunkArticle, chunkArticleByParagraph, chunkProgramByDay } from "./chunk";
 import { hashEmbedder, type Embedder } from "./embeddings";
-import { evaluateMessage, type EvalLabel, type EvalResult } from "./eval";
+import { evaluateMessageDetail, type EvalDetailResult, type EvalLabel } from "./eval";
 import { cannedChatModel, type ChatModel } from "./models";
 import { checkRefusals, type TemplateId } from "./refusals";
-import { retrieve, type RetrievedChunk, type StoredChunk } from "./retrieve";
+import { retrieve, type RetrievedChunk, type RetrieveOptions, type StoredChunk } from "./retrieve";
 import { cosineSimilarity } from "./text";
 import { planClientTurn } from "./turn";
 
@@ -256,18 +256,31 @@ async function gateMatches(message: string, gate: EvalGate): Promise<boolean> {
   );
 }
 
+/** paragraph applies to notes and to the program. The other two change one side only. */
+export type EvalChunking = "note" | "paragraph" | "paragraph-notes" | "program-days";
+
 export type EvalOptions = {
   /** demo is the five seeded articles. extended adds docs/eval-notes.json and one client program. */
   corpus?: EvalCorpus;
   threshold?: number;
+  /** note keeps a whole note together up to 700 characters. paragraph makes one snippet per paragraph and per program day. */
+  chunking?: EvalChunking;
+  retrieval?: RetrieveOptions;
 };
 
-async function buildCorpus(embedder: Embedder, corpus: EvalCorpus): Promise<StoredChunk[]> {
+async function buildCorpus(
+  embedder: Embedder,
+  corpus: EvalCorpus,
+  chunking: EvalChunking,
+): Promise<StoredChunk[]> {
   const stored: StoredChunk[] = [];
   const notes = corpus === "extended" ? loadEvalNotes() : null;
   const articles = [...DEMO_ARTICLES, ...(notes?.articles ?? [])];
   for (const article of articles) {
-    const snippets = chunkArticle(article.title, article.body);
+    const snippets =
+      chunking === "paragraph" || chunking === "paragraph-notes"
+        ? chunkArticleByParagraph(article.title, article.body)
+        : chunkArticle(article.title, article.body);
     const vectors = await embedder.embed(snippets);
     snippets.forEach((snippet, index) => {
       stored.push({
@@ -283,7 +296,8 @@ async function buildCorpus(embedder: Embedder, corpus: EvalCorpus): Promise<Stor
     });
   }
   if (notes) {
-    const snippets = [notes.program.text];
+    const snippets =
+      chunking === "paragraph" || chunking === "program-days" ? chunkProgramByDay(notes.program.text) : [notes.program.text];
     const vectors = await embedder.embed(snippets);
     snippets.forEach((snippet, index) => {
       stored.push({
@@ -321,15 +335,15 @@ export function metricLines(label: string, metrics: EvalMetrics): string[] {
   ];
 }
 
-type EvalDetail = { item: EvalCase; chunks: RetrievedChunk[]; result: EvalResult };
+type EvalDetail = { item: EvalCase; chunks: RetrievedChunk[]; result: EvalDetailResult };
 
 async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ mode: string; details: EvalDetail[] }> {
   const { embedder, chat, mode } = await runtime();
-  const stored = await buildCorpus(embedder, options.corpus ?? "demo");
+  const stored = await buildCorpus(embedder, options.corpus ?? "demo", options.chunking ?? "note");
   const details: EvalDetail[] = [];
   for (const item of cases) {
     const chunks = await retrieve(
-      { orgId: DEMO_ORG_ID, clientId: CLIENT_ID, message: item.message, k: 5 },
+      { orgId: DEMO_ORG_ID, clientId: CLIENT_ID, message: item.message, k: 5, options: options.retrieval },
       {
         embedder,
         store: {
@@ -352,7 +366,7 @@ async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ m
         },
       },
     );
-    const result = await evaluateMessage(item.message, { chunks, autoSend: true, chat, threshold: options.threshold });
+    const result = await evaluateMessageDetail(item.message, { chunks, autoSend: true, chat, threshold: options.threshold });
     details.push({ item, chunks, result });
   }
   return { mode, details };
