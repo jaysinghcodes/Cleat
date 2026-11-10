@@ -3,6 +3,7 @@ import {
   blendConfidence,
   scoreRetrieval,
   type AiDecision,
+  type ConfidenceWeights,
   type Band,
   type ReasonCode,
 } from "./confidence";
@@ -212,12 +213,19 @@ export async function planClientTurn(input: {
   settings: TurnSettings;
   chat: ChatModel;
   now: string;
+  /** Eval sweeps only. Production uses the default weights. */
+  weights?: ConfidenceWeights;
 }): Promise<AiPlan> {
   void input.threadId;
   const refusal = checkRefusals(input.message);
   const retrieval = scoreRetrieval(
     input.message,
-    input.chunks.map((chunk) => ({ snippet: chunk.snippet, score: chunk.vectorScore ?? chunk.score })),
+    input.chunks.map((chunk) => ({
+      snippet: chunk.snippet,
+      score: chunk.vectorScore ?? chunk.score,
+      coverage: chunk.coverage,
+    })),
+    input.weights,
   );
   const sources = sourcesFromChunks(input.chunks);
   const auditChunks: AuditChunk[] = input.chunks.map((chunk) => ({

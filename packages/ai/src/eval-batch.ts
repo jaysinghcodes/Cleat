@@ -2,12 +2,14 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEMO_ARTICLES, DEMO_ORG_ID } from "../../db/src/demo-copy";
+import type { ConfidenceWeights } from "./confidence";
 import { chunkArticle, chunkArticleByParagraph, chunkProgramByDay } from "./chunk";
 import { hashEmbedder, type Embedder } from "./embeddings";
 import { evaluateMessageDetail, type EvalDetailResult, type EvalLabel } from "./eval";
 import { cannedChatModel, type ChatModel } from "./models";
 import { checkRefusals, type TemplateId } from "./refusals";
 import { retrieve, type RetrievedChunk, type RetrieveOptions, type StoredChunk } from "./retrieve";
+import { keywordScorer } from "./keywords";
 import { cosineSimilarity } from "./text";
 import { planClientTurn } from "./turn";
 
@@ -265,6 +267,7 @@ export type EvalOptions = {
   threshold?: number;
   /** note keeps a whole note together up to 700 characters. paragraph makes one snippet per paragraph and per program day. */
   chunking?: EvalChunking;
+  weights?: ConfidenceWeights;
   retrieval?: RetrieveOptions;
 };
 
@@ -366,7 +369,13 @@ async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ m
         },
       },
     );
-    const result = await evaluateMessageDetail(item.message, { chunks, autoSend: true, chat, threshold: options.threshold });
+    const result = await evaluateMessageDetail(item.message, {
+      chunks,
+      autoSend: true,
+      chat,
+      threshold: options.threshold,
+      weights: options.weights,
+    });
     details.push({ item, chunks, result });
   }
   return { mode, details };
@@ -382,6 +391,35 @@ export async function explainEval(cases: EvalCase[], options: EvalOptions = {}):
       .join(" | ");
     return `${item.id}  want ${item.expected}  got ${result.label}  score ${result.confidence.toFixed(3)}  [${result.reasonCodes.join(",")}]  ${top}`;
   });
+}
+
+/** Raw signals behind each row, for tuning the score on the dev split. */
+export async function evalFeatures(cases: EvalCase[], options: EvalOptions = {}): Promise<string[]> {
+  const { details } = await evalDetails(cases, options);
+  return details
+    .filter(({ result }) => result.label !== "refuse")
+    .map(({ item, chunks }) => {
+      const top = chunks[0];
+      const scorer = keywordScorer(
+        item.message,
+        chunks.map((chunk) => chunk.snippet),
+      );
+      const other = chunks.find((chunk) => chunk.articleId !== top?.articleId || chunk.source !== top?.source);
+      const right =
+        item.noteIncludes == null ? "-" : (top?.snippet ?? "").toLowerCase().includes(item.noteIncludes.toLowerCase()) ? "Y" : "N";
+      return [
+        item.expected === "answer" ? "ANS" : "esc",
+        right,
+        `vec ${(top?.vectorScore ?? top?.score ?? 0).toFixed(2)}`,
+        `cov ${(top?.coverage ?? 0).toFixed(2)}`,
+        `phr ${top ? scorer.score(top.snippet).phrase.toFixed(2) : "0"}`,
+        `rank ${(top?.score ?? 0).toFixed(2)}`,
+        `next ${(other?.score ?? 0).toFixed(2)}`,
+        `terms ${scorer.terms.length}`,
+        item.id,
+        `[${scorer.terms.join(" ")}]`,
+      ].join("  ");
+    });
 }
 
 export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}): Promise<EvalRun> {

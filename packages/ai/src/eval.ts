@@ -1,4 +1,4 @@
-import { DEFAULT_THRESHOLD, type ReasonCode } from "./confidence";
+import { DEFAULT_THRESHOLD, type ConfidenceWeights, type ReasonCode } from "./confidence";
 import { cannedChatModel, type ChatModel } from "./models";
 import type { TemplateId } from "./refusals";
 import type { RetrievedChunk } from "./retrieve";
@@ -13,6 +13,7 @@ export type EvalContext = {
   signOff?: string;
   toneNotes?: string;
   chat?: ChatModel;
+  weights?: ConfidenceWeights;
 };
 
 export type EvalResult = {
@@ -50,6 +51,7 @@ export async function evaluateMessageDetail(message: string, context: EvalContex
     settings,
     chat: context.chat ?? cannedChatModel,
     now: "2026-10-08T00:00:00.000Z",
+    weights: context.weights,
   });
   const detail = { confidence: plan.audit.confidence, reasonCodes: plan.audit.reasonCodes };
   if (plan.audit.decision === "hard_refuse") {

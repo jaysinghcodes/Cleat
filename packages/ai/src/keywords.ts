@@ -14,6 +14,8 @@ const STOPWORDS = new Set(
     "not no dont doesnt cant wont isnt",
     "much many any some just really very still get got go going",
     "please thanks thank hey hi hello ok okay yes yeah",
+    "need want like look know tell use make let see say try",
+    "long instead now time thing something anything way sure again only well right yesterday",
   ]
     .join(" ")
     .split(" "),
