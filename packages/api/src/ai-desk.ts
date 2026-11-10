@@ -255,19 +255,20 @@ export async function saveUnansweredHours(supabase: CleatClient, orgId: string, 
 export async function actOnHeldDraft(
   supabase: CleatClient,
   origin: string,
-  input: { draftId: string; action: "send_edited" | "send_as_is" | "dismiss"; editedText?: string },
-): Promise<void> {
+  input: { draftId: string; action: "send_edited" | "send_as_is" | "dismiss"; editedText?: string; saveAsNote?: boolean },
+): Promise<{ noteSaved: boolean }> {
   const token = await authHeader(supabase);
   const response = await fetch(`${origin.replace(/\/$/, "")}/api/ai/drafts`, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
     body: JSON.stringify(input),
   });
+  const payload = (await response.json().catch(() => null)) as { error?: unknown; noteSaved?: unknown } | null;
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: unknown } | null;
     const message = payload && typeof payload.error === "string" ? payload.error : aiCopy.loadFailed;
     throw new CleatRequestError(message);
   }
+  return { noteSaved: payload?.noteSaved === true };
 }
 
 export async function resolveInboxItem(

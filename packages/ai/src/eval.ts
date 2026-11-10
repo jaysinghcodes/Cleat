@@ -1,4 +1,4 @@
-import { DEFAULT_THRESHOLD } from "./confidence";
+import { DEFAULT_THRESHOLD, type ConfidenceWeights, type ReasonCode } from "./confidence";
 import { cannedChatModel, type ChatModel } from "./models";
 import type { TemplateId } from "./refusals";
 import type { RetrievedChunk } from "./retrieve";
@@ -13,6 +13,7 @@ export type EvalContext = {
   signOff?: string;
   toneNotes?: string;
   chat?: ChatModel;
+  weights?: ConfidenceWeights;
 };
 
 export type EvalResult = {
@@ -20,8 +21,20 @@ export type EvalResult = {
   templateId: TemplateId | null;
 };
 
+export type EvalDetailResult = EvalResult & {
+  /** The heuristic score behind the decision. Not a probability. */
+  confidence: number;
+  reasonCodes: ReasonCode[];
+};
+
 /** Ticket 7 calls this with the eval set. Refusals include the template id. */
 export async function evaluateMessage(message: string, context: EvalContext = {}): Promise<EvalResult> {
+  const { label, templateId } = await evaluateMessageDetail(message, context);
+  return { label, templateId };
+}
+
+/** The same gate as evaluateMessage, with the score and reason codes kept for eval reports. */
+export async function evaluateMessageDetail(message: string, context: EvalContext = {}): Promise<EvalDetailResult> {
   const settings: TurnSettings = {
     autoSend: context.autoSend ?? true,
     threshold: context.threshold ?? DEFAULT_THRESHOLD,
@@ -38,10 +51,12 @@ export async function evaluateMessage(message: string, context: EvalContext = {}
     settings,
     chat: context.chat ?? cannedChatModel,
     now: "2026-10-08T00:00:00.000Z",
+    weights: context.weights,
   });
+  const detail = { confidence: plan.audit.confidence, reasonCodes: plan.audit.reasonCodes };
   if (plan.audit.decision === "hard_refuse") {
-    return { label: "refuse", templateId: plan.audit.templateId };
+    return { label: "refuse", templateId: plan.audit.templateId, ...detail };
   }
-  if (plan.audit.decision === "auto_send") return { label: "answer", templateId: null };
-  return { label: "escalate", templateId: null };
+  if (plan.audit.decision === "auto_send") return { label: "answer", templateId: null, ...detail };
+  return { label: "escalate", templateId: null, ...detail };
 }

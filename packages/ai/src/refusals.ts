@@ -1,3 +1,4 @@
+import { oneEditApart } from "./keywords";
 import { normalizeText } from "./text";
 
 /**
@@ -52,6 +53,40 @@ const SELF_HARM: RegExp[] = [
   /don'?t want to be alive/,
   /do not want to be alive/,
   /dont want to be alive/,
+  // Red team additions. Slang, softer wording, and overdose wording.
+  /\bunaliv/,
+  /\bkms\b/,
+  /\boff(?:ing)? myself\b/,
+  /\bcutting myself\b/,
+  /\b(?:hang|shoot|drown)(?:ing)? myself\b/,
+  /\btak(?:e|ing) my (?:own )?life\b/,
+  /\b(?:think(?:ing)?|thought|thoughts) (?:about|of) ending (?:things|everything)\b/,
+  /\bend(?:ing)? everything\b/,
+  /\bpoint (?:in|to|of) (?:living|life|going on)\b/,
+  /\bbetter off without me\b/,
+  /\b(?:life|living) (?:is not|isn'?t|isnt) worth\b/,
+  /\bnot worth living\b/,
+  /\bcan(?:not|'t|t) go on (?:anymore|any more|any longer|like this|living)\b/,
+  /\bnever wake up\b/,
+  /\b(?:want(?:s|ed|ing)?|wish(?:ed|ing)?|like) to (?:just )?disappear\b/,
+  /\bdisappear forever\b/,
+  /\boverdos/,
+  /\b(?:pills?|meds|medication|tablets)\b[^.]{0,40}\bon purpose\b/,
+  /\bon purpose\b[^.]{0,40}\b(?:pills?|meds|medication|tablets)\b/,
+  // Red team round two. Hopeless wording that never names death.
+  /\b(?:reason|point) to (?:live|be here|be alive|exist|go on|carry on|keep going)\b(?! (?:with|to the|on the))/,
+  /\b(?:not|stop|cease to|rather not) exist(?:ing)?\b/,
+  /\b(?:happier|better|better off|easier)\b[^.]{0,30}\bif i (?:was|were|wasn'?t|am) (?:gone|dead|not here|not around|never born)\b/,
+  /\b(?:want|wish|hope|like)\b[^.]{0,30}\bnot wake up\b/,
+  /\b(?:done|finished|through) with (?:life|living|it all)\b/,
+  /\b(?:hate|tired of|sick of) (?:my life|living|being alive)\b/,
+  /\bjump(?:ing)? (?:off|in front of) (?:a |the |my )?(?:bridge|building|roof|balcony|cliff|train|bus|car)\b/,
+  /\b(?:nobody|no one|noone)(?: would| will|'d)? (?:even )?(?:miss me|care if i)\b/,
+  /\b(?:my )?life (?:is|feels|seems) (?:pointless|meaningless|worthless|not worth)\b|\bi(?:'m| am|m) (?:worthless|a burden)\b/,
+  /\bdark thoughts\b|\bgoodbye (?:everyone|everybody|forever|world)\b|\bmy last message\b|\blast time you(?:'ll| will) hear from me\b/,
+  /\b(?:fine|better|happier|ok|okay) without me\b|\bnothing (?:left for me|to live for)\b|\bno way out\b/,
+  /\btake (?:all|the whole bottle of|a bunch of|too many)\b[^.]{0,20}\b(?:pills?|meds|medication|tablets)\b/,
+  /\b(?:going to|gonna|want to|wanna|about to|plan(?:ning)? to|ready to) end (?:things|everything)\b/,
 ];
 
 /** Emergency checks run before medical checks. Patterns lean toward over flagging. */
@@ -74,7 +109,7 @@ const EMERGENCY: RegExp[] = [
   /face (?:feels |is )?numb/,
   /side of my face/,
   /\bslurr/,
-  /\bstroke\b/,
+  /(?<!\b(?:rowing|row|rower|swim|swimming|each|per|every|long|short|power|pull|bike) )\bstroke\b(?! rate)/,
   /facial droop/,
   /\bnumb\b/,
   /heart attack/,
@@ -83,23 +118,54 @@ const EMERGENCY: RegExp[] = [
   /\b(?:racing|pounding|irregular)\b[^.]{0,40}\bheart(?:beat)?s?\b/,
   /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:racing|pounding|irregular)\b/,
   /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) (?:slow|settle)/,
+  // Red team additions. Misspellings, plain language for the same symptoms, and signs that were missing.
+  /\bche(?:a|s)st\b|\bchets\b|\bchst\b/,
+  /can(?:not|'t|t)(?: \w+)? breathe?\b/,
+  /\b(?:barely|hardly|unable to|struggl\w+ to) breathe?\b/,
+  /\bgasp(?:s|ed|ing)?\b/,
+  /\bwheez/,
+  /\bdizz?[yi]/,
+  /\bwooz/,
+  /\b(?:room|everything|head|world) (?:is|was|started|keeps|kept) spinning\b/,
+  /\bwent (?:black|dark)\b/,
+  /\bcollaps/,
+  /\bunconscious\b|\bunresponsive\b|\bnot responding\b/,
+  /\bblood\b(?! (?:is |was )?(?:pressure|sugar|pumping|flow|flowing|test|tests|work))/,
+  /\bseizure|\bconvuls/,
+  /\bthroat\b[^.]{0,24}\b(?:closing|closed|tight|swelling|swollen)\b/,
+  /\ballergic reaction\b|\banaphyla|\bepipen\b/,
+  /\bnumbness\b|\btingl/,
+  /\bhit (?:my|his|her|their) head\b|\bconcuss|\bhead injury\b/,
+  /\b(?:vision|eyesight)\b[^.]{0,30}\b(?:blurr\w*|black|dark|tunnel|double)\b/,
+  /\bblurr(?:y|ed) vision\b|\bseeing (?:stars|double|spots)\b/,
+  /\bjaw\b[^.]{0,30}\b(?:ach\w*|hurts?|pain\w*|tight)\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:beating|going|thumping) (?:so |really |very |too |super )?(?:fast|hard)\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) calm\b/,
+  // Red team round two. Colour change, loss of feeling, and breathing attacks.
+  /\b(?:lips?|face|fingers?|fingertips|skin)\b[^.]{0,20}\b(?:turn(?:s|ing|ed)?|going|gone|went|are|is|look(?:s|ing)?) (?:blue|purple|grey|gray|white|pale)\b/,
+  /\b(?:can(?:not|'t|t)|could ?n[o']?t|couldnt|unable to) feel my\b/,
+  /\basthma attack\b|\bpanic attack\b|\bslurr/,
+  /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:skip\w*|flutter\w*)\b|\bpalpitat/,
+  /\bwent (?:fuzzy|blurry|white|grey|gray)\b|\bi hit the (?:floor|ground)\b/,
+  /\b(?:get|getting|catch|catching) (?:any |enough )?air\b|\bchok(?:e|ed|ing)\b(?! up on)/,
+  /\b(?:worst|sudden|severe|splitting|thunderclap) headache\b/,
+  /\b(?:not|isn'?t|is not|won'?t|will not|stopped) (?:waking up|wake up|breathing|moving)\b(?<!\bdid not wake up)/,
 ];
 
 const MEDICAL: RegExp[] = [
-  /\bpain\b/,
-  /\bhurts?\b/,
-  /\bhurting\b/,
+  /\bpain(?:s|ful|fully|killers?)?\b/,
+  /\bhurt(?:s|ing|y)?\b/,
   /\binjur/,
-  /\bknee\b/,
-  /\bshoulder\b/,
-  /\bankle\b/,
-  /\bhip\b/,
+  /\bknees?\b/,
+  /\bshoulders?\b/,
+  /\bankles?\b/,
+  /\bhips?\b/,
   /pulled muscle/,
-  /\bstrain\b/,
-  /\bsprain\b/,
+  /\bstrain(?:s|ed)?\b/,
+  /\bsprain(?:s|ed)?\b/,
   /heart condition/,
   /heart disease/,
-  /\bdiabetes\b/,
+  /\bdiabet/,
   /blood sugar/,
   /blood pressure/,
   /\bpregnan/,
@@ -123,6 +189,39 @@ const MEDICAL: RegExp[] = [
   /what should i eat/,
   /eating plan/,
   /\bnutrition\b/,
+  // Red team additions. Conditions, clinicians, drugs, supplements, illness, and diet asks that were missing.
+  /\bach(?:e|es|ing|y)\b/,
+  /\bswollen\b|\bswelling\b|\binflam/,
+  /\brotator cuff\b|\bmeniscus\b|\bsciatic|\bhernia|\b(?:slipped|bulging|herniated) dis[ck]\b/,
+  /\bfractur|\bdislocat|\bbroken? (?:my|a|an|his|her|their)\b|\bstitches\b|\bconcuss/,
+  /\bsurger|\bsurgeon\b|\bphysio|\bphysical therap|\bchiropract|\bx-?ray\b|\bmri\b|\bdiagnos/,
+  /\bfever|\bflu\b|\bnause|\bvomit|\bthrew up\b|\bthrowing up\b|\binfection\b|\bcovid\b|\bmigraine/,
+  /\b(?:feel(?:s|ing)?|felt|am|i'm|im|been|got|getting|was) (?:\w+ )?sick\b(?! of)/,
+  /\bnaproxen\b|\baleve\b|\bmotrin\b|\bacetaminophen\b|\bparacetamol\b|\bmuscle relax/,
+  /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
+  /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bcreatine\b|\bsupplements?\b|\bpre-?workout\b|\bfat burners?\b/,
+  /\b(?:how (?:much|many)|should i|do i need|what)\b[^.?!]{0,40}\b(?:protein|carbs?|carbohydrates?|fats?|sugar|fib(?:er|re)|sodium)\b[^.?!]{0,30}\b(?:eat|eating|have|need|take|get|consume|a day|per day|daily)\b/,
+  /\bfasting\b|\bketo\b|\blow carb\b|\b(?:what|which|best|good|a|my|crash|on a|this) diet\b(?! (?:coke|soda|pepsi|sprite|drinks?))|\bdieting\b|\blos(?:e|ing) weight\b|\bweight loss\b/,
+  // Red team round two. Named conditions, more drugs, clinicians, not eating, and stomach trouble.
+  /\b[a-z]+itis\b|\bsplints?\b|\btendon|\barthrit|\basthma|\bscolios|\bosteo|\bepilep|\bcancer\b|\bchemo|\banemi|\bthyroid|\bcholesterol|\bhypertens|\bvertigo\b/,
+  /\badderall\b|\bbeta ?blockers?\b|\bstatins?\b|\bblood thinners?\b|\bxanax\b|\bopioid|\boxy(?:codone|contin)\b|\bantihistamine|\bmetformin\b|\bozempic\b|\bwegovy\b|\bsemaglutide\b/,
+  /\b(?:dr|doc|docs|gp|cardiologist|physician|nurse|specialist|orthopedist|ortho)\b/,
+  /\b(?:have ?n[o']?t|havent|not|did ?n[o']?t|didnt|barely|hardly) (?:eaten|eat|ate|eating)\b|\bstarv|\bskip(?:ping|ped)? meals\b|\bpurg(?:e|ing)\b|\bbinge|\blaxative/,
+  /\bsick to my stomach\b|\bstomach (?:ache|hurts|bug|cramps?)\b|\bqueasy\b/,
+  /\bthrew (?:out )?my (?:lower |upper )?(?:back|neck|shoulder)\b|\bthrew (?:my )?(?:lower |upper )?(?:back|neck) out\b/,
+  /\b(?:back|neck|spine|knees?|elbows?|wrists?|ankles?|hips?|shoulders?|joints?)\b[^.]{0,30}\bon fire\b/,
+  /\b(?:been|am|i'?m|started|start|back to) cutting\b(?! (?:the|my|this|that|it|out|back|down|up)\b)/,
+  /\bbad (?:dis[ck]|back|neck|wrist|elbow)\b|\bdis[ck] (?:issue|problem|injur)/,
+  /\b(?:high|low) bp\b|\bbp (?:is|was|meds)\b/,
+  /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)|\bmelatonin\b|\bsleeping pills?\b|\bsleep aids?\b|\bcaffeine pills?\b/,
+  /\bsafe to (?:lift|train|run|work ?out|exercise|squat|deadlift|bench|press|row)\b/,
+  /\bwater weight\b|\bweigh ?in\b|\bsweat(?:ing)? (?:it|weight) (?:out|off)\b|\bdehydrat|\bsauna suit\b/,
+  /\b(?:bad|awful|terrible|severe|horrible) cramps?\b|\bcramps? (?:are|is|were) (?:so |really )?(?:bad|awful|terrible|severe)\b|\bperiod cramps?\b|\bmenstrua/,
+  /\b(?:tennis|golfers?) elbow\b|\b(?:runners?|jumpers?) knee\b|\bfrozen shoulder\b|\bcarpal tunnel\b/,
+  /\b(?:got|have|having|caught|with|fighting) a (?:bad |head |chest )?cold\b|\bunder the weather\b|\bunwell\b|\bsore throat\b|\bcough|\bcongest|\bfeel(?:ing)? ill\b/,
+  /\b(?:achilles|acl|mcl|pcl|labrum|it band)\b|\b(?:repair|reconstruction|replacement|operation|post ?op|rehab)\b/,
+  /\burin|\bpee(?:ing)? (?:is |was )?(?:dark|brown|red|blood)|\bdark pee\b|\bheadaches?\b/,
+  /\bic(?:e|ing) (?:it|or heat|my)\b|\bheat (?:it|pack|pad)\b|\bice pack\b|\b(?:slept|sleeping) (?:wrong|funny|weird)\b/,
   /**
    * tore, torn, pulled, strained, or tweaked, next to a hamstring, calf, quad, groin, or acl.
    * "hamstring curls" and "calf raises" do not match. A die joke later in the message still does.
@@ -130,6 +229,91 @@ const MEDICAL: RegExp[] = [
   /\b(?:tore|torn|pulled|strained|tweaked)\b(?:\s+(?:a|an|my|the|his|her|their|left|right|both|badly|really|just|up|slightly|pretty|so|very)){0,4}\s+(?:hamstrings?|calves|calf|quadriceps|quads?|groins?|acls?)\b/,
   /\b(?:(?:a|an|my|the|his|her|their)\s+)?(?:(?:left|right|both)\s+)?(?:hamstrings?|calves|calf|quadriceps|quads?|groins?|acls?)\b(?:\s+(?:is|was|got|feels|feel|feeling|really|badly|just|so|very|still)){0,3}\s+(?:tore|torn|pulled|strained|tweaked)\b/,
 ];
+
+/** A body part and a symptom word in one message is an injury, even when neither word is on the list alone. */
+const BODY_PART =
+  /\b(?:back|spine|neck|wrists?|elbows?|knees?|shoulders?|ankles?|hips?|legs?|arms?|forearms?|hands?|fingers?|thumbs?|foot|feet|toes?|heels?|shins?|calf|calves|thighs?|quads?|hamstrings?|glutes?|groin|biceps?|triceps?|pecs?|lats?|traps?|abs|ribs?|joints?|muscles?|tendons?|ligaments?|achilles|head|jaw|collarbone)\b/;
+
+/** "sore", "tired", and "dead" are left out on purpose. They are normal after training. */
+const SYMPTOM =
+  /\b(?:killing me|pop(?:ped|ping)?|snapp(?:ed|ing)|buckl(?:ed|ing|es)|flar(?:e|es|ed|ing) up|acting up|shooting|radiat(?:es|ing)|unstable|wobbly|lumps?|bumps?|tweak(?:s|ed|ing|y)?|pulled|tore|torn|tear|spasm(?:s|ing)?|cramp(?:s|ed|ing)?|twinge(?:s|d)?|pinch(?:ed|ing)?|sharp|stabbing|throbbing|bruis(?:e|ed|ing)|locked up|gave out|giving out|click(?:s|ing)?|grind(?:s|ing)?|messed up|jacked up|feels (?:off|wrong|weird|funny))\b/;
+
+type Severity = "self_harm" | "emergency" | "medical";
+
+/**
+ * Longer safety words that are still caught when one letter is wrong, missing, extra, or swapped.
+ * The word has to start with the same letter. Short words like chest are not here because
+ * one edit turns them into everyday words. They have their own spelled out patterns.
+ */
+const TYPO_KEYWORDS: [string, Severity][] = [
+  ["suicide", "self_harm"],
+  ["suicidal", "self_harm"],
+  ["breathe", "emergency"],
+  ["breathing", "emergency"],
+  ["bleeding", "emergency"],
+  ["fainted", "emergency"],
+  ["fainting", "emergency"],
+  ["dizziness", "emergency"],
+  ["unconscious", "emergency"],
+  ["seizure", "emergency"],
+  ["injury", "medical"],
+  ["injured", "medical"],
+  ["ibuprofen", "medical"],
+  ["tylenol", "medical"],
+  ["aspirin", "medical"],
+  ["medication", "medical"],
+  ["medicine", "medical"],
+  ["shoulder", "medical"],
+  ["sprained", "medical"],
+  ["painful", "medical"],
+  ["painkiller", "medical"],
+  ["pregnant", "medical"],
+  ["diabetes", "medical"],
+  ["naproxen", "medical"],
+  ["swollen", "medical"],
+];
+
+/** Everyday words one edit away from a safety word. */
+const TYPO_ALLOWED = new Set(["breather", "aspiring", "blending", "breeding"]);
+
+function typoSeverity(text: string): Severity | null {
+  let worst: Severity | null = null;
+  for (const word of text.match(/[a-z]+/g) ?? []) {
+    if (word.length < 5 || TYPO_ALLOWED.has(word)) continue;
+    for (const [keyword, severity] of TYPO_KEYWORDS) {
+      if (word[0] !== keyword[0] || !oneEditApart(word, keyword)) continue;
+      if (severity === "self_harm") return "self_harm";
+      if (severity === "emergency" || worst === null) worst = severity;
+    }
+  }
+  return worst;
+}
+
+/** Look alike letters from other alphabets, mapped to the plain letter. */
+const LOOK_ALIKE: Record<string, string> = {
+  "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "у": "y", "і": "i", "ј": "j", "ѕ": "s",
+  "һ": "h", "ԁ": "d", "к": "k", "м": "m", "т": "t", "н": "h", "в": "b",
+  "α": "a", "ε": "e", "ο": "o", "ι": "i", "κ": "k", "ρ": "p", "τ": "t", "υ": "u", "ν": "v",
+};
+
+const DIGIT_LETTER: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i" };
+
+/**
+ * Undoes the common ways a word is disguised: accents, look alike letters, hidden
+ * characters, a digit or symbol standing in for a letter inside a word, letters
+ * spaced or dotted apart, and a letter held down.
+ * "8am" and "3 sets" are left alone because the digit is not inside a word.
+ */
+export function undisguise(text: string, runLength: 1 | 2 = 2): string {
+  const plain = text
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, "")
+    .replace(/[^\u0000-\u007f]/g, (char) => LOOK_ALIKE[char] ?? char);
+  const letters = plain.replace(/(?<=[a-z][013457@$!]*)[013457@$!](?=[013457@$!]*[a-z])/g, (char) => DIGIT_LETTER[char] ?? char);
+  const joined = letters.replace(/\b(?:[a-z][ .\-_*]){2,}[a-z]\b/g, (run) => run.replace(/[ .\-_*]/g, ""));
+  return joined.replace(/([a-z])\1{2,}/g, (_run, letter: string) => letter.repeat(runLength));
+}
 
 /** Training words that make "hurt myself" or "injured myself" an injury, not self harm. */
 const TRAINING_CONTEXT =
@@ -162,6 +346,16 @@ const ASKS_FOR_COACH: RegExp[] = [
   /\bwant (?:my |the )?coach\b/,
   /\bmessage (?:my )?(?:coach|alex|trainer)\b/,
   /\bmy coach\b/,
+  // Red team additions. Asking for a person without the word coach.
+  /\b(?:real|actual|live) (?:person|human|coach|trainer)\b/,
+  /\ba human\b|\bsomeone real\b|\bnot a bot\b/,
+  /\b(?:tell|get|have|ask) (?:alex|(?:my |the )?(?:coach|trainer))\b/,
+  /\b(?:call|phone|ring) me\b/,
+  /\b(?:speak|talk|chat) (?:to|with) (?:someone|somebody|a person|him|her|alex)\b/,
+  /\bis (?:alex|(?:my |the )?(?:coach|trainer)) (?:around|there|in|available|free|online|here|about)\b/,
+  /\bsomeone who can (?:actually |really )?help\b|\bget me (?:someone|somebody|help)\b/,
+  /\b(?:speak|talk|chat) (?:to|with) (?:whoever|the (?:owner|manager|boss)|management)\b|\bwhoever (?:runs|is in charge)\b/,
+  /\b(?:alex|coach|trainer)\b[^.]{0,20}\b(?:text|call|message|email|ring|phone|contact|reach) me\b|\btext me\b/,
 ];
 
 const PROGRAM_SWAP: RegExp[] = [
@@ -175,6 +369,14 @@ const PROGRAM_SWAP: RegExp[] = [
   /\bswitch (?:my |the )?plan\b/,
   /\bchange (?:my |the )?plan\b/,
   /program swap/,
+  // Red team additions. A program change without the word program, or with it misspelled.
+  /\b(?:different|another|new) (?:routine|split|workouts?)\b/,
+  /\b(?:switch|swap|change|rewrite|redo|replace|quit) (?:me to |up )?(?:my |the |this |a |to a )?(?:whole )?(?:program\w*|routine|plan|workouts|split)\b/,
+  /\b(?:put|move|get) me on(?:to)? (?:a |another |the |some )?(?:different |new |other )?(?:plan|program\w*|routine|split)\b/,
+  /\b(?:different|another|new) plan\b/,
+  /\b(?:fresh|different|another|new) (?:routine|split|plan|program\w*)\b/,
+  /\b(?:program\w*|routine|plan|split)\b[^.]{0,30}\b(?:is not|isn'?t|not) (?:for me|working)\b|\bgive me something (?:else|different|new)\b/,
+  /\b(?:cancel|scrap|ditch|drop|restart|reset) (?:my |the |this )?(?:whole )?(?:program\w*|routine|plan|split)\b|\bstart (?:over|again from scratch|from scratch)\b/,
 ];
 
 export type HardRefusal = {
@@ -423,6 +625,20 @@ function dieClass(text: string): "self_harm" | "hold" | null {
   return hold ? "hold" : null;
 }
 
+/** Giving up wording that names no cause. */
+const HOPELESS =
+  /\bcan(?:not|'?t) (?:do|take|handle) (?:this|it|any of this) (?:anymore|any more|any longer)\b|\bwhat(?:'?s| is) the point\b(?! of\b)|\bno point (?:anymore|any more)\b/;
+
+/**
+ * "I can't do this anymore" and "what's the point" are self harm when the message
+ * has no training talk. With training talk they are a coach hold, the same rule
+ * the die jokes follow. "what's the point of a deload" is a normal question and is skipped.
+ */
+function hopelessClass(text: string): "self_harm" | "hold" | null {
+  if (!HOPELESS.test(text)) return null;
+  return DIE_TRAINING.test(text) ? "hold" : "self_harm";
+}
+
 function distressHold(text: string): DraftHold {
   const reasonCodes: HoldReason[] = ["distress_wording"];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
@@ -447,13 +663,14 @@ function distressHold(text: string): DraftHold {
  * Asks for the coach and program swaps are holds, not refusals.
  * This runs on the raw message, before retrieval.
  */
-export function checkRefusals(message: string): RefusalCheck {
-  const text = normalizeText(message);
+function classify(text: string): RefusalCheck {
   if (matches(text, SELF_HARM)) return selfHarmRefusal();
   const die = dieClass(text);
   if (die === "self_harm") return selfHarmRefusal();
   const endIt = endItClass(text);
   if (endIt === "self_harm") return selfHarmRefusal();
+  const hopeless = hopelessClass(text);
+  if (hopeless === "self_harm") return selfHarmRefusal();
   const directed = selfDirectedInjury(text);
   if (directed?.templateId === "emergency" && die === "hold") return selfHarmRefusal();
   if (directed) return directed;
@@ -462,10 +679,49 @@ export function checkRefusals(message: string): RefusalCheck {
     return emergencyRefusal();
   }
   if (matches(text, MEDICAL)) return medicalRefusal();
-  if (die === "hold" || endIt === "hold") return distressHold(text);
+  if (BODY_PART.test(text) && SYMPTOM.test(text)) return medicalRefusal();
+  if (die === "hold" || endIt === "hold" || hopeless === "hold") return distressHold(text);
   const reasonCodes: HoldReason[] = [];
   if (matches(text, ASKS_FOR_COACH)) reasonCodes.push("asks_for_coach");
   if (matches(text, PROGRAM_SWAP)) reasonCodes.push("program_swap");
   if (reasonCodes.length > 0) return { kind: "hold", reasonCodes };
   return { kind: "none" };
+}
+
+function rank(check: RefusalCheck): number {
+  if (check.kind === "none") return 0;
+  if (check.kind === "hold") return 1;
+  if (check.templateId === "medical_safety") return 2;
+  if (check.templateId === "emergency") return 3;
+  return 4;
+}
+
+function typoRefusal(text: string): RefusalCheck {
+  const severity = typoSeverity(text);
+  if (severity === "self_harm") return selfHarmRefusal();
+  if (severity === "emergency") return emergencyRefusal();
+  if (severity === "medical") return medicalRefusal();
+  return { kind: "none" };
+}
+
+/**
+ * The safety gate. Runs on the raw message, before retrieval, and never calls a model.
+ * The message is classified as written, then again with common disguises undone
+ * (look alike letters, digits for letters, spaced out letters, held down letters),
+ * and longer safety words are also caught one typo away.
+ * The most serious result wins: self harm, then emergency, then medical, then a hold.
+ */
+export function checkRefusals(message: string): RefusalCheck {
+  const text = normalizeText(message);
+  const variants = [...new Set([text, undisguise(text, 2), undisguise(text, 1)])];
+  let worst = classify(text);
+  for (const variant of variants.slice(1)) {
+    const next = classify(variant);
+    if (rank(next) > rank(worst)) worst = next;
+  }
+  for (const variant of variants) {
+    const next = typoRefusal(variant);
+    if (rank(next) > rank(worst)) worst = next;
+  }
+  return worst;
 }

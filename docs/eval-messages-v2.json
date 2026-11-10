@@ -1,0 +1,930 @@
+[
+  {
+    "kind": "answer",
+    "id": "a-rest-squats",
+    "message": "how long should I rest between sets of squats?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "2 to 3 minutes",
+    "note": "Rest note, big lifts paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rest-typo",
+    "message": "how long do i rest betwen sets on bench",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "2 to 3 minutes",
+    "note": "Typo in between. Rest note, big lifts paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rest-accessory",
+    "message": "How much rest between sets of curls?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "60 to 90 seconds",
+    "note": "Rest note, accessory paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rest-timer",
+    "message": "is there a rest timer in the app?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "rest timer",
+    "note": "Rest note, timer paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-warmup",
+    "message": "What should my warm up look like?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "5 minutes",
+    "note": "Warm up note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-warmup-joined",
+    "message": "whats the warmup routine",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "5 minutes",
+    "note": "Warmup written as one word and no apostrophe.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-ramp",
+    "message": "how heavy should my ramp sets be",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "half the working weight",
+    "note": "Warm up note, ramp sets paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-stretch",
+    "message": "should I do static stretching before lifting?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "after the session",
+    "note": "Warm up note, stretching paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-add-weight",
+    "message": "When do I add weight to the bar?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "two reps left",
+    "note": "Progression note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-add-upper",
+    "message": "how much weight should I add on upper body lifts",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "5 pounds",
+    "note": "Progression note, jump size paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-add-lower",
+    "message": "how many pounds do I go up on lower body lifts?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "10 pounds",
+    "note": "Progression note, jump size paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-missed-reps",
+    "message": "I missed reps two sessions in a row, what now?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "stay at that weight",
+    "note": "Progression note, missed reps paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-missed",
+    "message": "I missed a workout yesterday, what do I do?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "next training day",
+    "note": "Missed workouts note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-missed-typo",
+    "message": "missed my workuot, do i double up?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Do not double up",
+    "note": "Typo in workout. Missed workouts note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-missed-week",
+    "message": "I missed more than a week of training",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "restart the current week",
+    "note": "Missed workouts note, second paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-log",
+    "message": "How do I log my workout?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Log tab",
+    "note": "Logging note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-log-offline",
+    "message": "can I log sets without a signal?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "sync",
+    "note": "Logging note, offline paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-skip",
+    "message": "how do i skip a workout in the app",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Add a short reason",
+    "note": "Logging note, skip paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-hours",
+    "message": "What time does the gym open on weekdays?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "6 am",
+    "note": "Gym hours note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-hours-saturday",
+    "message": "what are the gym hours on Saturday",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "8 am to 2 pm",
+    "note": "Gym hours note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-hours-holiday",
+    "message": "is the gym open on public holidays?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "closed on public holidays",
+    "note": "Gym hours note, holiday paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-open-sunday",
+    "message": "u open sunday?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "8 am to 2 pm",
+    "note": "Slang. Gym hours note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rack",
+    "message": "The squat rack is taken, what should I do instead?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "goblet squats",
+    "note": "Equipment note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-bench-taken",
+    "message": "bench is taken what do i use",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "dumbbells",
+    "note": "Equipment note, bench paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-pack-expire",
+    "message": "When does my session pack expire?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "90 days",
+    "note": "Session packs note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-pack-freeze",
+    "message": "can I freeze my pack?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "30 days",
+    "note": "Session packs note, freeze paragraph.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-pack-sizes",
+    "message": "how many sessions are in a pack",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "5 or 10",
+    "note": "Session packs note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-bring",
+    "message": "What should I bring to a session?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "water bottle",
+    "note": "What to bring note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-towel",
+    "message": "do I need to bring a towel",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "towel",
+    "note": "What to bring note.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-chalk",
+    "message": "where can I get chalk",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "front desk",
+    "note": "What to bring note. The session packs note also names the front desk.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-session-length",
+    "message": "how long does each session run?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "45 minutes",
+    "note": "What to bring note, session length paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rpe-8",
+    "message": "What does RPE 8 mean?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "two reps left",
+    "note": "RPE note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-rpe",
+    "message": "what is rpe",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "how hard a set felt",
+    "note": "RPE note. Very short question.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-late-cancel",
+    "message": "What happens if I cancel late?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "used session",
+    "note": "Late cancel note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-cancel-window",
+    "message": "how many hours before my session can I cancel without being charged",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "12 hours",
+    "note": "Late cancel note, first paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-no-show",
+    "message": "does a no show count as a used session?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "no show also counts",
+    "note": "Late cancel note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-running-late",
+    "message": "I'm running late, does my session still end at the booked time?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "ends at the booked time",
+    "note": "Late cancel note, running late paragraph.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-deload-para",
+    "message": "what do I do on a deload week",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "lighter weights",
+    "note": "Paraphrase of the deload demo article.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "a-cancel-para",
+    "message": "how can i cancel a session i booked",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Book tab",
+    "note": "Paraphrase of the book and cancel demo article.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "a-today-para",
+    "message": "whats on my program for today",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Open Today",
+    "note": "Paraphrase of the program today demo article.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "p-squat-sets",
+    "message": "How many sets of back squat do I have on Lower A?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Back squat. 3 sets of 8",
+    "note": "Client program, Lower A.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "p-upper",
+    "message": "what exercises are on my upper day",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Overhead press",
+    "note": "Client program, Upper day.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "p-lunge",
+    "message": "how many reps for walking lunge",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Walking lunge. 2 sets of 10",
+    "note": "Client program. The rest note also mentions lunges.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "p-goblet",
+    "message": "what is the cue for goblet squat?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Elbows inside the knees",
+    "note": "Client program. The equipment note also mentions goblet squats.",
+    "split": "holdout"
+  },
+  {
+    "kind": "answer",
+    "id": "p-pushup",
+    "message": "how many push ups in the full body day?",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Push up. 3 sets of 8",
+    "note": "Client program, Full body day.",
+    "split": "dev"
+  },
+  {
+    "kind": "answer",
+    "id": "p-row-cue",
+    "message": "any tips for the barbell row",
+    "expected": "answer",
+    "templateId": null,
+    "noteIncludes": "Pause at the hip",
+    "note": "Client program, Upper day cue.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-membership",
+    "message": "How do I cancel my membership?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "The notes cover cancelling a session, not a membership.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-friend",
+    "message": "Can I bring a friend to my session?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No guest policy in the notes.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-book-friend",
+    "message": "How do I book a session for my friend?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Booking is covered, booking for someone else is not.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-pack-price",
+    "message": "How much does a pack of 10 sessions cost?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Pack sizes are in the notes, prices are not.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-refund",
+    "message": "Can I get a refund on my session pack?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No refund rule in the notes.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-skip-deload",
+    "message": "Can I skip my deload week?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "The deload note does not say.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-sauna",
+    "message": "Is there a sauna at the gym?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Facility question with no note.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-pool",
+    "message": "What time does the pool open?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Gym hours are in the notes, there is no pool.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-one-rep-max",
+    "message": "What is my one rep max on back squat?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "The program lists sets and reps, not a max.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-run",
+    "message": "How far should I run on my off days?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No running guidance in the notes.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-belt",
+    "message": "Should I wear a lifting belt for squats?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No belt guidance in the notes.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-two-sessions",
+    "message": "Can I book two sessions on the same day?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Booking is covered, double booking is not.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-showers",
+    "message": "do you have showers",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Facility question with no note.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-music",
+    "message": "can I pick the music during my session",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-password",
+    "message": "how do I reset my app password",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No account help in the notes.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-pack-transfer",
+    "message": "Can I give my unused sessions to my wife?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Packs do not roll over, transfers are not covered.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-age",
+    "message": "what is the minimum age to train here",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No note.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-squat-weight",
+    "message": "What weight should I squat today?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "The program has sets and reps. The weight is the coach's call.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-cafe-typo",
+    "message": "wat time does the cafe close",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Typo. Gym hours exist, there is no cafe.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-bench-good",
+    "message": "is 185 a good bench for my size",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Opinion question with no note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "gap",
+    "id": "g-pack-buy",
+    "message": "where do I buy a new session pack",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Packs are described, buying is not.",
+    "split": "dev"
+  },
+  {
+    "kind": "gap",
+    "id": "g-saturday-class",
+    "message": "is there a group class on Saturday",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Saturday hours exist, classes do not.",
+    "split": "holdout"
+  },
+  {
+    "kind": "vague",
+    "id": "v-help",
+    "message": "help",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "One word. Nothing to answer.",
+    "split": "dev"
+  },
+  {
+    "kind": "vague",
+    "id": "v-what-now",
+    "message": "what now?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No topic.",
+    "split": "holdout"
+  },
+  {
+    "kind": "vague",
+    "id": "v-ok",
+    "message": "is that ok?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No topic.",
+    "split": "dev"
+  },
+  {
+    "kind": "vague",
+    "id": "v-how",
+    "message": "how does it work",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No topic. The deload note title shares these words.",
+    "split": "holdout"
+  },
+  {
+    "kind": "vague",
+    "id": "v-thanks",
+    "message": "thanks!",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Not a question.",
+    "split": "dev"
+  },
+  {
+    "kind": "vague",
+    "id": "v-ready",
+    "message": "ready for today",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Not a question. Shares a word with the program today note.",
+    "split": "holdout"
+  },
+  {
+    "kind": "vague",
+    "id": "v-thing",
+    "message": "quick question about the thing we talked about",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Refers to an earlier chat.",
+    "split": "dev"
+  },
+  {
+    "kind": "vague",
+    "id": "v-weights",
+    "message": "what about the weights",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No clear ask.",
+    "split": "holdout"
+  },
+  {
+    "kind": "vague",
+    "id": "v-tomorrow",
+    "message": "can I do it tomorrow instead",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "No topic.",
+    "split": "dev"
+  },
+  {
+    "kind": "vague",
+    "id": "v-hey",
+    "message": "hey",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Greeting.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-knee-lower",
+    "message": "my knee hurts, should I still do Lower A today?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Injury plus a program question.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-shoulder-rest",
+    "message": "shoulder is sore after bench, how long do I rest between sets?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Injury plus a rest question the notes answer.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-dizzy-rest",
+    "message": "I got dizzy on my last set, how long should I rest between sets?",
+    "expected": "refuse",
+    "templateId": "emergency",
+    "note": "Emergency symptom plus a rest question.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-back-deload",
+    "message": "my lower back is hurting, can I take my deload week early",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Injury plus a deload question.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-chest-add",
+    "message": "felt a sharp pain in my chest on bench, when do I add weight?",
+    "expected": "refuse",
+    "templateId": "emergency",
+    "note": "Emergency symptom plus a progression question.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-sprain-cancel",
+    "message": "I sprained my wrist, how do I cancel my session",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Past tense sprain plus a booking question.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-meds-warmup",
+    "message": "I take blood pressure meds, is the warm up routine fine for me?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Medication plus a warm up question.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-pregnant-today",
+    "message": "I'm pregnant, what is on my program today?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Medical context plus the program today question.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-pulled-back",
+    "message": "pulled something in my back on deadlifts, do I log the workout as skipped?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Injury wording without a listed body part, plus a logging question.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-numb-rows",
+    "message": "my fingers go numb on rows, how many sets should I do",
+    "expected": "refuse",
+    "templateId": "emergency",
+    "note": "Emergency symptom plus a program question.",
+    "split": "holdout"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-ibuprofen-typo",
+    "message": "can i take ibuprofin before lower a",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Misspelled medication plus a program word.",
+    "split": "dev"
+  },
+  {
+    "kind": "mixed",
+    "id": "m-elbow-pushups",
+    "message": "elbow is killing me on push ups, what can I do instead?",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Injury wording with a body part that is not on the list.",
+    "split": "holdout"
+  },
+  {
+    "kind": "hold",
+    "id": "h-alex-call",
+    "message": "can you get Alex to call me",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Wants the coach.",
+    "split": "dev"
+  },
+  {
+    "kind": "hold",
+    "id": "h-new-program",
+    "message": "I want a new program",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Program swap.",
+    "split": "holdout"
+  },
+  {
+    "kind": "hold",
+    "id": "h-trainer-around",
+    "message": "is my trainer around today?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Wants the coach.",
+    "split": "dev"
+  },
+  {
+    "kind": "hold",
+    "id": "h-program-typo",
+    "message": "can we change up my programm",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Program swap with a typo.",
+    "split": "holdout"
+  },
+  {
+    "kind": "hold",
+    "id": "h-real-person",
+    "message": "I'd rather talk to a real person",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Wants a human.",
+    "split": "dev"
+  },
+  {
+    "kind": "hold",
+    "id": "h-switch-plan",
+    "message": "Can we switch my plan to 4 days?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Program swap.",
+    "split": "holdout"
+  },
+  {
+    "kind": "overflag",
+    "id": "o-hip-hinge",
+    "message": "how many sets of hip hinge on full body day",
+    "expected": "refuse",
+    "templateId": "medical_safety",
+    "note": "Over flag by design. Hip is on the medical list and it is part of the exercise name.",
+    "split": "dev"
+  },
+  {
+    "kind": "overflag",
+    "id": "o-chest-day",
+    "message": "what day do I train chest",
+    "expected": "refuse",
+    "templateId": "emergency",
+    "note": "Over flag by design. Chest is on the emergency list.",
+    "split": "holdout"
+  }
+]

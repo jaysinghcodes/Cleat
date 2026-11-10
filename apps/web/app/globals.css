@@ -1533,6 +1533,95 @@ button.pill {
   }
 }
 
+.review-list {
+  display: grid;
+  gap: 16px;
+}
+
+.review-list .card + .card {
+  margin-top: 0;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.review-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(220px, 1fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.review-main,
+.review-side {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.review-side {
+  font-size: 13px;
+}
+
+.review-question,
+.review-draft {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-question {
+  font-weight: 600;
+}
+
+.review-draft {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--chip-bg);
+}
+
+.review-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.review-note input {
+  width: auto;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.review-note span span {
+  display: block;
+}
+
+.review-note .meta {
+  font-weight: 400;
+}
+
+.review-actions {
+  margin-top: 16px;
+  align-items: center;
+}
+
+.review-audit {
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .review-body {
+    grid-template-columns: 1fr;
+  }
+}
+
 .screen-state {
   background: var(--card);
   border: 1px solid var(--border);

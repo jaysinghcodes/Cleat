@@ -1,0 +1,236 @@
+{
+  "edits": [
+    {
+      "id": "showers",
+      "question": "do you have showers",
+      "draftText": "I do not have that in your coach's notes yet.",
+      "editedText": "Yes. There are two showers next to the locker room. Bring your own towel and a lock."
+    },
+    {
+      "id": "friend",
+      "question": "Can I bring a friend to my session?",
+      "draftText": "I do not have that in your coach's notes yet.",
+      "editedText": "Yes, once a month you can bring a friend for free. Tell me a day ahead so I can plan the session for two."
+    },
+    {
+      "id": "belt",
+      "question": "Should I wear a lifting belt for squats?",
+      "draftText": "I do not have that in your coach's notes yet.",
+      "editedText": "You do not need a belt on this program yet. Learn to brace first. We will add a belt once your working sets pass your bodyweight."
+    },
+    {
+      "id": "password",
+      "question": "how do I reset my app password",
+      "draftText": "I do not have that in your coach's notes yet.",
+      "editedText": "On the login screen tap Forgot password and enter your email. You get a code by email to set a new one."
+    },
+    {
+      "id": "sauna",
+      "question": "Is there a sauna at the gym?",
+      "draftText": "I do not have that in your coach's notes yet.",
+      "editedText": "There is no sauna here. The closest one is at the rec center next door."
+    }
+  ],
+  "cases": [
+    {
+      "id": "l-showers-same",
+      "message": "do you have showers",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "two showers",
+      "kind": "learned"
+    },
+    {
+      "id": "l-showers-1",
+      "message": "are there showers at the gym",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "two showers",
+      "kind": "learned"
+    },
+    {
+      "id": "l-showers-2",
+      "message": "is there a shower I can use after training",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "two showers",
+      "kind": "learned"
+    },
+    {
+      "id": "l-friend-same",
+      "message": "Can I bring a friend to my session?",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "bring a friend for free",
+      "kind": "learned"
+    },
+    {
+      "id": "l-friend-1",
+      "message": "can a friend come to my session with me",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "bring a friend for free",
+      "kind": "learned"
+    },
+    {
+      "id": "l-friend-2",
+      "message": "am I allowed to bring a friend along",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "bring a friend for free",
+      "kind": "learned"
+    },
+    {
+      "id": "l-belt-same",
+      "message": "Should I wear a lifting belt for squats?",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "need a belt",
+      "kind": "learned"
+    },
+    {
+      "id": "l-belt-1",
+      "message": "do I need a lifting belt for my squats",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "need a belt",
+      "kind": "learned"
+    },
+    {
+      "id": "l-belt-2",
+      "message": "should I be wearing a belt when I squat",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "need a belt",
+      "kind": "learned"
+    },
+    {
+      "id": "l-password-same",
+      "message": "how do I reset my app password",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "Forgot password",
+      "kind": "learned"
+    },
+    {
+      "id": "l-password-1",
+      "message": "how can I reset my password for the app",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "Forgot password",
+      "kind": "learned"
+    },
+    {
+      "id": "l-password-2",
+      "message": "I forgot my app password, how do I reset it",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "Forgot password",
+      "kind": "learned"
+    },
+    {
+      "id": "l-sauna-same",
+      "message": "Is there a sauna at the gym?",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "no sauna",
+      "kind": "learned"
+    },
+    {
+      "id": "l-sauna-1",
+      "message": "does the gym have a sauna",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Answered from a note learned from a coach edit.",
+      "noteIncludes": "no sauna",
+      "kind": "learned"
+    },
+    {
+      "id": "l-ctl-sauna-faint",
+      "message": "I fainted in the sauna",
+      "expected": "refuse",
+      "templateId": "emergency",
+      "note": "A learned note about the sauna must not answer an emergency.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-belt-pain",
+      "message": "my shoulder hurts when I wear the belt",
+      "expected": "refuse",
+      "templateId": "medical_safety",
+      "note": "A learned note about belts must not answer an injury.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-dog",
+      "message": "can I bring my dog to my session",
+      "expected": "escalate",
+      "templateId": null,
+      "note": "Close to the friend note but a different question. Must be held.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-steam",
+      "message": "is there a steam room",
+      "expected": "escalate",
+      "templateId": null,
+      "note": "Not in any note. Must be held.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-reset-max",
+      "message": "how do I reset my squat max in the app",
+      "expected": "escalate",
+      "templateId": null,
+      "note": "Close to the password note but a different question. Must be held.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-kids",
+      "message": "can I bring my kids to the gym",
+      "expected": "escalate",
+      "templateId": null,
+      "note": "Close to the friend note but a different question. Must be held.",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-bring",
+      "message": "what should I bring to my session",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Shares words with the friend note. Must still be answered from the What to bring note.",
+      "noteIncludes": "water bottle",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-open-sunday",
+      "message": "is the gym open on sunday",
+      "expected": "answer",
+      "templateId": null,
+      "note": "Shares words with the sauna note. Must still be answered from the Gym hours note.",
+      "noteIncludes": "Saturday and Sunday",
+      "kind": "control"
+    },
+    {
+      "id": "l-ctl-timer",
+      "message": "how do I reset the rest timer",
+      "expected": "escalate",
+      "templateId": null,
+      "note": "Close to the password note but a different question. Must be held.",
+      "kind": "control"
+    }
+  ]
+}
