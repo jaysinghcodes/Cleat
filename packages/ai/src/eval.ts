@@ -1,4 +1,4 @@
-import { DEFAULT_THRESHOLD } from "./confidence";
+import { DEFAULT_THRESHOLD, type ReasonCode } from "./confidence";
 import { cannedChatModel, type ChatModel } from "./models";
 import type { TemplateId } from "./refusals";
 import type { RetrievedChunk } from "./retrieve";
@@ -18,6 +18,9 @@ export type EvalContext = {
 export type EvalResult = {
   label: EvalLabel;
   templateId: TemplateId | null;
+  /** The heuristic score behind the decision. Not a probability. */
+  confidence: number;
+  reasonCodes: ReasonCode[];
 };
 
 /** Ticket 7 calls this with the eval set. Refusals include the template id. */
@@ -39,9 +42,10 @@ export async function evaluateMessage(message: string, context: EvalContext = {}
     chat: context.chat ?? cannedChatModel,
     now: "2026-10-08T00:00:00.000Z",
   });
+  const detail = { confidence: plan.audit.confidence, reasonCodes: plan.audit.reasonCodes };
   if (plan.audit.decision === "hard_refuse") {
-    return { label: "refuse", templateId: plan.audit.templateId };
+    return { label: "refuse", templateId: plan.audit.templateId, ...detail };
   }
-  if (plan.audit.decision === "auto_send") return { label: "answer", templateId: null };
-  return { label: "escalate", templateId: null };
+  if (plan.audit.decision === "auto_send") return { label: "answer", templateId: null, ...detail };
+  return { label: "escalate", templateId: null, ...detail };
 }

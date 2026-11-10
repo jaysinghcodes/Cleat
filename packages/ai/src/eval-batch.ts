@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { DEMO_ARTICLES, DEMO_ORG_ID } from "../../db/src/demo-copy";
 import { chunkArticle } from "./chunk";
 import { hashEmbedder, type Embedder } from "./embeddings";
-import { evaluateMessage, type EvalLabel } from "./eval";
+import { evaluateMessage, type EvalLabel, type EvalResult } from "./eval";
 import { cannedChatModel, type ChatModel } from "./models";
 import { checkRefusals, type TemplateId } from "./refusals";
 import { retrieve, type RetrievedChunk, type StoredChunk } from "./retrieve";
@@ -48,6 +48,10 @@ export type EvalMetrics = {
   safetyChecks: number;
   safetyPassed: number;
   safetyPassRate: number;
+  /** Answerable rows that name a note. Counts how often the top retrieved note is that note, whatever the gate decided. */
+  retrievalChecks: number;
+  retrievalHits: number;
+  retrievalHitRate: number;
 };
 
 export type EvalRun = { failed: number; lines: string[]; metrics: EvalMetrics; failures: string[] };
@@ -313,19 +317,16 @@ export function metricLines(label: string, metrics: EvalMetrics): string[] {
     `${label} held for coach ${percent(metrics.heldRate)} (${metrics.held} of ${metrics.messages})`,
     `${label} missed answers ${metrics.missedAnswers}`,
     `${label} safety checks ${percent(metrics.safetyPassRate)} (${metrics.safetyPassed} of ${metrics.safetyChecks})`,
+    `${label} right note on top ${percent(metrics.retrievalHitRate)} (${metrics.retrievalHits} of ${metrics.retrievalChecks})`,
   ];
 }
 
-export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}): Promise<EvalRun> {
+type EvalDetail = { item: EvalCase; chunks: RetrievedChunk[]; result: EvalResult };
+
+async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ mode: string; details: EvalDetail[] }> {
   const { embedder, chat, mode } = await runtime();
   const stored = await buildCorpus(embedder, options.corpus ?? "demo");
-
-  const lines: string[] = [`mode ${mode}`];
-  const failures: string[] = [];
-  let failed = 0;
-  const totals = { answer: 0, escalate: 0, refuse: 0, passed: 0 };
-  const gates = { none: 0, p1: 0 };
-  const tally = { wrongAutoSends: 0, missedAnswers: 0, safetyChecks: 0, safetyPassed: 0 };
+  const details: EvalDetail[] = [];
   for (const item of cases) {
     const chunks = await retrieve(
       { orgId: DEMO_ORG_ID, clientId: CLIENT_ID, message: item.message, k: 5 },
@@ -352,14 +353,45 @@ export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}
       },
     );
     const result = await evaluateMessage(item.message, { chunks, autoSend: true, chat, threshold: options.threshold });
+    details.push({ item, chunks, result });
+  }
+  return { mode, details };
+}
+
+/** One line per row with the top notes and the score. For reading failures, not for gating. */
+export async function explainEval(cases: EvalCase[], options: EvalOptions = {}): Promise<string[]> {
+  const { details } = await evalDetails(cases, options);
+  return details.map(({ item, chunks, result }) => {
+    const top = chunks
+      .slice(0, 3)
+      .map((chunk) => `${chunk.score.toFixed(2)} ${(chunk.title ?? "").slice(0, 24)}`)
+      .join(" | ");
+    return `${item.id}  want ${item.expected}  got ${result.label}  score ${result.confidence.toFixed(3)}  [${result.reasonCodes.join(",")}]  ${top}`;
+  });
+}
+
+export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}): Promise<EvalRun> {
+  const { mode, details } = await evalDetails(cases, options);
+  const lines: string[] = [`mode ${mode}`];
+  const failures: string[] = [];
+  let failed = 0;
+  const totals = { answer: 0, escalate: 0, refuse: 0, passed: 0 };
+  const gates = { none: 0, p1: 0 };
+  const tally = { wrongAutoSends: 0, missedAnswers: 0, safetyChecks: 0, safetyPassed: 0, retrievalChecks: 0, retrievalHits: 0 };
+  for (const { item, chunks, result } of details) {
+    const topHasNote =
+      item.noteIncludes == null
+        ? true
+        : (chunks[0]?.snippet ?? "").toLowerCase().includes(item.noteIncludes.toLowerCase());
+    if (item.noteIncludes != null && result.label !== "refuse") {
+      tally.retrievalChecks += 1;
+      if (topHasNote) tally.retrievalHits += 1;
+    }
     totals[result.label] += 1;
     const labelOk = result.label === item.expected;
     const templateOk = (result.templateId ?? null) === item.templateId;
     const gateOk = item.gate == null ? true : await gateMatches(item.message, item.gate);
-    const noteOk =
-      result.label !== "answer" || item.noteIncludes == null
-        ? true
-        : (chunks[0]?.snippet ?? "").toLowerCase().includes(item.noteIncludes.toLowerCase());
+    const noteOk = result.label !== "answer" || topHasNote;
     const ok = labelOk && templateOk && gateOk && noteOk;
     if (result.label === "answer" && (item.expected !== "answer" || !noteOk)) tally.wrongAutoSends += 1;
     if (item.expected === "answer" && result.label === "escalate") tally.missedAnswers += 1;
@@ -402,6 +434,9 @@ export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}
     safetyChecks: tally.safetyChecks,
     safetyPassed: tally.safetyPassed,
     safetyPassRate: ratio(tally.safetyPassed, tally.safetyChecks),
+    retrievalChecks: tally.retrievalChecks,
+    retrievalHits: tally.retrievalHits,
+    retrievalHitRate: ratio(tally.retrievalHits, tally.retrievalChecks),
   };
   return { failed, lines, metrics, failures };
 }
