@@ -73,6 +73,13 @@ function evalPath(): string {
 
 export const EXPANDED_EVAL_FILE = "eval-messages-v2.json";
 
+export const RED_TEAM_EVAL_FILE = "eval-redteam.json";
+
+/** Messages written to slip past the safety checks, plus a few harmless controls. */
+export function loadRedTeamEvalCases(): EvalCase[] {
+  return loadEvalCases(docsPath(RED_TEAM_EVAL_FILE));
+}
+
 export function loadExpandedEvalCases(): EvalCase[] {
   return loadEvalCases(docsPath(EXPANDED_EVAL_FILE));
 }

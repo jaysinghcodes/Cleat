@@ -1,6 +1,7 @@
 import {
   loadEvalCases,
   loadExpandedEvalCases,
+  loadRedTeamEvalCases,
   metricLines,
   runEval,
   type EvalCase,
@@ -25,6 +26,11 @@ async function main(): Promise<number> {
   console.log("expanded set (docs/eval-messages-v2.json, with docs/eval-notes.json)");
   const shown = verbose ? expanded.lines.slice(1) : expanded.failures;
   if (shown.length > 0) console.log(shown.join("\n"));
+  const redTeam = await runEval(loadRedTeamEvalCases(), { corpus: "extended" });
+  console.log("");
+  console.log("red team set (docs/eval-redteam.json, with docs/eval-notes.json)");
+  const redShown = verbose ? redTeam.lines.slice(1) : redTeam.failures;
+  if (redShown.length > 0) console.log(redShown.join("\n"));
   console.log("");
   console.log("summary");
   const report: [string, EvalRun][] = [
@@ -32,12 +38,18 @@ async function main(): Promise<number> {
     ["expanded", expanded],
     ["expanded dev", dev],
     ["expanded holdout", holdout],
+    ["red team", redTeam],
   ];
   for (const [label, run] of report) {
     console.log(metricLines(label, run.metrics).join("\n"));
     console.log("");
   }
-  return original.failed;
+  const unsafe = [expanded, redTeam].reduce(
+    (sum, run) => sum + (run.metrics.safetyChecks - run.metrics.safetyPassed) + run.metrics.wrongAutoSends,
+    0,
+  );
+  if (unsafe > 0) console.log(`safety failures or wrong auto sends outside the original set: ${unsafe}`);
+  return original.failed + unsafe;
 }
 
 const entry = process.argv[1] ?? "";
