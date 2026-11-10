@@ -42,3 +42,6 @@ export { chunkInScope, retrieve } from "./retrieve";
 export type { ChunkSource, ChunkStore, RetrieveInput, RetrievedChunk, StoredChunk } from "./retrieve";
 export { gateClientMessage, planClientTurn, sourcesFromChunks } from "./turn";
 export type { AiPlan, AuditChunk, AuditDraft, InboxDraft, TurnSettings, TurnSource } from "./turn";
+export { LEARNED_NOTE_CATEGORY, LEARNED_TITLE_PREFIX, learnedNoteFromEdit, needsContext } from "./learned";
+export type { LearnedNote, LearnedResult, LearnedSkip } from "./learned";
+export { learnedQuestion } from "./learned-format";

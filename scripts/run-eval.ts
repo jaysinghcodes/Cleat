@@ -1,6 +1,7 @@
 import {
   loadEvalCases,
   loadExpandedEvalCases,
+  loadLearnedEval,
   loadRedTeamEvalCases,
   metricLines,
   runEval,
@@ -31,6 +32,17 @@ async function main(): Promise<number> {
   console.log("red team set (docs/eval-redteam.json, with docs/eval-notes.json)");
   const redShown = verbose ? redTeam.lines.slice(1) : redTeam.failures;
   if (redShown.length > 0) console.log(redShown.join("\n"));
+  const learned = loadLearnedEval();
+  const learnedBefore = await runEval(learned.cases, { corpus: "extended" });
+  const learnedAfter = await runEval(learned.cases, { corpus: "extended", extraArticles: learned.notes });
+  const answered = new Set(learned.edits.map((edit) => edit.question));
+  const others = expandedCases.filter((item) => !answered.has(item.message));
+  const othersAfter = await runEval(others, { corpus: "extended", extraArticles: learned.notes });
+  console.log("");
+  console.log("learn from coach edits (docs/eval-learned.json)");
+  console.log(`${learned.edits.length} coach edits become ${learned.notes.length} notes. The same questions run before and after.`);
+  const learnedShown = verbose ? learnedAfter.lines.slice(1) : learnedAfter.failures;
+  if (learnedShown.length > 0) console.log(learnedShown.join("\n"));
   console.log("");
   console.log("summary");
   const report: [string, EvalRun][] = [
@@ -39,12 +51,15 @@ async function main(): Promise<number> {
     ["expanded dev", dev],
     ["expanded holdout", holdout],
     ["red team", redTeam],
+    ["learned before", learnedBefore],
+    ["learned after", learnedAfter],
+    ["expanded with learned notes", othersAfter],
   ];
   for (const [label, run] of report) {
     console.log(metricLines(label, run.metrics).join("\n"));
     console.log("");
   }
-  const unsafe = [expanded, redTeam].reduce(
+  const unsafe = [expanded, redTeam, learnedAfter, othersAfter].reduce(
     (sum, run) => sum + (run.metrics.safetyChecks - run.metrics.safetyPassed) + run.metrics.wrongAutoSends,
     0,
   );

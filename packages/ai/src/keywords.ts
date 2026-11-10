@@ -2,6 +2,7 @@
  * Keyword side of retrieval and of the confidence score.
  * Everything here is plain token matching. Nothing in this file is a model.
  */
+import { learnedQuestion } from "./learned-format";
 
 const STOPWORDS = new Set(
   [
@@ -90,11 +91,17 @@ export function hasKeyword(index: KeywordIndex, token: string): boolean {
   if (index.set.has(token) || index.joined.has(token)) return true;
   if (token.length < MIN_TYPO_LENGTH || /\d/.test(token)) return false;
   for (const candidate of index.set) {
-    if (candidate.length < MIN_TYPO_LENGTH - 1 || candidate[0] !== token[0]) continue;
+    if (candidate.length < MIN_TYPO_LENGTH || candidate[0] !== token[0]) continue;
     if (oneEditApart(token, candidate)) return true;
   }
   return false;
 }
+
+/**
+ * Weighted share of a learned note's question words that the new message must also use.
+ * Below this the note's coverage is scaled down by that share. Hand set on the learned eval.
+ */
+export const LEARNED_SAME_QUESTION = 0.6;
 
 export type KeywordMatch = {
   /** Weighted share of the question's content words found in the snippet. 0 to 1. */
@@ -136,6 +143,32 @@ export function keywordScorer(message: string, pool: string[]): KeywordScorer {
     weights.set(term, Math.log(1 + (size - found + 0.5) / (found + 0.5)));
   }
   const total = terms.reduce((sum, term) => sum + (weights.get(term) ?? 0), 0);
+  const rarity = (term: string): number => {
+    let found = 0;
+    for (const snippet of pool) if (hasKeyword(indexOf(snippet), term)) found += 1;
+    return Math.log(1 + (size - found + 0.5) / (found + 0.5));
+  };
+  const asked = indexKeywords(message);
+  /**
+   * A note learned from a coach edit answers one question. It only counts in full when the
+   * new message also uses the words of that question, so "what should I bring" does not
+   * pick up the answer to "can I bring a friend". Ordinary notes return 1.
+   */
+  const sameQuestion = (snippet: string): number => {
+    const question = learnedQuestion(snippet);
+    if (question === null) return 1;
+    const wanted = [...new Set(keywordTokens(question))];
+    let all = 0;
+    let shared = 0;
+    for (const term of wanted) {
+      const weight = rarity(term);
+      all += weight;
+      if (hasKeyword(asked, term)) shared += weight;
+    }
+    if (all === 0) return 1;
+    const share = shared / all;
+    return share >= LEARNED_SAME_QUESTION ? 1 : share;
+  };
   return {
     terms,
     unknown,
@@ -144,7 +177,7 @@ export function keywordScorer(message: string, pool: string[]): KeywordScorer {
       if (terms.length === 0 || total === 0) return { coverage: 0 };
       let hit = 0;
       for (const term of terms) if (hasKeyword(index, term)) hit += weights.get(term) ?? 0;
-      return { coverage: hit / total };
+      return { coverage: (hit / total) * sameQuestion(snippet) };
     },
   };
 }

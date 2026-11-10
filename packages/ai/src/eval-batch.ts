@@ -10,6 +10,7 @@ import { cannedChatModel, type ChatModel } from "./models";
 import { checkRefusals, type TemplateId } from "./refusals";
 import { retrieve, type RetrievedChunk, type RetrieveOptions, type StoredChunk } from "./retrieve";
 import { keywordScorer } from "./keywords";
+import { learnedNoteFromEdit } from "./learned";
 import { cosineSimilarity } from "./text";
 import { planClientTurn } from "./turn";
 
@@ -101,7 +102,43 @@ export function loadEvalNotes(path = docsPath("eval-notes.json")): EvalNotes {
 }
 
 export function loadEvalCases(path = evalPath()): EvalCase[] {
-  const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  return parseEvalCases(JSON.parse(readFileSync(path, "utf8")) as unknown);
+}
+
+export const LEARNED_EVAL_FILE = "eval-learned.json";
+
+export type EvalArticle = { id: string; title: string; body: string };
+
+export type LearnedEval = {
+  /** Coach edits, as the review screen would send them. */
+  edits: { id: string; question: string; draftText: string; editedText: string }[];
+  /** Notes built from those edits by the same function the server uses. */
+  notes: EvalArticle[];
+  cases: EvalCase[];
+};
+
+/**
+ * Coach edits plus the questions they should fix. The cases are run twice:
+ * once without the learned notes and once with them.
+ */
+export function loadLearnedEval(path = docsPath(LEARNED_EVAL_FILE)): LearnedEval {
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as { edits?: unknown; cases?: unknown };
+  if (!Array.isArray(parsed.edits)) throw new Error("Learned eval file needs a list of edits.");
+  const edits = parsed.edits.map((item, index) => {
+    const row = item as Partial<LearnedEval["edits"][number]>;
+    if (!row.id || !row.question || !row.draftText || !row.editedText) throw new Error(`Learned edit ${index} is incomplete.`);
+    if (DASH.test(row.question) || DASH.test(row.editedText)) throw new Error(`Learned edit ${row.id} has dash punctuation.`);
+    return { id: row.id, question: row.question, draftText: row.draftText, editedText: row.editedText };
+  });
+  const notes = edits.map((edit) => {
+    const built = learnedNoteFromEdit(edit);
+    if (!built.ok) throw new Error(`Learned edit ${edit.id} did not produce a note (${built.reason}).`);
+    return { id: `learned-${edit.id}`, title: built.note.title, body: built.note.body };
+  });
+  return { edits, notes, cases: parseEvalCases(parsed.cases) };
+}
+
+function parseEvalCases(parsed: unknown): EvalCase[] {
   if (!Array.isArray(parsed)) throw new Error("Eval file must be a list.");
   return parsed.map((item, index) => {
     if (!item || typeof item !== "object") throw new Error(`Eval row ${index} is not an object.`);
@@ -271,12 +308,14 @@ export type EvalOptions = {
   threshold?: number;
   weights?: ConfidenceWeights;
   retrieval?: RetrieveOptions;
+  /** Notes added on top of the corpus, such as notes learned from coach edits. */
+  extraArticles?: EvalArticle[];
 };
 
-async function buildCorpus(embedder: Embedder, corpus: EvalCorpus): Promise<StoredChunk[]> {
+async function buildCorpus(embedder: Embedder, corpus: EvalCorpus, extra: EvalArticle[] = []): Promise<StoredChunk[]> {
   const stored: StoredChunk[] = [];
   const notes = corpus === "extended" ? loadEvalNotes() : null;
-  const articles = [...DEMO_ARTICLES, ...(notes?.articles ?? [])];
+  const articles = [...DEMO_ARTICLES, ...(notes?.articles ?? []), ...extra];
   for (const article of articles) {
     const snippets = chunkArticle(article.title, article.body);
     const vectors = await embedder.embed(snippets);
@@ -336,7 +375,7 @@ type EvalDetail = { item: EvalCase; chunks: RetrievedChunk[]; result: EvalDetail
 
 async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ mode: string; details: EvalDetail[] }> {
   const { embedder, chat, mode } = await runtime();
-  const stored = await buildCorpus(embedder, options.corpus ?? "demo");
+  const stored = await buildCorpus(embedder, options.corpus ?? "demo", options.extraArticles);
   const details: EvalDetail[] = [];
   for (const item of cases) {
     const chunks = await retrieve(

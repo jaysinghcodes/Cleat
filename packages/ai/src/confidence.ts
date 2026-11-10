@@ -1,4 +1,5 @@
-import { keywordScorer } from "./keywords";
+import { keywordScorer, keywordTokens } from "./keywords";
+import { learnedQuestion } from "./learned-format";
 import { roundConfidence } from "./text";
 
 /** Not configurable. Medium starts here. Below this is Low or refused. */
@@ -108,6 +109,21 @@ export function isThinQuestion(message: string, termCount: number): boolean {
   return termCount === 2 && POINTS_ELSEWHERE.test(message.toLowerCase());
 }
 
+/**
+ * True when the note was learned from a coach edit and the new message uses exactly
+ * the same content words as the question the coach answered. The coach has already
+ * answered this question once, so the thin question rule steps aside.
+ */
+export function repeatsLearnedQuestion(message: string, snippet: string): boolean {
+  const question = learnedQuestion(snippet);
+  if (question === null) return false;
+  const asked = new Set(keywordTokens(message));
+  const answered = new Set(keywordTokens(question));
+  if (asked.size === 0 || asked.size !== answered.size) return false;
+  for (const term of asked) if (!answered.has(term)) return false;
+  return true;
+}
+
 export type ScoredChunk = {
   snippet: string;
   /** Top match strength. Vector similarity, 0 to 1. */
@@ -138,7 +154,10 @@ export function scoreRetrieval(
   );
   const hit = best?.coverage ?? scorer.score(best?.snippet ?? "").coverage;
   const raw = top * weights.strength + hit * weights.coverage;
-  const thin = isThinQuestion(message, scorer.terms.length) && top < NEAR_COPY_STRENGTH;
+  const thin =
+    isThinQuestion(message, scorer.terms.length) &&
+    top < NEAR_COPY_STRENGTH &&
+    !repeatsLearnedQuestion(message, best?.snippet ?? "");
   const ceiling = scorer.terms.length === 0 ? NO_CONTENT_CEILING : thin ? THIN_QUESTION_CEILING : 1;
   const confidence = roundConfidence(Math.min(raw, ceiling));
   const reasonCodes: ReasonCode[] = [];
