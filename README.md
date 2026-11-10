@@ -338,9 +338,57 @@ To use OpenAI, set `OPENAI_API_KEY` on the Next.js server only. Do not prefix it
 
 New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to 0.95). The confidence floor is 0.50 and is not a setting. The reserved demo org `d1000000-0000-4000-8000-000000000001` is the only org `enable_demo_auto_send()` turns on. `pnpm seed` inserts that org and calls the function. The call is server side. The anon and authenticated roles cannot run it.
 
-`pnpm eval` batches [docs/eval-messages.json](docs/eval-messages.json) through the same gate and prints pass or fail per message, plus totals. With `OPENAI_API_KEY` unset it stays offline (`cleat-hash-embedding`, `cleat-canned-scorer`). With the key set on the server, it uses `text-embedding-3-small` and `gpt-4o-mini`.
+`pnpm eval` batches [docs/eval-messages.json](docs/eval-messages.json) and three more sets through the same gate and prints pass or fail per message, plus totals. See Eval results below. With `OPENAI_API_KEY` unset it stays offline (`cleat-hash-embedding`, `cleat-canned-scorer`). With the key set on the server, it uses `text-embedding-3-small` and `gpt-4o-mini`.
 
 Escalations show up in the trainer Priority inbox and on the thread.
+
+Held answers also have their own screen at `/review`. Each one shows the client question, the held answer, the score, and why it was held, with Approve, Edit, and Reject. When a coach edits an answer, the question and the fix can be saved as a note so the next similar question is answered from the coach's own words. The coach can untick that for a reply that is personal to one client. Learned notes show up under Knowledge like any other note.
+
+## Eval results
+
+`pnpm eval` runs four message sets with the offline embedder and the canned scorer. It exits with an error on any safety miss or wrong auto send.
+
+| Set | File | Messages | What it checks |
+| --- | --- | --- | --- |
+| Original | `docs/eval-messages.json` | 105 | The first set, kept unchanged |
+| Expanded | `docs/eval-messages-v2.json` with `docs/eval-notes.json` | 98 | Answerable questions, typos, vague messages, mixed injury plus program questions, and questions the notes cannot answer |
+| Red team | `docs/eval-redteam.json` | 219 | Messages written to slip past the safety checks |
+| Learned | `docs/eval-learned.json` | 23 | Questions a coach edit should fix, plus near misses that must stay held |
+
+Before is `main`. After is this branch. The numbers come from the same command on both.
+
+| Metric | Before | After |
+| --- | --- | --- |
+| Original set accuracy | 100.0% (105 of 105) | 100.0% (105 of 105) |
+| Original set safety checks | 100.0% (69 of 69) | 100.0% (69 of 69) |
+| Original set held for coach | 31.4% (33 of 105) | 31.4% (33 of 105) |
+| Expanded set accuracy | 49.0% (48 of 98) | 87.8% (86 of 98) |
+| Expanded set wrong auto sends | 0 of 0 auto sends | 0 of 34 auto sends |
+| Expanded set held for coach | 89.8% (88 of 98) | 51.0% (50 of 98) |
+| Expanded set answerable questions held | 46 of 46 | 12 of 46 |
+| Expanded set safety checks | 71.4% (10 of 14) | 100.0% (14 of 14) |
+| Expanded set right note on top | 69.6% (32 of 46) | 97.8% (45 of 46) |
+| Red team safety checks | 20.0% (36 of 180) | 100.0% (180 of 180) |
+| Red team wrong auto sends | 0 | 0 |
+| Learned set accuracy, before and after 5 coach edits | 39.1% (9 of 23) | 82.6% (19 of 23) |
+| Learned set wrong auto sends | 0 | 0 |
+
+What changed and why, in plain words:
+
+1. The old score held every question in the expanded set, including all 46 it could have answered. It had zero wrong auto sends only because it sent nothing. The new score answers 34 of those 46 and still has zero wrong auto sends.
+2. Search now blends word matching with vector similarity. Word matching forgives typos and plural endings and counts rare words for more. That put the right note on top for 45 of 46 answerable questions, up from 32.
+3. The score is still a hand set rule of thumb: top match strength plus word coverage. It now reads coverage from the best note only and drops hard when the question uses a word no note contains. Weights moved from 0.45 strength and 0.55 coverage to 0.10 and 0.90. The auto send cutoff stays at 0.85. The weights were picked on half of the expanded set and checked on the other half, which scores 85.7% with 0 wrong auto sends. The score is not a probability and was not fitted to outcomes.
+4. A question with a single content word, or one that points at something said earlier, is always held.
+5. The safety checks now catch slang, typos, look alike letters, spaced out letters, symptoms in plain words, named conditions, more drug names, and asks for a person that do not say coach. They still run on the raw message before any search, and the replies are still fixed templates.
+6. Learning from coach edits fixed 10 of 14 learned questions that used to be held. A learned note only counts in full when the new message uses the words of the question it answered, so the note for bringing a friend does not answer what to bring.
+
+Tried and dropped: splitting notes into paragraph chunks lowered accuracy on the tuning half from 83.7% to 79.6%. Splitting the program into one chunk per day and a phrase rerank pass changed nothing. All three were reverted.
+
+Limits worth knowing:
+
+1. The safety checks are patterns, and patterns miss new wording. The red team set was written in five rounds, and each later round was scored before its fixes went in. Those first scores were 20 of 32, 14 of 28, and 10 of 25. Every miss in those rounds was held for the coach and none was auto sent, but a held miss gets a normal draft instead of the fixed safety reply. Expect new wording to slip past at a similar rate.
+2. All of this is measured on a seeded demo dataset with the offline embedder. The sets are small and written by hand. Treat the numbers as a regression check, not as a forecast for real gyms.
+3. Four reworded learned questions and 12 answerable expanded questions are still held. That is the safe direction, and it costs the coach a tap.
 
 ## Calendar
 
