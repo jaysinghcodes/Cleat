@@ -13,6 +13,7 @@ import { shouldHoldDynamicDeskNav } from "./nav-offline";
 export const DESK_NAV = [
   { href: "/accountability", label: "Accountability" },
   { href: "/inbox", label: "Priority inbox" },
+  { href: "/review", label: "Review" },
   { href: "/clients", label: "Clients" },
   { href: "/programs", label: "Programs" },
   { href: "/chat", label: "Chat" },
