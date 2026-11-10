@@ -1,9 +1,11 @@
-import { type DraftAction } from "@cleat/ai";
+import { learnedNoteFromEdit, type DraftAction } from "@cleat/ai";
 import { aiCopy } from "@cleat/domain";
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "../../../../lib/server/admin";
 import { aiCors, aiJson, requireTrainer } from "../../../../lib/server/actor";
 import { commitHeldDraft } from "../../../../lib/server/draft-commit";
+import { createAiRuntime } from "../../../../lib/server/openai";
+import { embedArticle } from "../../../../lib/server/pipeline";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export function OPTIONS() {
 export async function POST(request: Request) {
   const actor = await requireTrainer(request);
   if (!actor.ok) return actor.response;
-  let payload: { action?: unknown; draftId?: unknown; editedText?: unknown };
+  let payload: { action?: unknown; draftId?: unknown; editedText?: unknown; saveAsNote?: unknown };
   try {
     payload = (await request.json()) as typeof payload;
   } catch {
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
   if (!admin) return aiJson({ error: aiCopy.loadFailed }, 500);
   const loaded = await admin
     .from("held_drafts")
-    .select("id, org_id, client_id, thread_id, audit_id, inbox_item_id, draft_text, sources, status")
+    .select("id, org_id, client_id, thread_id, message_id, audit_id, inbox_item_id, draft_text, sources, status")
     .eq("id", draftId)
     .eq("org_id", actor.orgId)
     .eq("status", "held")
@@ -85,6 +87,40 @@ export async function POST(request: Request) {
         const inbox = await admin.from("inbox_items").update({ status }).eq("id", row?.inbox_item_id).eq("org_id", actor.orgId);
         if (inbox.error) throw new Error(inbox.error.message);
       },
+      saveNote:
+        payload.saveAsNote === true
+          ? async (edit) => {
+              // The question is read from the stored client message, never from the request.
+              const asked = await admin
+                .from("messages")
+                .select("body")
+                .eq("id", row?.message_id)
+                .eq("org_id", actor.orgId)
+                .maybeSingle();
+              if (asked.error || !asked.data) return false;
+              const built = learnedNoteFromEdit({ question: String(asked.data.body ?? ""), ...edit });
+              if (!built.ok) return false;
+              const inserted = await admin
+                .from("kb_articles")
+                .insert({
+                  org_id: actor.orgId,
+                  title: built.note.title,
+                  category: built.note.category,
+                  body: built.note.body,
+                  created_by: actor.userId,
+                })
+                .select("id")
+                .single();
+              if (inserted.error || !inserted.data) return false;
+              await embedArticle(admin, createAiRuntime().embedder, {
+                id: String(inserted.data.id),
+                orgId: actor.orgId,
+                title: built.note.title,
+                body: built.note.body,
+              });
+              return true;
+            }
+          : undefined,
     });
     return aiJson(commit.body, commit.httpStatus);
   } catch {
