@@ -1,5 +1,7 @@
 /**
- * Runs the expanded set under several pipeline variants and prints one row each.
+ * Runs the expanded set with and without hybrid search and prints one row each.
+ * Paragraph chunks, per day program chunks, and a phrase rerank pass were tried here
+ * and removed. The README section "Eval results" has their numbers.
  * Usage: tsx scripts/eval-sweep.ts [dev|holdout|all]
  */
 import { loadEvalCases, loadExpandedEvalCases, runEval, percent, type EvalOptions } from "../packages/ai/src/eval-batch";
@@ -10,13 +12,6 @@ const expanded = loadExpandedEvalCases().filter((item) => which === "all" || ite
 const variants: [string, EvalOptions][] = [
   ["vector only (baseline)", { retrieval: { hybrid: false } }],
   ["current defaults", {}],
-  ["paragraph chunks", { chunking: "paragraph" }],
-  ["hybrid", { retrieval: { hybrid: true } }],
-  ["hybrid + rerank", { retrieval: { hybrid: true, rerank: true } }],
-  ["hybrid + paragraph", { chunking: "paragraph", retrieval: { hybrid: true } }],
-  ["hybrid + rerank + paragraph", { chunking: "paragraph", retrieval: { hybrid: true, rerank: true } }],
-  ["hybrid + rerank + paragraph notes only", { chunking: "paragraph-notes", retrieval: { hybrid: true, rerank: true } }],
-  ["hybrid + rerank + program days only", { chunking: "program-days", retrieval: { hybrid: true, rerank: true } }],
 ];
 
 async function main() {

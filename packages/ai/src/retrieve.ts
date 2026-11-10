@@ -33,22 +33,16 @@ export type RetrievedChunk = {
 export type RetrieveOptions = {
   /** Blend keyword coverage into the vector rank. */
   hybrid?: boolean;
-  /** Second pass over the blended list: reward question phrases that appear intact. */
-  rerank?: boolean;
   /** How many vector candidates to fetch before blending. */
   pool?: number;
   /** Share of the rank score that comes from keyword coverage. */
   keywordWeight?: number;
-  /** Bonus for intact phrases in the rerank pass. */
-  phraseWeight?: number;
 };
 
 export const DEFAULT_RETRIEVE_OPTIONS: Required<RetrieveOptions> = {
   hybrid: true,
-  rerank: false,
   pool: 20,
   keywordWeight: 0.5,
-  phraseWeight: 0.15,
 };
 
 export type RetrieveInput = {
@@ -128,8 +122,7 @@ export function blendKeywordRank(
       const vector = unit(row.score);
       const match = scorer.score(row.snippet);
       const blended = (1 - weight) * vector + weight * match.coverage;
-      const bonus = settings.rerank ? settings.phraseWeight * match.phrase : 0;
-      return { ...row, score: unit(blended + bonus), vectorScore: vector, coverage: match.coverage };
+      return { ...row, score: unit(blended), vectorScore: vector, coverage: match.coverage };
     })
     .sort((left, right) => right.score - left.score);
 }

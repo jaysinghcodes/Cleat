@@ -99,8 +99,6 @@ export function hasKeyword(index: KeywordIndex, token: string): boolean {
 export type KeywordMatch = {
   /** Weighted share of the question's content words found in the snippet. 0 to 1. */
   coverage: number;
-  /** Share of neighbouring word pairs in the question that are also neighbours in the snippet. 0 to 1. */
-  phrase: number;
 };
 
 export type KeywordScorer = {
@@ -119,7 +117,6 @@ export type KeywordScorer = {
  */
 export function keywordScorer(message: string, pool: string[]): KeywordScorer {
   const terms = [...new Set(keywordTokens(message))];
-  const ordered = keywordTokens(message);
   const indexes = new Map<string, KeywordIndex>();
   const indexOf = (snippet: string): KeywordIndex => {
     let index = indexes.get(snippet);
@@ -139,30 +136,15 @@ export function keywordScorer(message: string, pool: string[]): KeywordScorer {
     weights.set(term, Math.log(1 + (size - found + 0.5) / (found + 0.5)));
   }
   const total = terms.reduce((sum, term) => sum + (weights.get(term) ?? 0), 0);
-  const pairs: [string, string][] = [];
-  for (let index = 0; index + 1 < ordered.length; index += 1) {
-    const left = ordered[index];
-    const right = ordered[index + 1];
-    if (left && right && left !== right) pairs.push([left, right]);
-  }
   return {
     terms,
     unknown,
     score(snippet: string): KeywordMatch {
       const index = indexOf(snippet);
-      if (terms.length === 0 || total === 0) return { coverage: 0, phrase: 0 };
+      if (terms.length === 0 || total === 0) return { coverage: 0 };
       let hit = 0;
       for (const term of terms) if (hasKeyword(index, term)) hit += weights.get(term) ?? 0;
-      let together = 0;
-      for (const [left, right] of pairs) {
-        for (let at = 0; at + 1 < index.tokens.length; at += 1) {
-          if (index.tokens[at] === left && index.tokens[at + 1] === right) {
-            together += 1;
-            break;
-          }
-        }
-      }
-      return { coverage: hit / total, phrase: pairs.length === 0 ? 0 : together / pairs.length };
+      return { coverage: hit / total };
     },
   };
 }

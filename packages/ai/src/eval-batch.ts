@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DEMO_ARTICLES, DEMO_ORG_ID } from "../../db/src/demo-copy";
 import type { ConfidenceWeights } from "./confidence";
-import { chunkArticle, chunkArticleByParagraph, chunkProgramByDay } from "./chunk";
+import { chunkArticle } from "./chunk";
 import { hashEmbedder, type Embedder } from "./embeddings";
 import { evaluateMessageDetail, type EvalDetailResult, type EvalLabel } from "./eval";
 import { cannedChatModel, type ChatModel } from "./models";
@@ -258,32 +258,20 @@ async function gateMatches(message: string, gate: EvalGate): Promise<boolean> {
   );
 }
 
-/** paragraph applies to notes and to the program. The other two change one side only. */
-export type EvalChunking = "note" | "paragraph" | "paragraph-notes" | "program-days";
-
 export type EvalOptions = {
   /** demo is the five seeded articles. extended adds docs/eval-notes.json and one client program. */
   corpus?: EvalCorpus;
   threshold?: number;
-  /** note keeps a whole note together up to 700 characters. paragraph makes one snippet per paragraph and per program day. */
-  chunking?: EvalChunking;
   weights?: ConfidenceWeights;
   retrieval?: RetrieveOptions;
 };
 
-async function buildCorpus(
-  embedder: Embedder,
-  corpus: EvalCorpus,
-  chunking: EvalChunking,
-): Promise<StoredChunk[]> {
+async function buildCorpus(embedder: Embedder, corpus: EvalCorpus): Promise<StoredChunk[]> {
   const stored: StoredChunk[] = [];
   const notes = corpus === "extended" ? loadEvalNotes() : null;
   const articles = [...DEMO_ARTICLES, ...(notes?.articles ?? [])];
   for (const article of articles) {
-    const snippets =
-      chunking === "paragraph" || chunking === "paragraph-notes"
-        ? chunkArticleByParagraph(article.title, article.body)
-        : chunkArticle(article.title, article.body);
+    const snippets = chunkArticle(article.title, article.body);
     const vectors = await embedder.embed(snippets);
     snippets.forEach((snippet, index) => {
       stored.push({
@@ -299,8 +287,7 @@ async function buildCorpus(
     });
   }
   if (notes) {
-    const snippets =
-      chunking === "paragraph" || chunking === "program-days" ? chunkProgramByDay(notes.program.text) : [notes.program.text];
+    const snippets = [notes.program.text];
     const vectors = await embedder.embed(snippets);
     snippets.forEach((snippet, index) => {
       stored.push({
@@ -342,7 +329,7 @@ type EvalDetail = { item: EvalCase; chunks: RetrievedChunk[]; result: EvalDetail
 
 async function evalDetails(cases: EvalCase[], options: EvalOptions): Promise<{ mode: string; details: EvalDetail[] }> {
   const { embedder, chat, mode } = await runtime();
-  const stored = await buildCorpus(embedder, options.corpus ?? "demo", options.chunking ?? "note");
+  const stored = await buildCorpus(embedder, options.corpus ?? "demo");
   const details: EvalDetail[] = [];
   for (const item of cases) {
     const chunks = await retrieve(
@@ -412,7 +399,6 @@ export async function evalFeatures(cases: EvalCase[], options: EvalOptions = {})
         right,
         `vec ${(top?.vectorScore ?? top?.score ?? 0).toFixed(2)}`,
         `cov ${(top?.coverage ?? 0).toFixed(2)}`,
-        `phr ${top ? scorer.score(top.snippet).phrase.toFixed(2) : "0"}`,
         `rank ${(top?.score ?? 0).toFixed(2)}`,
         `next ${(other?.score ?? 0).toFixed(2)}`,
         `terms ${scorer.terms.length}`,
