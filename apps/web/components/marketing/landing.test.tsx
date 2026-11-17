@@ -34,6 +34,20 @@ function innerTexts(html: string, tag: string): string[] {
   return [...html.matchAll(re)].map((match) => decode(match[1] ?? ""));
 }
 
+/** Tag-stripped element text with the original spaces kept, like textContent. */
+function textContent(html: string, tag: string): string {
+  const re = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "i");
+  const inner = re.exec(html)?.[1] ?? "";
+  return inner
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;|&#x27;/g, "'")
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCharCode(parseInt(code, 16)));
+}
+
 function renderedText(html: string): string {
   const named = [...html.matchAll(/\b(?:alt|aria-label)="([^"]*)"/g)].map((match) => match[1] ?? "");
   return `${decode(html)} ${named.join(" ")}`.trim();
@@ -42,8 +56,12 @@ function renderedText(html: string): string {
 const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(Landing)));
 
 test("hero and section copy match the locked strings", () => {
-  assert.deepEqual(innerTexts(html, "h1"), [MARKETING_H1]);
-  assert.equal(innerTexts(html, "h1")[0], "Coach more. Chase less.");
+  assert.equal(textContent(html, "h1"), MARKETING_H1);
+  assert.equal(textContent(html, "h1"), "Coach more. Chase less.");
+  assert.deepEqual(
+    [...html.matchAll(/<span class="mkt-h1-line">([^<]*)<\/span>/g)].map((match) => match[1]),
+    ["Coach more.", "Chase less."],
+  );
   assert.equal(MARKETING_TITLE, "Cleat · Coach more. Chase less.");
 
   const paragraphs = innerTexts(html, "p");

@@ -1409,6 +1409,10 @@ a.article-row.active {
   .mkt-lede {
     max-width: none;
   }
+
+  .mkt-hero h1 .mkt-h1-line {
+    display: block;
+  }
 }
 
 .inbox-filters {
