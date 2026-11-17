@@ -58,6 +58,9 @@ const html = renderToStaticMarkup(createElement(ThemeProvider, null, createEleme
 test("hero and section copy match the locked strings", () => {
   assert.equal(textContent(html, "h1"), MARKETING_H1);
   assert.equal(textContent(html, "h1"), "Coach more. Chase less.");
+  assert.equal(html.includes("/cleat-avatar-dark.png"), true);
+  assert.equal(html.includes("/cleat-avatar-light.png"), true);
+  assert.equal(html.includes("/cleat-mark-charcoal.png"), false);
   assert.deepEqual(
     [...html.matchAll(/<span class="mkt-h1-line">([^<]*)<\/span>/g)].map((match) => match[1]),
     ["Coach more.", "Chase less."],

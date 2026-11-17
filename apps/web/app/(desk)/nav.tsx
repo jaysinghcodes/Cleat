@@ -4,6 +4,7 @@ import { screenCopy, type Membership } from "@cleat/domain";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type MouseEvent, type ReactNode } from "react";
+import { CleatMark } from "../../components/cleat-mark";
 import { useOnline } from "../online";
 import { OfflineBanner, ScreenState } from "../screen-state";
 import { useSession } from "../session";
@@ -74,7 +75,7 @@ export function DeskShell({
       <aside className="sidebar">
         <Link className="brand" href="/accountability">
           <span className="brand-mark">
-            <img src="/cleat-mark-charcoal.png" alt="" />
+            <CleatMark size={28} />
           </span>
           Cleat
         </Link>

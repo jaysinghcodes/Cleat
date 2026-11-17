@@ -66,11 +66,9 @@ p {
   margin-bottom: 24px;
 }
 
-.lockup img {
+.lockup .cleat-mark {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  display: block;
 }
 
 .lockup span {
@@ -249,11 +247,9 @@ p {
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-.brand-mark img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.brand-mark .cleat-mark {
+  width: 28px;
+  height: 28px;
 }
 
 .nav {
@@ -1087,11 +1083,9 @@ a.article-row.active {
   flex-shrink: 0;
 }
 
-.mkt-lockup img {
+.mkt-lockup .cleat-mark {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  display: block;
 }
 
 .mkt-lockup span {
@@ -1343,11 +1337,54 @@ a.article-row.active {
   letter-spacing: -0.03em;
 }
 
-.mkt-footer-mark img {
+.mkt-footer-mark .cleat-mark {
   width: 28px;
   height: 28px;
+}
+
+.cleat-mark {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.cleat-mark img {
+  width: 100%;
+  height: 100%;
   border-radius: 8px;
+  display: none;
+  object-fit: cover;
+}
+
+.cleat-mark .cleat-mark-dark {
   display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .cleat-mark .cleat-mark-dark {
+    display: none;
+  }
+
+  :root:not([data-theme]) .cleat-mark .cleat-mark-light {
+    display: block;
+  }
+}
+
+:root[data-theme="light"] .cleat-mark .cleat-mark-dark {
+  display: none;
+}
+
+:root[data-theme="light"] .cleat-mark .cleat-mark-light {
+  display: block;
+}
+
+:root[data-theme="dark"] .cleat-mark .cleat-mark-dark {
+  display: block;
+}
+
+:root[data-theme="dark"] .cleat-mark .cleat-mark-light {
+  display: none;
 }
 
 .mkt-footer-links {

@@ -14,8 +14,8 @@
 
 ## 3. Logo
 
-- Mark: **segmented apricot cleat**, angled, peeking in from the **top-right corner** of the tile.
-- **Primary icon: the charcoal-background version** (`app-icon-charcoal-angled.jpg`; UI crop `assets/cleat-mark-charcoal.png`). It's used in the sidebar, auth, landing and index.
+- Mark: **segmented apricot cleat**, straight. A tile uses the dark avatar on `#1C1917` in the dark theme and the light avatar on `#F5F2EE` in the light theme.
+- The tilted corner peek stays on the iOS and Android store icons. The phone splash and the in-app header still show that tilted mark, so those store icons are unchanged.
 - Website lockup = cleat mark + **"Cleat"** wordmark.
 - The cream/peach tile icon is retired from the UI.
 
@@ -106,6 +106,7 @@
 | Oct 9 | Speedy approved AA contrast nudges: dark error `#EE9088` → `#F1948A`; light success `#15803D` → `#15763D`; light warn and skip `#9E6007` → `#995707`. Apricot and charcoal stay locked. |
 | Nov 17 | Hero tagline updated to "Coach more. Chase less." |
 | Nov 17 | Dark page and phone stage 2 are `#1C1917`. Dark sidebar is `#171412`. Cards, text, apricot, and the light theme stay. |
+| Nov 17 | Website mark is the straight apricot cleat. Tiles follow the theme. Store icons stay tilted because the phone splash and in-app header still use that mark. |
 
 ## 9. Screen inventory (23)
 

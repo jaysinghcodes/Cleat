@@ -1,4 +1,5 @@
 import { ThemeCycle } from "../../app/theme";
+import { CleatMark } from "../cleat-mark";
 
 export const MARKETING_TITLE = "Cleat · Coach more. Chase less.";
 
@@ -45,12 +46,6 @@ export function clientInviteHref(): string {
   return `${configured || "http://localhost:8081"}/invite`;
 }
 
-function Mark({ size }: { size: number }) {
-  return (
-    <img src="/cleat-mark-charcoal.png" alt="Cleat mark" width={size} height={size} />
-  );
-}
-
 function Status({ tone, children }: { tone: "done" | "nudge" | "ai"; children: string }) {
   return <span className={`mkt-status mkt-${tone}`}>{children}</span>;
 }
@@ -60,7 +55,7 @@ export function Landing() {
     <div className="mkt">
       <header className="mkt-nav">
         <a className="mkt-lockup" href="/">
-          <Mark size={32} />
+          <CleatMark size={32} alt="Cleat mark" />
           <span>Cleat</span>
         </a>
         <nav className="mkt-links" aria-label="Primary">
@@ -145,7 +140,7 @@ export function Landing() {
       </main>
       <footer className="mkt-footer">
         <div className="mkt-footer-mark">
-          <Mark size={28} />
+          <CleatMark size={28} alt="Cleat mark" />
           <span>Cleat</span>
         </div>
         <div className="mkt-footer-links">

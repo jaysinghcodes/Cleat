@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description: "Cleat trainer desk.",
+  icons: {
+    icon: [
+      { url: "/cleat-avatar-light.png", media: "(prefers-color-scheme: light)", type: "image/png" },
+      { url: "/cleat-avatar-dark.png", media: "(prefers-color-scheme: dark)", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
