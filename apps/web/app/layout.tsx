@@ -15,9 +15,11 @@ export const metadata: Metadata = {
   description: "Cleat trainer desk.",
   icons: {
     icon: [
+      { url: "/icon.png", type: "image/png" },
       { url: "/cleat-avatar-light.png", media: "(prefers-color-scheme: light)", type: "image/png" },
       { url: "/cleat-avatar-dark.png", media: "(prefers-color-scheme: dark)", type: "image/png" },
     ],
+    apple: [{ url: "/icon.png", type: "image/png" }],
   },
 };
 
