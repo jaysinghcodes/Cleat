@@ -1,10 +1,10 @@
 import { ThemeCycle } from "../../app/theme";
 
-export const MARKETING_TITLE = "Cleat · Your coaching. Never a guess.";
+export const MARKETING_TITLE = "Cleat · Coach more. Chase less.";
 
 export const MARKETING_PILL = "For independent and online coaches";
 
-export const MARKETING_H1 = "Your coaching. Never a guess.";
+export const MARKETING_H1 = "Coach more. Chase less.";
 
 export const MARKETING_SUBLINE =
   "Cleat keeps clients logging on iOS and Android, shows you who skipped and who needs a nudge, and answers routine questions from your own programs only when it's sure. Everything else comes to you.";

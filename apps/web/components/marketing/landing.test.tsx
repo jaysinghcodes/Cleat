@@ -12,6 +12,7 @@ import {
   MARKETING_PROOF,
   MARKETING_SECTIONS,
   MARKETING_SUBLINE,
+  MARKETING_TITLE,
   clientInviteHref,
 } from "./landing";
 
@@ -42,7 +43,8 @@ const html = renderToStaticMarkup(createElement(ThemeProvider, null, createEleme
 
 test("hero and section copy match the locked strings", () => {
   assert.deepEqual(innerTexts(html, "h1"), [MARKETING_H1]);
-  assert.equal(innerTexts(html, "h1")[0], "Your coaching. Never a guess.");
+  assert.equal(innerTexts(html, "h1")[0], "Coach more. Chase less.");
+  assert.equal(MARKETING_TITLE, "Cleat · Coach more. Chase less.");
 
   const paragraphs = innerTexts(html, "p");
   assert.equal(paragraphs[0], MARKETING_PILL);
