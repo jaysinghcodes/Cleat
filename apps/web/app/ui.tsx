@@ -2,12 +2,13 @@
 
 import { APP_NAME, copy, userFacingError } from "@cleat/domain";
 import type { InputHTMLAttributes, ReactNode } from "react";
+import { CleatMark } from "../components/cleat-mark";
 import { ThemeCycle } from "./theme";
 
 export function BrandLockup() {
   return (
     <div className="lockup">
-      <img src="/cleat-mark-charcoal.png" alt="" width={32} height={32} />
+      <CleatMark size={32} />
       <span>{APP_NAME}</span>
     </div>
   );

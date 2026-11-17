@@ -80,7 +80,7 @@ export type ThemeTokens = {
   fontMono: string;
 };
 
-/** Dark theme. Warm mist. */
+/** Dark theme. Warm mist. The logo tile stays #1C1917 so it reads apart from the page. */
 export const dark = {
   colorScheme: "dark",
   sidebar: "#211F1E",

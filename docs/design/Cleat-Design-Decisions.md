@@ -14,8 +14,8 @@
 
 ## 3. Logo
 
-- Mark: **segmented apricot cleat**, angled, peeking in from the **top-right corner** of the tile.
-- **Primary icon: the charcoal-background version** (`app-icon-charcoal-angled.jpg`; UI crop `assets/cleat-mark-charcoal.png`). It's used in the sidebar, auth, landing and index.
+- Mark: **segmented apricot cleat**, straight. A tile uses the dark avatar on `#1C1917` in the dark theme and the light avatar on `#F5F2EE` in the light theme. The dark page is `#262423`, so the logo tile reads apart from the page.
+- The tilted corner peek stays on the iOS and Android store icons. The phone splash and the in-app header still show that tilted mark, so those store icons are unchanged.
 - Website lockup = cleat mark + **"Cleat"** wordmark.
 - The cream/peach tile icon is retired from the UI.
 
@@ -28,7 +28,7 @@
 | Token | Hex | Use |
 |---|---|---|
 | Sidebar | `#211F1E` | Nav column, code blocks |
-| Page | `#262423` | App background |
+| Page | `#262423` | App background and phone stage 2 |
 | Card | `#312E2C` | Surfaces |
 | Raised | `#3C3936` | Hover, active row, inputs-on-card, avatars |
 | Border | `rgba(255,255,255,0.08)` | Hairlines (6% soft, 14% strong) |
@@ -80,7 +80,7 @@
 6. **Elevation by lightness:** sidebar < page < card < raised, roughly 4 to 5 OKLCH lightness points per step. Shadows are minimal in dark mode.
 7. **Avatars** are neutral. Only urgent/needs-nudge avatars take the error tint.
 8. **Stats** use neutral numbers with a status dot in the label, not big colored numerals.
-9. **Copy rules:** No dash punctuation in product copy (no em dash, en dash, or spaced hyphen used as punctuation). Hyphenated words like check-in or sign-up are fine. Locked marketing copy: hero "Your coaching. Never a guess."; hero subline "Cleat keeps clients logging on iOS and Android, shows you who skipped and who needs a nudge, and answers routine questions from your own programs only when it's sure. Everything else comes to you."; AI section "It answers when it's sure. You answer the rest."; accountability section "Every rep logged. Every skip seen."
+9. **Copy rules:** No dash punctuation in product copy (no em dash, en dash, or spaced hyphen used as punctuation). Hyphenated words like check-in or sign-up are fine. Locked marketing copy: hero "Coach more. Chase less."; hero subline "Cleat keeps clients logging on iOS and Android, shows you who skipped and who needs a nudge, and answers routine questions from your own programs only when it's sure. Everything else comes to you."; AI section "It answers when it's sure. You answer the rest."; accountability section "Every rep logged. Every skip seen."
 
 ## 7. Theme behavior
 
@@ -101,8 +101,11 @@
 | Oct 7 | Compare: **3 darks** (Graphite, Slate dusk, Warm mist) + **2 lights** (Grey, Paper) on the trainer inbox, with hierarchy fixes. |
 | Oct 7 | **Locked: Dark = Warm mist, Light = Grey + white cards; charcoal-background logo is primary.** Rolled across all wireframes. |
 | Oct 7 | **Copy rule:** no dash punctuation in product text. Marketing tagline TBD / placeholder. |
-| Oct 7 | **Tagline locked:** hero "Your coaching. Never a guess."; AI section "It answers when it's sure. You answer the rest."; accountability "Every rep logged. Every skip seen." |
+| Oct 7 | **Tagline locked:** AI section "It answers when it's sure. You answer the rest."; accountability "Every rep logged. Every skip seen." |
 | Oct 9 | Speedy approved AA contrast nudges: dark error `#EE9088` → `#F1948A`; light success `#15803D` → `#15763D`; light warn and skip `#9E6007` → `#995707`. Apricot and charcoal stay locked. |
+| Nov 17 | Hero tagline updated to "Coach more. Chase less." |
+| Nov 17 | Dark page is `#262423`, sidebar `#211F1E`, phone stage 2 `#262423`, cards `#312E2C`. The `#1C1917` logo tile stays distinct from the page. |
+| Nov 17 | Website mark is the straight apricot cleat. Tiles follow the theme. Store icons stay tilted because the phone splash and in-app header still use that mark. |
 
 ## 9. Screen inventory (23)
 

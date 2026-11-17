@@ -8,6 +8,7 @@
   "include": [
     "components/marketing/landing.test.tsx",
     "components/marketing/landing.tsx",
+    "components/cleat-mark.tsx",
     "app/theme.tsx",
     "app/screen-state.tsx",
     "app/screen-state.test.tsx",

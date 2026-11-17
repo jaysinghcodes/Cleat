@@ -1,10 +1,15 @@
 import { ThemeCycle } from "../../app/theme";
+import { CleatMark } from "../cleat-mark";
 
-export const MARKETING_TITLE = "Cleat · Your coaching. Never a guess.";
+export const MARKETING_TITLE = "Cleat · Coach more. Chase less.";
 
 export const MARKETING_PILL = "For independent and online coaches";
 
-export const MARKETING_H1 = "Your coaching. Never a guess.";
+export const MARKETING_H1 = "Coach more. Chase less.";
+
+const heroBreak = MARKETING_H1.indexOf(". ");
+const HERO_LEAD = MARKETING_H1.slice(0, heroBreak + 1);
+const HERO_REST = MARKETING_H1.slice(heroBreak + 2);
 
 export const MARKETING_SUBLINE =
   "Cleat keeps clients logging on iOS and Android, shows you who skipped and who needs a nudge, and answers routine questions from your own programs only when it's sure. Everything else comes to you.";
@@ -41,12 +46,6 @@ export function clientInviteHref(): string {
   return `${configured || "http://localhost:8081"}/invite`;
 }
 
-function Mark({ size }: { size: number }) {
-  return (
-    <img src="/cleat-mark-charcoal.png" alt="Cleat mark" width={size} height={size} />
-  );
-}
-
 function Status({ tone, children }: { tone: "done" | "nudge" | "ai"; children: string }) {
   return <span className={`mkt-status mkt-${tone}`}>{children}</span>;
 }
@@ -56,7 +55,7 @@ export function Landing() {
     <div className="mkt">
       <header className="mkt-nav">
         <a className="mkt-lockup" href="/">
-          <Mark size={32} />
+          <CleatMark size={32} alt="Cleat mark" />
           <span>Cleat</span>
         </a>
         <nav className="mkt-links" aria-label="Primary">
@@ -72,7 +71,9 @@ export function Landing() {
         <section className="mkt-hero">
           <div>
             <p className="mkt-pill">{MARKETING_PILL}</p>
-            <h1>{MARKETING_H1}</h1>
+            <h1>
+              <span className="mkt-h1-line">{HERO_LEAD}</span> <span className="mkt-h1-line">{HERO_REST}</span>
+            </h1>
             <p className="mkt-lede">{MARKETING_SUBLINE}</p>
             <div className="mkt-cta">
               <a className="btn btn-primary btn-lg" href={TRAINER_SIGNUP_HREF}>
@@ -139,7 +140,7 @@ export function Landing() {
       </main>
       <footer className="mkt-footer">
         <div className="mkt-footer-mark">
-          <Mark size={28} />
+          <CleatMark size={28} alt="Cleat mark" />
           <span>Cleat</span>
         </div>
         <div className="mkt-footer-links">
