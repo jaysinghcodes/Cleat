@@ -80,11 +80,11 @@ export type ThemeTokens = {
   fontMono: string;
 };
 
-/** Dark theme. Warm mist. */
+/** Dark theme. Page is the logo charcoal. Sidebar stays darker than the page. */
 export const dark = {
   colorScheme: "dark",
-  sidebar: "#211F1E",
-  page: "#262423",
+  sidebar: "#171412",
+  page: "#1C1917",
   card: "#312E2C",
   raised: "#3C3936",
   bgSoft: "#3C3936",
@@ -115,7 +115,7 @@ export const dark = {
   codeFg: "#F3F0EC",
   onUrgent: onAccentColor,
   phoneStage1: "#211F1E",
-  phoneStage2: "#262423",
+  phoneStage2: "#1C1917",
   phoneBezel: "#141312",
   shadow: "0 1px 2px rgba(0,0,0,0.20), 0 8px 24px rgba(0,0,0,0.18)",
   shadowSm: "0 1px 2px rgba(0,0,0,0.18)",

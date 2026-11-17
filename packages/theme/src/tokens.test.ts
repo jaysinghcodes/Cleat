@@ -22,6 +22,18 @@ test("onAccent is charcoal on both themes", () => {
   assert.equal(light.onAccent, "#1C1917");
 });
 
+test("dark page is logo charcoal and the sidebar stays darker", () => {
+  assert.equal(dark.page, "#1C1917");
+  assert.equal(dark.phoneStage2, "#1C1917");
+  assert.equal(dark.sidebar, "#171412");
+  assert.ok(luminance(dark.sidebar) < luminance(dark.page));
+  assert.equal(light.page, "#F4F4F5");
+  assert.equal(light.sidebar, "#FAFAFA");
+  assert.equal(dark.card, "#312E2C");
+  assert.equal(dark.accent, "#E8A87C");
+  assert.equal(dark.text, "#F3F0EC");
+});
+
 test("light accentText is the darker apricot", () => {
   assert.equal(light.accentText, "#9A5B2F");
   assert.equal(light.accent, "#E8A87C");

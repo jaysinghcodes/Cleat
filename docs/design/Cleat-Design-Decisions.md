@@ -27,8 +27,9 @@
 
 | Token | Hex | Use |
 |---|---|---|
-| Sidebar | `#211F1E` | Nav column, code blocks |
-| Page | `#262423` | App background |
+| Sidebar | `#171412` | Nav column |
+| Page | `#1C1917` | App background and phone stage 2 |
+| Code | `#211F1E` | Code blocks |
 | Card | `#312E2C` | Surfaces |
 | Raised | `#3C3936` | Hover, active row, inputs-on-card, avatars |
 | Border | `rgba(255,255,255,0.08)` | Hairlines (6% soft, 14% strong) |
@@ -56,13 +57,13 @@
 
 | Pair | Dark: page / card | Light: page / card |
 |---|---:|---:|
-| Primary text | 13.60 / 11.87 ✅ | 15.91 / 17.49 ✅ |
-| Secondary | 7.12 / 6.21 ✅ | 6.94 / 7.63 ✅ |
-| Tertiary | 5.35 / 4.67 ✅ | 4.80 / 5.28 ✅ |
-| Accent text | 7.60 / 6.63 ✅ (`#E8A87C`) | 4.88 / 5.37 ✅ (`#9A5B2F`) |
-| Success | 7.75 / 6.76 ✅ | 5.18 / 5.69 ✅ |
-| Warning | 8.45 / 7.37 ✅ | 5.13 / 5.64 ✅ |
-| Error | 6.87 / 6.00 ✅ | 5.89 / 6.47 ✅ |
+| Primary text | 15.39 / 11.87 ✅ | 15.91 / 17.49 ✅ |
+| Secondary | 8.05 / 6.21 ✅ | 6.94 / 7.63 ✅ |
+| Tertiary | 6.05 / 4.67 ✅ | 4.80 / 5.28 ✅ |
+| Accent text | 8.60 / 6.63 ✅ (`#E8A87C`) | 4.88 / 5.37 ✅ (`#9A5B2F`) |
+| Success | 8.77 / 6.76 ✅ | 5.18 / 5.69 ✅ |
+| Warning | 9.56 / 7.37 ✅ | 5.13 / 5.64 ✅ |
+| Error | 7.78 / 6.00 ✅ | 5.89 / 6.47 ✅ |
 | Charcoal `#1C1917` on apricot | 8.60 ✅ | 8.60 ✅ |
 
 **Rules**
@@ -104,6 +105,7 @@
 | Oct 7 | **Tagline locked:** AI section "It answers when it's sure. You answer the rest."; accountability "Every rep logged. Every skip seen." |
 | Oct 9 | Speedy approved AA contrast nudges: dark error `#EE9088` → `#F1948A`; light success `#15803D` → `#15763D`; light warn and skip `#9E6007` → `#995707`. Apricot and charcoal stay locked. |
 | Nov 17 | Hero tagline updated to "Coach more. Chase less." |
+| Nov 17 | Dark page and phone stage 2 are `#1C1917`. Dark sidebar is `#171412`. Cards, text, apricot, and the light theme stay. |
 
 ## 9. Screen inventory (23)
 
