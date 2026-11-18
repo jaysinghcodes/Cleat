@@ -289,5 +289,5 @@ export type {
 export { deferredPushNotifier } from "./notify";
 export type { SessionNotifier } from "./notify";
 
-export { reviewBanner, reviewCopy, reviewCountLabel, reviewEditChanged, reviewQueue } from "./review";
+export { reviewBanner, reviewCopy, reviewCountLabel, reviewEditChanged, reviewQueue, startReviewEdit } from "./review";
 export type { ReviewItem } from "./review";

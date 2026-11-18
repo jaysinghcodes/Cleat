@@ -1,0 +1,324 @@
+[
+  {
+    "id": "n-creatine-safe",
+    "message": "Is creatine safe to take?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-preworkout-6am",
+    "message": "Can I take pre workout before the 6am class?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-protein-day",
+    "message": "How much protein should I eat a day?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-bulk",
+    "message": "What should I eat to bulk?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cold-skip",
+    "message": "I have a cold, should I skip today?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-lose-weight",
+    "message": "How do I lose weight without losing muscle?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-protein-powder",
+    "message": "Is protein powder fine after a session?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-caffeine",
+    "message": "Is caffeine ok before lifting?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-electrolytes",
+    "message": "Should I drink electrolytes on a long conditioning day?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-multi",
+    "message": "Is a multivitamin worth taking?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-fish-oil",
+    "message": "Should I take fish oil?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-creatine-start",
+    "message": "should I start taking creatine",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-creatine-rest",
+    "message": "Can I take creatine on rest days?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-preworkout-plain",
+    "message": "Is pre workout ok before class?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-supplement-mix",
+    "message": "Are supplements like creatine and fish oil fine?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-carbs",
+    "message": "how many carbs should I eat a day",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-calories-cut",
+    "message": "how many calories should i eat to cut",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-protein-grams",
+    "message": "how many grams of protein should I have a day",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-macros",
+    "message": "what should my macros be",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-before-session",
+    "message": "What should I eat before a session?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-after-session",
+    "message": "What should I eat after a session?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-meal-timing",
+    "message": "How should I time meals around training?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-lose-fat",
+    "message": "How do I lose fat while lifting?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cut-food",
+    "message": "What should I eat to cut?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-protein-muscle",
+    "message": "how much protein do I need to build muscle",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-fasting",
+    "message": "should I try fasting to lose weight faster",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-calories-bulk",
+    "message": "How many calories should I eat to bulk?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cold-train",
+    "message": "ive got a cold should i train",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-runny-nose",
+    "message": "I have a runny nose, should I go light today?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-sore-throat",
+    "message": "I have a sore throat, should I skip or go light?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-run-down",
+    "message": "I feel run down, should I skip today?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-tired",
+    "message": "I feel tired today, should I go light?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-weather",
+    "message": "I am under the weather, should I train?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cough",
+    "message": "I have a small cough, can I still come in?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-congested",
+    "message": "I am congested, should I skip the session?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cold-easy",
+    "message": "I have a mild cold, can I train easy?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-protein-shake",
+    "message": "Can I have a protein shake after lifting?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-creatine-dose",
+    "message": "How much creatine should I take a day?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-fish-oil-morning",
+    "message": "Can I take fish oil in the morning?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-electrolyte-water",
+    "message": "Are electrolytes in my water bottle ok?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-multi-daily",
+    "message": "Can I take a multivitamin every day?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-coffee",
+    "message": "Is coffee caffeine ok before the 6am class?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-bulk-meals",
+    "message": "What meals help when I am bulking?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cut-muscle",
+    "message": "Can I cut and keep muscle?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-cold-legs",
+    "message": "I have a cold, can I still train legs easy?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  },
+  {
+    "id": "n-nose-skip",
+    "message": "Runny nose today, should I skip?",
+    "expected": "escalate",
+    "templateId": null,
+    "note": "Must not refuse."
+  }
+]

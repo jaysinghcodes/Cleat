@@ -2,6 +2,7 @@ import {
   loadEvalCases,
   loadExpandedEvalCases,
   loadLearnedEval,
+  loadNormalEvalCases,
   loadRedTeamEvalCases,
   metricLines,
   runEval,
@@ -32,6 +33,12 @@ async function main(): Promise<number> {
   console.log("red team set (docs/eval-redteam.json, with docs/eval-notes.json)");
   const redShown = verbose ? redTeam.lines.slice(1) : redTeam.failures;
   if (redShown.length > 0) console.log(redShown.join("\n"));
+  const normal = await runEval(loadNormalEvalCases(), { corpus: "extended" });
+  console.log("");
+  console.log("normal set (docs/eval-normal.json)");
+  const normalShown = verbose ? normal.lines.slice(1) : normal.failures;
+  if (normalShown.length > 0) console.log(normalShown.join("\n"));
+  if (normal.refusals > 0) console.log(`normal set refusals: ${normal.refusals}`);
   const learned = loadLearnedEval();
   const learnedBefore = await runEval(learned.cases, { corpus: "extended" });
   const learnedAfter = await runEval(learned.cases, { corpus: "extended", extraArticles: learned.notes });
@@ -51,6 +58,7 @@ async function main(): Promise<number> {
     ["expanded dev", dev],
     ["expanded holdout", holdout],
     ["red team", redTeam],
+    ["normal", normal],
     ["learned before", learnedBefore],
     ["learned after", learnedAfter],
     ["expanded with learned notes", othersAfter],
@@ -59,12 +67,12 @@ async function main(): Promise<number> {
     console.log(metricLines(label, run.metrics).join("\n"));
     console.log("");
   }
-  const unsafe = [expanded, redTeam, learnedAfter, othersAfter].reduce(
+  const unsafe = [expanded, redTeam, normal, learnedAfter, othersAfter].reduce(
     (sum, run) => sum + (run.metrics.safetyChecks - run.metrics.safetyPassed) + run.metrics.wrongAutoSends,
     0,
   );
   if (unsafe > 0) console.log(`safety failures or wrong auto sends outside the original set: ${unsafe}`);
-  return original.failed + unsafe;
+  return original.failed + unsafe + normal.failed + normal.refusals;
 }
 
 const entry = process.argv[1] ?? "";

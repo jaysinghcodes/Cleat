@@ -338,15 +338,15 @@ To use OpenAI, set `OPENAI_API_KEY` on the Next.js server only. Do not prefix it
 
 New orgs start with auto send off and a threshold of 0.85 (allowed range 0.60 to 0.95). The confidence floor is 0.50 and is not a setting. The reserved demo org `d1000000-0000-4000-8000-000000000001` is the only org `enable_demo_auto_send()` turns on. `pnpm seed` inserts that org and calls the function. The call is server side. The anon and authenticated roles cannot run it.
 
-`pnpm eval` batches [docs/eval-messages.json](docs/eval-messages.json) and three more sets through the same gate and prints pass or fail per message, plus totals. See Eval results below. With `OPENAI_API_KEY` unset it stays offline (`cleat-hash-embedding`, `cleat-canned-scorer`). With the key set on the server, it uses `text-embedding-3-small` and `gpt-4o-mini`.
+`pnpm eval` batches [docs/eval-messages.json](docs/eval-messages.json) and four more sets through the same gate and prints pass or fail per message, plus totals. See Eval results below. With `OPENAI_API_KEY` unset it stays offline (`cleat-hash-embedding`, `cleat-canned-scorer`). With the key set on the server, it uses `text-embedding-3-small` and `gpt-4o-mini`.
 
 Escalations show up in the trainer Priority inbox and on the thread.
 
-Held answers also have their own screen at `/review`. Each one shows the client question, the held answer, the score, and why it was held, with Approve, Edit, and Reject. When a coach edits an answer, the question and the fix can be saved as a note so the next similar question is answered from the coach's own words. The coach can untick that for a reply that is personal to one client. Learned notes show up under Knowledge like any other note.
+Held answers also have their own screen at `/review`. Each one shows the client question, the held answer, the score, and why it was held, with Approve, Edit, and Reject. When a coach edits an answer, the question and the fix can be saved as a note so the next similar question is answered from the coach's own words. The box starts off. The coach ticks the box to save the fix as a note. Leave it off when the reply is personal to one client. Learned notes show up under Knowledge like any other note.
 
 ## Eval results
 
-`pnpm eval` runs four message sets with the offline embedder and the canned scorer. It exits with an error on any safety miss or wrong auto send.
+`pnpm eval` runs five message sets with the offline embedder and the canned scorer. It exits with an error on any safety miss, any refusal in the normal set, or any wrong auto send.
 
 | Set | File | Messages | What it checks |
 | --- | --- | --- | --- |
@@ -354,8 +354,9 @@ Held answers also have their own screen at `/review`. Each one shows the client 
 | Expanded | `docs/eval-messages-v2.json` with `docs/eval-notes.json` | 98 | Answerable questions, typos, vague messages, mixed injury plus program questions, and questions the notes cannot answer |
 | Red team | `docs/eval-redteam.json` | 219 | Messages written to slip past the safety checks |
 | Learned | `docs/eval-learned.json` | 23 | Questions a coach edit should fix, plus near misses that must stay held |
+| Normal | `docs/eval-normal.json` | 46 | Everyday gym questions that must not get a safety template. Score 100.0% (46 of 46), 0 wrong auto sends |
 
-Before is `main`. After is this branch. The numbers come from the same command on both.
+Before is commit `43aff81` (main before PR #42) and After is `75cdb04`. The numbers come from the same command on both.
 
 | Metric | Before | After |
 | --- | --- | --- |

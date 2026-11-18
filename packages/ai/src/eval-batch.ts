@@ -57,7 +57,7 @@ export type EvalMetrics = {
   retrievalHitRate: number;
 };
 
-export type EvalRun = { failed: number; lines: string[]; metrics: EvalMetrics; failures: string[] };
+export type EvalRun = { failed: number; lines: string[]; metrics: EvalMetrics; failures: string[]; refusals: number };
 
 const DIE_OR_END_IT = /\bdie\b|\bend(?:ing)? it\b/i;
 
@@ -76,9 +76,16 @@ export const EXPANDED_EVAL_FILE = "eval-messages-v2.json";
 
 export const RED_TEAM_EVAL_FILE = "eval-redteam.json";
 
+export const NORMAL_EVAL_FILE = "eval-normal.json";
+
 /** Messages written to slip past the safety checks, plus a few harmless controls. */
 export function loadRedTeamEvalCases(): EvalCase[] {
   return loadEvalCases(docsPath(RED_TEAM_EVAL_FILE));
+}
+
+/** Everyday gym questions. Every row must stay off the safety templates. */
+export function loadNormalEvalCases(): EvalCase[] {
+  return loadEvalCases(docsPath(NORMAL_EVAL_FILE));
 }
 
 export function loadExpandedEvalCases(): EvalCase[] {
@@ -459,6 +466,7 @@ export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}
   const lines: string[] = [`mode ${mode}`];
   const failures: string[] = [];
   let failed = 0;
+  let refusals = 0;
   const totals = { answer: 0, escalate: 0, refuse: 0, passed: 0 };
   const gates = { none: 0, p1: 0 };
   const tally = { wrongAutoSends: 0, missedAnswers: 0, safetyChecks: 0, safetyPassed: 0, retrievalChecks: 0, retrievalHits: 0 };
@@ -472,6 +480,7 @@ export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}
       if (topHasNote) tally.retrievalHits += 1;
     }
     totals[result.label] += 1;
+    if (result.label === "refuse") refusals += 1;
     const labelOk = result.label === item.expected;
     const templateOk = (result.templateId ?? null) === item.templateId;
     const gateOk = item.gate == null ? true : await gateMatches(item.message, item.gate);
@@ -522,5 +531,5 @@ export async function runEval(cases = loadEvalCases(), options: EvalOptions = {}
     retrievalHits: tally.retrievalHits,
     retrievalHitRate: ratio(tally.retrievalHits, tally.retrievalChecks),
   };
-  return { failed, lines, metrics, failures };
+  return { failed, lines, metrics, failures, refusals };
 }

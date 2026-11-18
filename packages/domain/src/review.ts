@@ -53,6 +53,15 @@ export function reviewCountLabel(count: number): string {
   return `${count} ${reviewCopy.waiting}`;
 }
 
+/** Edit opens with the note box unticked. The coach ticks it to save. */
+export function startReviewEdit(item: { id: string; draft: { text: string } }): {
+  id: string;
+  text: string;
+  saveNote: boolean;
+} {
+  return { id: item.id, text: item.draft.text, saveNote: false };
+}
+
 export function reviewBanner(input: { action: "approve" | "edit" | "reject"; noteAsked: boolean; noteSaved: boolean }): string {
   if (input.action === "approve") return reviewCopy.approved;
   if (input.action === "reject") return reviewCopy.rejected;

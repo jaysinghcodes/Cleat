@@ -182,14 +182,9 @@ const MEDICAL: RegExp[] = [
   /\bpills?\b/,
   /\bdosage\b/,
   /\bdose\b/,
-  /meal plan/,
-  /diet plan/,
-  /\bmacros?\b/,
-  /\bcalories?\b/,
-  /what should i eat/,
-  /eating plan/,
-  /\bnutrition\b/,
-  // Red team additions. Conditions, clinicians, drugs, supplements, illness, and diet asks that were missing.
+  // Red team additions. Conditions, clinicians, drugs, and illness that were missing.
+  // Training nutrition is not a refusal: protein, carbs, calories, macros, meal timing,
+  // bulking, cutting, and losing weight or fat. A crash diet or a very low calorie target still is.
   /\bach(?:e|es|ing|y)\b/,
   /\bswollen\b|\bswelling\b|\binflam/,
   /\brotator cuff\b|\bmeniscus\b|\bsciatic|\bhernia|\b(?:slipped|bulging|herniated) dis[ck]\b/,
@@ -199,9 +194,11 @@ const MEDICAL: RegExp[] = [
   /\b(?:feel(?:s|ing)?|felt|am|i'm|im|been|got|getting|was) (?:\w+ )?sick\b(?! of)/,
   /\bnaproxen\b|\baleve\b|\bmotrin\b|\bacetaminophen\b|\bparacetamol\b|\bmuscle relax/,
   /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
-  /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bcreatine\b|\bsupplements?\b|\bpre-?workout\b|\bfat burners?\b/,
-  /\b(?:how (?:much|many)|should i|do i need|what)\b[^.?!]{0,40}\b(?:protein|carbs?|carbohydrates?|fats?|sugar|fib(?:er|re)|sodium)\b[^.?!]{0,30}\b(?:eat|eating|have|need|take|get|consume|a day|per day|daily)\b/,
-  /\bfasting\b|\bketo\b|\blow carb\b|\b(?:what|which|best|good|a|my|crash|on a|this) diet\b(?! (?:coke|soda|pepsi|sprite|drinks?))|\bdieting\b|\blos(?:e|ing) weight\b|\bweight loss\b/,
+  /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bfat burners?\b/,
+  /\bcrash diets?\b/,
+  /\b(?:very|extremely|super|ultra|crazy) low calories?\b/,
+  /\b(?:eat(?:ing)?|on|only|just|under|below|less than)\s+(?:about |around |only |just )?(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\b/,
+  /\b(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\s*(?:a day|per day|daily|diet|target)\b/,
   // Red team round two. Named conditions, more drugs, clinicians, not eating, and stomach trouble.
   /\b[a-z]+itis\b|\bsplints?\b|\btendon|\barthrit|\basthma|\bscolios|\bosteo|\bepilep|\bcancer\b|\bchemo|\banemi|\bthyroid|\bcholesterol|\bhypertens|\bvertigo\b/,
   /\badderall\b|\bbeta ?blockers?\b|\bstatins?\b|\bblood thinners?\b|\bxanax\b|\bopioid|\boxy(?:codone|contin)\b|\bantihistamine|\bmetformin\b|\bozempic\b|\bwegovy\b|\bsemaglutide\b/,
@@ -213,12 +210,11 @@ const MEDICAL: RegExp[] = [
   /\b(?:been|am|i'?m|started|start|back to) cutting\b(?! (?:the|my|this|that|it|out|back|down|up)\b)/,
   /\bbad (?:dis[ck]|back|neck|wrist|elbow)\b|\bdis[ck] (?:issue|problem|injur)/,
   /\b(?:high|low) bp\b|\bbp (?:is|was|meds)\b/,
-  /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)|\bmelatonin\b|\bsleeping pills?\b|\bsleep aids?\b|\bcaffeine pills?\b/,
+  /\bmelatonin\b|\bsleeping pills?\b|\bsleep aids?\b|\bcaffeine pills?\b/,
   /\bsafe to (?:lift|train|run|work ?out|exercise|squat|deadlift|bench|press|row)\b/,
   /\bwater weight\b|\bweigh ?in\b|\bsweat(?:ing)? (?:it|weight) (?:out|off)\b|\bdehydrat|\bsauna suit\b/,
   /\b(?:bad|awful|terrible|severe|horrible) cramps?\b|\bcramps? (?:are|is|were) (?:so |really )?(?:bad|awful|terrible|severe)\b|\bperiod cramps?\b|\bmenstrua/,
   /\b(?:tennis|golfers?) elbow\b|\b(?:runners?|jumpers?) knee\b|\bfrozen shoulder\b|\bcarpal tunnel\b/,
-  /\b(?:got|have|having|caught|with|fighting) a (?:bad |head |chest )?cold\b|\bunder the weather\b|\bunwell\b|\bsore throat\b|\bcough|\bcongest|\bfeel(?:ing)? ill\b/,
   /\b(?:achilles|acl|mcl|pcl|labrum|it band)\b|\b(?:repair|reconstruction|replacement|operation|post ?op|rehab)\b/,
   /\burin|\bpee(?:ing)? (?:is |was )?(?:dark|brown|red|blood)|\bdark pee\b|\bheadaches?\b/,
   /\bic(?:e|ing) (?:it|or heat|my)\b|\bheat (?:it|pack|pad)\b|\bice pack\b|\b(?:slept|sleeping) (?:wrong|funny|weird)\b/,
@@ -398,6 +394,22 @@ export type RefusalCheck = HardRefusal | DraftHold | { kind: "none" };
 
 function matches(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
+}
+
+/**
+ * "Can I take" a named drug. A rest day ("take a", "take the", "take 2") is not this.
+ * Creatine, protein, pre workout, caffeine, electrolytes, a multivitamin, and fish oil are not drugs.
+ * A drug named in the same message still matches the medical list, so the red flag wins.
+ */
+const TAKE_ASK =
+  /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)/;
+
+const LEGAL_SUPPLEMENT =
+  /\b(?:creatine|protein(?: powder)?|pre-? ?work ?outs?|caffeine(?! pills?)|electrolytes?|multivitamins?|fish oils?|supplements?|vitamins?)\b/;
+
+function asksForDrug(text: string): boolean {
+  if (!TAKE_ASK.test(text)) return false;
+  return !LEGAL_SUPPLEMENT.test(text);
 }
 
 function hasHarmIntent(text: string): boolean {
@@ -661,6 +673,11 @@ function distressHold(text: string): DraftHold {
  * Those holds run only after emergency and injury. A medical emergency plus a
  * die hold still gets the emergency template and the 988 line.
  * Asks for the coach and program swaps are holds, not refusals.
+ * A normal training question is not a refusal. That is a legal supplement
+ * (creatine, protein powder, pre workout, caffeine, electrolytes, a multivitamin, fish oil),
+ * nutrition for training (protein, carbs, calories, bulking, cutting, losing weight or fat, meal timing),
+ * or a mild illness with no red flag (a cold, a runny nose, a sore throat, feeling tired or run down).
+ * A red flag in the same message still refuses.
  * This runs on the raw message, before retrieval.
  */
 function classify(text: string): RefusalCheck {
@@ -678,7 +695,7 @@ function classify(text: string): RefusalCheck {
     if (die === "hold") return selfHarmRefusal();
     return emergencyRefusal();
   }
-  if (matches(text, MEDICAL)) return medicalRefusal();
+  if (matches(text, MEDICAL) || asksForDrug(text)) return medicalRefusal();
   if (BODY_PART.test(text) && SYMPTOM.test(text)) return medicalRefusal();
   if (die === "hold" || endIt === "hold" || hopeless === "hold") return distressHold(text);
   const reasonCodes: HoldReason[] = [];

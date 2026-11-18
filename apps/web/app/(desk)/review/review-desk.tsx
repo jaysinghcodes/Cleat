@@ -7,6 +7,7 @@ import {
   reviewCopy,
   reviewEditChanged,
   reviewQueue,
+  startReviewEdit,
   screenCopy,
   userFacingError,
   type ReviewItem,
@@ -144,7 +145,7 @@ export function ReviewDesk({ defaultWindowHours }: { defaultWindowHours: number 
       onStartEdit={(item) => {
         setBanner(null);
         setError(null);
-        setEdit({ id: item.id, text: item.draft.text, saveNote: true });
+        setEdit(startReviewEdit(item));
       }}
       onEditText={(value) => setEdit((current) => (current ? { ...current, text: value } : current))}
       onSaveNote={(value) => setEdit((current) => (current ? { ...current, saveNote: value } : current))}
