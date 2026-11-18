@@ -117,6 +117,8 @@ const EMERGENCY: RegExp[] = [
   /palpitation/,
   /\b(?:racing|pounding|irregular)\b[^.]{0,40}\bheart(?:beat)?s?\b/,
   /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:racing|pounding|irregular)\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,40}\brac(?:e|es|ing)\b/,
+  /\brac(?:e|es|ing)\b[^.]{0,30}\bheart(?:beat)?s?\b/,
   /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) (?:slow|settle)/,
   // Red team additions. Misspellings, plain language for the same symptoms, and signs that were missing.
   /\bche(?:a|s)st\b|\bchets\b|\bchst\b/,
@@ -151,6 +153,13 @@ const EMERGENCY: RegExp[] = [
   /\b(?:worst|sudden|severe|splitting|thunderclap) headache\b/,
   /\b(?:not|isn'?t|is not|won'?t|will not|stopped) (?:waking up|wake up|breathing|moving)\b(?<!\bdid not wake up)/,
 ];
+
+/**
+ * Named drugs. A legal supplement in the same message does not cancel these.
+ * Opioids, decongestants, stimulants, and cold medicines live here.
+ */
+const NAMED_DRUG =
+  /\b(?:tramadol|codeine|hydrocodone|vicodin|norco|percocet|morphine|fentanyl|methadone|suboxone|dilaudid|heroin|sudafed|pseudoephedrine|phenylephrine|afrin|ephedr(?:ine|a)|clen(?:buterol)?|ritalin|vyvanse|modafinil|nyquil|dayquil|theraflu|robitussin|mucinex|viagra|cialis|diuretics?)\b/;
 
 const MEDICAL: RegExp[] = [
   /\bpain(?:s|ful|fully|killers?)?\b/,
@@ -190,15 +199,24 @@ const MEDICAL: RegExp[] = [
   /\brotator cuff\b|\bmeniscus\b|\bsciatic|\bhernia|\b(?:slipped|bulging|herniated) dis[ck]\b/,
   /\bfractur|\bdislocat|\bbroken? (?:my|a|an|his|her|their)\b|\bstitches\b|\bconcuss/,
   /\bsurger|\bsurgeon\b|\bphysio|\bphysical therap|\bchiropract|\bx-?ray\b|\bmri\b|\bdiagnos/,
-  /\bfever|\bflu\b|\bnause|\bvomit|\bthrew up\b|\bthrowing up\b|\binfection\b|\bcovid\b|\bmigraine/,
+  /\bfever|\bflu\b|\bnause|\bvomit|\bpuk(?:e|ed|ing)\b|\bthrew up\b|\bthrowing up\b|\bthrow up\b|\binfection\b|\bcovid\b|\bmigraine|\bpneumonia\b|\btemperature of \d{2,3}\b/,
   /\b(?:feel(?:s|ing)?|felt|am|i'm|im|been|got|getting|was) (?:\w+ )?sick\b(?! of)/,
   /\bnaproxen\b|\baleve\b|\bmotrin\b|\bacetaminophen\b|\bparacetamol\b|\bmuscle relax/,
   /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
   /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bfat burners?\b/,
+  NAMED_DRUG,
   /\bcrash diets?\b/,
   /\b(?:very|extremely|super|ultra|crazy) low calories?\b/,
   /\b(?:eat(?:ing)?|on|only|just|under|below|less than)\s+(?:about |around |only |just )?(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\b/,
   /\b(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\s*(?:a day|per day|daily|diet|target)\b/,
+  /\b(?:eat(?:ing)?|eaten)\s+(?:only |just |about |around )?(?:[5-9]\d{2}|1[0-2]\d{2})\b(?!\s*(?:g\b|grams?|lb|lbs|pounds?|kg|kilos?|reps?|sets?|mg\b))/,
+  /\bfasting\b|\bwater fast|\bfast for\b|\bjuice cleanse\b/,
+  /\bwithout eating\b|\b(?:do not|don't|dont) eat (?:anything|at all)\b/,
+  /\b(?:make|making|made) (?:myself|my self) (?:sick|throw up|puke)\b/,
+  /\bguilty\b[^.]{0,40}\beat/,
+  /\b(?:get|drop) down to \d{2}\s*pounds?\b/,
+  /\bkidneys?\b/,
+  /\bcough\w*\b[^.]{0,40}\b(?:weeks?|months?)\b/,
   // Red team round two. Named conditions, more drugs, clinicians, not eating, and stomach trouble.
   /\b[a-z]+itis\b|\bsplints?\b|\btendon|\barthrit|\basthma|\bscolios|\bosteo|\bepilep|\bcancer\b|\bchemo|\banemi|\bthyroid|\bcholesterol|\bhypertens|\bvertigo\b/,
   /\badderall\b|\bbeta ?blockers?\b|\bstatins?\b|\bblood thinners?\b|\bxanax\b|\bopioid|\boxy(?:codone|contin)\b|\bantihistamine|\bmetformin\b|\bozempic\b|\bwegovy\b|\bsemaglutide\b/,
@@ -399,7 +417,7 @@ function matches(text: string, patterns: RegExp[]): boolean {
 /**
  * "Can I take" a named drug. A rest day ("take a", "take the", "take 2") is not this.
  * Creatine, protein, pre workout, caffeine, electrolytes, a multivitamin, and fish oil are not drugs.
- * A drug named in the same message still matches the medical list, so the red flag wins.
+ * A named drug in the same message is never cancelled by that exemption.
  */
 const TAKE_ASK =
   /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)/;
@@ -408,6 +426,7 @@ const LEGAL_SUPPLEMENT =
   /\b(?:creatine|protein(?: powder)?|pre-? ?work ?outs?|caffeine(?! pills?)|electrolytes?|multivitamins?|fish oils?|supplements?|vitamins?)\b/;
 
 function asksForDrug(text: string): boolean {
+  if (NAMED_DRUG.test(text)) return true;
   if (!TAKE_ASK.test(text)) return false;
   return !LEGAL_SUPPLEMENT.test(text);
 }
