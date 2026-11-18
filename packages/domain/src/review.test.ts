@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { InboxQueueItem } from "./inbox";
-import { reviewBanner, reviewCopy, reviewCountLabel, reviewEditChanged, reviewQueue } from "./review";
+import { reviewBanner, reviewCopy, reviewCountLabel, reviewEditChanged, reviewQueue, startReviewEdit } from "./review";
 
 const DASH = /[—–]| - /;
 
@@ -53,6 +53,11 @@ test("a safety template never shows in review, even with a draft attached", () =
 test("an edit counts only when the words change", () => {
   assert.equal(reviewEditChanged("Yes, two showers.", "Yes,  two showers.\n"), false);
   assert.equal(reviewEditChanged("Yes, two showers.", "Yes, two showers by the lockers."), true);
+});
+
+test("opening edit leaves save as note unticked", () => {
+  const next = startReviewEdit({ id: "held", draft: { text: "Bring a towel." } });
+  assert.deepEqual(next, { id: "held", text: "Bring a towel.", saveNote: false });
 });
 
 test("banner tells the coach what happened to the note", () => {

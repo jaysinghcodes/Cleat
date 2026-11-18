@@ -7,4 +7,5 @@
 - [eval-messages.json](./eval-messages.json): canned client messages for `pnpm eval`.
 - [eval-messages-v2.json](./eval-messages-v2.json) and [eval-notes.json](./eval-notes.json): the expanded set and the extra notes it runs against.
 - [eval-redteam.json](./eval-redteam.json): messages written to slip past the safety checks.
+- [eval-normal.json](./eval-normal.json): everyday gym questions that must not get a safety template.
 - [eval-learned.json](./eval-learned.json): coach edits and the questions they should fix.

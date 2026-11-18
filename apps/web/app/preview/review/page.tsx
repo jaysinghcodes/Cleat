@@ -1,6 +1,6 @@
 "use client";
 
-import { reviewBanner, reviewQueue, type InboxQueueItem, type ReviewItem } from "@cleat/domain";
+import { reviewBanner, reviewQueue, startReviewEdit, type InboxQueueItem, type ReviewItem } from "@cleat/domain";
 import { notFound, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { DeskShell } from "../../(desk)/nav";
@@ -46,7 +46,7 @@ function PreviewReview() {
         edit={edit}
         onApprove={(item) => done(item, "approve")}
         onReject={(item) => done(item, "reject")}
-        onStartEdit={(item) => setEdit({ id: item.id, text: item.draft.text, saveNote: true })}
+        onStartEdit={(item) => setEdit(startReviewEdit(item))}
         onEditText={(value) => setEdit((current) => (current ? { ...current, text: value } : current))}
         onSaveNote={(value) => setEdit((current) => (current ? { ...current, saveNote: value } : current))}
         onCancelEdit={() => setEdit(null)}

@@ -117,6 +117,9 @@ const EMERGENCY: RegExp[] = [
   /palpitation/,
   /\b(?:racing|pounding|irregular)\b[^.]{0,40}\bheart(?:beat)?s?\b/,
   /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:racing|pounding|irregular)\b/,
+  /\bheart(?:beat)?s?\b[^.]{0,40}\brac(?:e|es|ing)\b/,
+  /\brac(?:e|es|ing)\b[^.]{0,30}\bheart(?:beat)?s?\b/,
+  /\bpulse\b[^.]{0,40}\b(?:all over|racing|irregular|skipping|pounding|fast)\b/,
   /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) (?:slow|settle)/,
   // Red team additions. Misspellings, plain language for the same symptoms, and signs that were missing.
   /\bche(?:a|s)st\b|\bchets\b|\bchst\b/,
@@ -152,6 +155,13 @@ const EMERGENCY: RegExp[] = [
   /\b(?:not|isn'?t|is not|won'?t|will not|stopped) (?:waking up|wake up|breathing|moving)\b(?<!\bdid not wake up)/,
 ];
 
+/**
+ * Named drugs. A legal supplement in the same message does not cancel these.
+ * Opioids, decongestants, stimulants, and cold medicines live here.
+ */
+const NAMED_DRUG =
+  /\b(?:tramadol|codeine|hydrocodone|vicodin|norco|percocet|morphine|fentanyl|methadone|suboxone|dilaudid|heroin|sudafed|pseudoephedrine|phenylephrine|afrin|ephedr(?:ine|a)|clen(?:buterol)?|ritalin|vyvanse|modafinil|nyquil|dayquil|theraflu|robitussin|mucinex|viagra|cialis|diuretics?)\b/;
+
 const MEDICAL: RegExp[] = [
   /\bpain(?:s|ful|fully|killers?)?\b/,
   /\bhurt(?:s|ing|y)?\b/,
@@ -182,43 +192,51 @@ const MEDICAL: RegExp[] = [
   /\bpills?\b/,
   /\bdosage\b/,
   /\bdose\b/,
-  /meal plan/,
-  /diet plan/,
-  /\bmacros?\b/,
-  /\bcalories?\b/,
-  /what should i eat/,
-  /eating plan/,
-  /\bnutrition\b/,
-  // Red team additions. Conditions, clinicians, drugs, supplements, illness, and diet asks that were missing.
+  // Red team additions. Conditions, clinicians, drugs, and illness that were missing.
+  // Training nutrition is not a refusal: protein, carbs, calories, macros, meal timing,
+  // bulking, cutting, and losing weight or fat. A crash diet or a very low calorie target still is.
   /\bach(?:e|es|ing|y)\b/,
   /\bswollen\b|\bswelling\b|\binflam/,
   /\brotator cuff\b|\bmeniscus\b|\bsciatic|\bhernia|\b(?:slipped|bulging|herniated) dis[ck]\b/,
   /\bfractur|\bdislocat|\bbroken? (?:my|a|an|his|her|their)\b|\bstitches\b|\bconcuss/,
   /\bsurger|\bsurgeon\b|\bphysio|\bphysical therap|\bchiropract|\bx-?ray\b|\bmri\b|\bdiagnos/,
-  /\bfever|\bflu\b|\bnause|\bvomit|\bthrew up\b|\bthrowing up\b|\binfection\b|\bcovid\b|\bmigraine/,
+  /\bfever|\bflu\b|\bnause|\bvomit|\bpuk(?:e|ed|ing)\b|\bthrew up\b|\bthrowing up\b|\bthrow up\b|\binfection\b|\bcovid\b|\bmigraine|\bpneumonia\b|\btemperature of \d{2,3}\b/,
   /\b(?:feel(?:s|ing)?|felt|am|i'm|im|been|got|getting|was) (?:\w+ )?sick\b(?! of)/,
   /\bnaproxen\b|\baleve\b|\bmotrin\b|\bacetaminophen\b|\bparacetamol\b|\bmuscle relax/,
   /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
-  /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bcreatine\b|\bsupplements?\b|\bpre-?workout\b|\bfat burners?\b/,
-  /\b(?:how (?:much|many)|should i|do i need|what)\b[^.?!]{0,40}\b(?:protein|carbs?|carbohydrates?|fats?|sugar|fib(?:er|re)|sodium)\b[^.?!]{0,30}\b(?:eat|eating|have|need|take|get|consume|a day|per day|daily)\b/,
-  /\bfasting\b|\bketo\b|\blow carb\b|\b(?:what|which|best|good|a|my|crash|on a|this) diet\b(?! (?:coke|soda|pepsi|sprite|drinks?))|\bdieting\b|\blos(?:e|ing) weight\b|\bweight loss\b/,
+  /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bfat burners?\b/,
+  NAMED_DRUG,
+  // stack, cycle, script, and mg are cues only beside an unknown substance.
+  // They are handled in asksForDrug, not as blanket refusals.
+  /\bcrash diets?\b/,
+  /\b(?:very|extremely|super|ultra|crazy) low calories?\b/,
+  /\b(?:eat(?:ing)?|on|only|just|under|below|less than)\s+(?:about |around |only |just )?(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\b/,
+  /\b(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\s*(?:a day|per day|daily|diet|target)\b/,
+  /\b(?:eat(?:ing)?|eaten)\s+(?:only |just |about |around )?(?:[5-9]\d{2}|1[0-2]\d{2})\b(?!\s*(?:g\b|grams?|lb|lbs|pounds?|kg|kilos?|reps?|sets?|mg\b))/,
+  /\bfasting\b|\bwater(?: only)? fast|\bfast for\b|\bjuice cleanse\b/,
+  /\bstop(?:ping|ped)? eating\b/,
+  /\bwithout eating\b|\b(?:do not|don't|dont) eat (?:anything|at all)\b/,
+  /\b(?:make|making|made) (?:myself|my self) (?:sick|throw up|puke)\b/,
+  /\bguilty\b[^.]{0,40}\beat/,
+  /\b(?:get|drop) down to \d{2}\s*pounds?\b/,
+  /\bkidneys?\b/,
+  /\bcough\w*\b[^.]{0,40}\b(?:weeks?|months?)\b/,
   // Red team round two. Named conditions, more drugs, clinicians, not eating, and stomach trouble.
   /\b[a-z]+itis\b|\bsplints?\b|\btendon|\barthrit|\basthma|\bscolios|\bosteo|\bepilep|\bcancer\b|\bchemo|\banemi|\bthyroid|\bcholesterol|\bhypertens|\bvertigo\b/,
   /\badderall\b|\bbeta ?blockers?\b|\bstatins?\b|\bblood thinners?\b|\bxanax\b|\bopioid|\boxy(?:codone|contin)\b|\bantihistamine|\bmetformin\b|\bozempic\b|\bwegovy\b|\bsemaglutide\b/,
   /\b(?:dr|doc|docs|gp|cardiologist|physician|nurse|specialist|orthopedist|ortho)\b/,
-  /\b(?:have ?n[o']?t|havent|not|did ?n[o']?t|didnt|barely|hardly) (?:eaten|eat|ate|eating)\b|\bstarv|\bskip(?:ping|ped)? meals\b|\bpurg(?:e|ing)\b|\bbinge|\blaxative/,
+  /\b(?:have ?n[o']?t|havent|not|did ?n[o']?t|didnt|barely|hardly) (?:eaten|eat|ate|eating)\b|\bstarv|\bskip(?:ping|ped)?(?:\s+(?:every|all|my|the|each))?\s+meals?\b|\bpurg(?:e|ing)\b|\bbinge|\blaxative/,
   /\bsick to my stomach\b|\bstomach (?:ache|hurts|bug|cramps?)\b|\bqueasy\b/,
   /\bthrew (?:out )?my (?:lower |upper )?(?:back|neck|shoulder)\b|\bthrew (?:my )?(?:lower |upper )?(?:back|neck) out\b/,
   /\b(?:back|neck|spine|knees?|elbows?|wrists?|ankles?|hips?|shoulders?|joints?)\b[^.]{0,30}\bon fire\b/,
   /\b(?:been|am|i'?m|started|start|back to) cutting\b(?! (?:the|my|this|that|it|out|back|down|up)\b)/,
   /\bbad (?:dis[ck]|back|neck|wrist|elbow)\b|\bdis[ck] (?:issue|problem|injur)/,
   /\b(?:high|low) bp\b|\bbp (?:is|was|meds)\b/,
-  /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)|\bmelatonin\b|\bsleeping pills?\b|\bsleep aids?\b|\bcaffeine pills?\b/,
+  /\bmelatonin\b|\bsleeping pills?\b|\bsleep aids?\b|\bcaffeine pills?\b/,
   /\bsafe to (?:lift|train|run|work ?out|exercise|squat|deadlift|bench|press|row)\b/,
   /\bwater weight\b|\bweigh ?in\b|\bsweat(?:ing)? (?:it|weight) (?:out|off)\b|\bdehydrat|\bsauna suit\b/,
   /\b(?:bad|awful|terrible|severe|horrible) cramps?\b|\bcramps? (?:are|is|were) (?:so |really )?(?:bad|awful|terrible|severe)\b|\bperiod cramps?\b|\bmenstrua/,
   /\b(?:tennis|golfers?) elbow\b|\b(?:runners?|jumpers?) knee\b|\bfrozen shoulder\b|\bcarpal tunnel\b/,
-  /\b(?:got|have|having|caught|with|fighting) a (?:bad |head |chest )?cold\b|\bunder the weather\b|\bunwell\b|\bsore throat\b|\bcough|\bcongest|\bfeel(?:ing)? ill\b/,
   /\b(?:achilles|acl|mcl|pcl|labrum|it band)\b|\b(?:repair|reconstruction|replacement|operation|post ?op|rehab)\b/,
   /\burin|\bpee(?:ing)? (?:is |was )?(?:dark|brown|red|blood)|\bdark pee\b|\bheadaches?\b/,
   /\bic(?:e|ing) (?:it|or heat|my)\b|\bheat (?:it|pack|pad)\b|\bice pack\b|\b(?:slept|sleeping) (?:wrong|funny|weird)\b/,
@@ -398,6 +416,80 @@ export type RefusalCheck = HardRefusal | DraftHold | { kind: "none" };
 
 function matches(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
+}
+
+/**
+ * "Can I take" and the casual forms "can u take", "can you use", "can I stack".
+ * A rest day ("take a", "take the", "take 2") is not this.
+ * The supplement exemption is an allowlist. It applies only when every non stopword
+ * is ordinary gym, supplement, or nutrition talk. A short unknown token such as tren
+ * breaks it. mg, stack, cycle, and script are cues only beside an unknown substance.
+ */
+const LOOSE_TAKE =
+  /\b(?:can|should|could|may|gonna|wanna)\s+(?:i|you|we)\s+(?:take|use|using|stack|mix)\b(?!\s+(?:a|an|the|my|this|that|time|some|more|longer|extra|two|three|\d+)\b)/;
+
+const LEGAL_SUPPLEMENT =
+  /\b(?:creatine|protein(?: powder)?|pre-? ?work ?outs?|caffeine(?! pills?)|electrolytes?|multivitamins?|fish oils?|supplements?|vitamins?)\b/;
+
+const SHORT_PED =
+  /\b(?:tren|dbol|anavar|var|test|deca|dnp|clen)\b|\bmk[-\s]?677\b/;
+
+const NORMAL_WORDS = new Set(
+  `a an the my your our i me we you it its is am are was were be been being do does did can could should would may might will to for of on in at by with and or before after during into from about around than then this that these those what how when where which who much many some any more most very really just only also still ok okay safe fine worth better good best have has had get got need want try trying take taking taken eat eating eaten drink drinking day daily per today tomorrow morning night early late now week weeks creatine protein powder whey isolate concentrate pre workout preworkout caffeine coffee electrolyte electrolytes multivitamin vitamin vitamins fish oil supplement supplements monohydrate banana shake shakes bar snack carb carbs carbohydrate carbohydrates calorie calories macro macros bulk bulking cut cutting fat weight lose losing loss muscle muscles meal meals food breakfast lunch dinner gram grams lean gym class session sessions train training lift lifting workout workouts leg legs rest days hot light easy run running squat squats bench deadlift cardio bottle water long conditioning start front desk great little bit mild small stuffy nose throat sore tired cough congested weather down feel feeling felt skip come going keep keeping without loading post every like gatorade powerade liquid iv lmnt pedialyte bcaa bcaas schedule coach sent new oats casein prep cheat please though now your`.split(
+    /\s+/,
+  ),
+);
+
+const CUE_WORDS = new Set(["mg", "stack", "stacking", "stacked", "stacks", "cycle", "cycles", "script", "scripts"]);
+
+function casualWords(text: string): string {
+  return text
+    .replace(/\b(?:u|ya)\b/g, "you")
+    .replace(/\bur\b/g, "your")
+    .replace(/\bim\b/g, "i")
+    .replace(/\b(?:pls|plz)\b/g, "please")
+    .replace(/\b(?:lol|lmao|omg|haha)\b/g, " ")
+    .replace(/\brn\b/g, "now")
+    .replace(/\btho\b/g, "though")
+    .replace(/\bgonna\b/g, "going to")
+    .replace(/\bwanna\b/g, "want to")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenIsNormal(token: string): boolean {
+  if (token.length === 1) return true;
+  return NORMAL_WORDS.has(token) || /^\d+$/.test(token) || /^\d{1,2}(?::\d{2})?(?:am|pm)$/.test(token);
+}
+
+function drugShaped(token: string): boolean {
+  return /(?:pam|zolam|phetamine|amphetamine|codone|androlone|olone|barbital)$/.test(token);
+}
+
+/**
+ * True when a take, use, stack, run, or mix ask names something outside the allowlist,
+ * or when mg, stack, cycle, or script sits next to an unknown substance.
+ * "Can I take pre workout at 5pm" and "how many mg of creatine" stay clear.
+ * "Can u take tren with creatine" does not.
+ */
+function outsideSupplementQuestion(text: string): boolean {
+  if (SHORT_PED.test(text)) return true;
+  const casual = casualWords(text);
+  if (SHORT_PED.test(casual)) return true;
+  const tokens = casual.match(/[a-z0-9]+/g) ?? [];
+  const unknowns = tokens.filter((token) => !tokenIsNormal(token) && !CUE_WORDS.has(token) && !/^\d+mg$/.test(token));
+  if (unknowns.some(drugShaped)) return true;
+  const asked = LOOSE_TAKE.test(casual);
+  if (asked && unknowns.length > 0) return true;
+  const supplement = LEGAL_SUPPLEMENT.test(casual);
+  if (supplement && unknowns.some((token) => token.length >= 6 || drugShaped(token))) return true;
+  const cue = tokens.some((token) => CUE_WORDS.has(token) || /^\d+mg$/.test(token));
+  return cue && unknowns.length > 0;
+}
+
+function asksForDrug(text: string): boolean {
+  if (NAMED_DRUG.test(text)) return true;
+  return outsideSupplementQuestion(text);
 }
 
 function hasHarmIntent(text: string): boolean {
@@ -661,6 +753,11 @@ function distressHold(text: string): DraftHold {
  * Those holds run only after emergency and injury. A medical emergency plus a
  * die hold still gets the emergency template and the 988 line.
  * Asks for the coach and program swaps are holds, not refusals.
+ * A normal training question is not a refusal. That is a legal supplement
+ * (creatine, protein powder, pre workout, caffeine, electrolytes, a multivitamin, fish oil),
+ * nutrition for training (protein, carbs, calories, bulking, cutting, losing weight or fat, meal timing),
+ * or a mild illness with no red flag (a cold, a runny nose, a sore throat, feeling tired or run down).
+ * A red flag in the same message still refuses.
  * This runs on the raw message, before retrieval.
  */
 function classify(text: string): RefusalCheck {
@@ -678,7 +775,7 @@ function classify(text: string): RefusalCheck {
     if (die === "hold") return selfHarmRefusal();
     return emergencyRefusal();
   }
-  if (matches(text, MEDICAL)) return medicalRefusal();
+  if (matches(text, MEDICAL) || asksForDrug(text)) return medicalRefusal();
   if (BODY_PART.test(text) && SYMPTOM.test(text)) return medicalRefusal();
   if (die === "hold" || endIt === "hold" || hopeless === "hold") return distressHold(text);
   const reasonCodes: HoldReason[] = [];
