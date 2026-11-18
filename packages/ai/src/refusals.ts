@@ -206,7 +206,8 @@ const MEDICAL: RegExp[] = [
   /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
   /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bfat burners?\b/,
   NAMED_DRUG,
-  /\b(?:stack(?:s|ed|ing)?|cycles?|scripts?)\b|\d+\s*mg\b/,
+  // stack, cycle, script, and mg are cues only beside an unknown substance.
+  // They are handled in asksForDrug, not as blanket refusals.
   /\bcrash diets?\b/,
   /\b(?:very|extremely|super|ultra|crazy) low calories?\b/,
   /\b(?:eat(?:ing)?|on|only|just|under|below|less than)\s+(?:about |around |only |just )?(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\b/,
@@ -418,25 +419,47 @@ function matches(text: string, patterns: RegExp[]): boolean {
 }
 
 /**
- * "Can I take" a named drug. A rest day ("take a", "take the", "take 2") is not this.
- * The supplement exemption is an allowlist. It applies only when every word is ordinary
- * gym, supplement, or nutrition talk. An unknown substance, a drug name shape, or a
- * medication cue keeps the refusal.
+ * "Can I take" and the casual forms "can u take", "can you use", "can I stack".
+ * A rest day ("take a", "take the", "take 2") is not this.
+ * The supplement exemption is an allowlist. It applies only when every non stopword
+ * is ordinary gym, supplement, or nutrition talk. A short unknown token such as tren
+ * breaks it. mg, stack, cycle, and script are cues only beside an unknown substance.
  */
-const TAKE_ASK =
-  /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)/;
+const LOOSE_TAKE =
+  /\b(?:can|should|could|may|gonna|wanna)\s+(?:i|you|we)\s+(?:take|use|using|stack|mix)\b(?!\s+(?:a|an|the|my|this|that|time|some|more|longer|extra|two|three|\d+)\b)/;
 
 const LEGAL_SUPPLEMENT =
   /\b(?:creatine|protein(?: powder)?|pre-? ?work ?outs?|caffeine(?! pills?)|electrolytes?|multivitamins?|fish oils?|supplements?|vitamins?)\b/;
 
+const SHORT_PED =
+  /\b(?:tren|dbol|anavar|var|test|deca|dnp|clen)\b|\bmk[-\s]?677\b/;
+
 const NORMAL_WORDS = new Set(
-  `a an the my your our i me we you it its is am are was were be been being do does did can could should would may might will to for of on in at by with and or before after during into from about around than then this that these those what how when where which who much many some any more most very really just only also still ok okay safe fine worth better good best have has had get got need want try trying take taking taken eat eating eaten drink drinking day daily per today tomorrow morning night early late now week weeks creatine protein powder whey isolate concentrate pre workout preworkout caffeine coffee electrolyte electrolytes multivitamin vitamin vitamins fish oil supplement supplements monohydrate banana shake shakes bar snack carb carbs carbohydrate carbohydrates calorie calories macro macros bulk bulking cut fat weight lose losing loss muscle muscles meal meals food breakfast lunch dinner gram grams lean gym class session sessions train training lift lifting workout workouts leg legs rest days hot light easy run running squat squats bench deadlift cardio bottle water long conditioning start front desk great little bit mild small stuffy nose throat sore tired cough congested weather down feel feeling felt skip come going keep keeping without loading post every like`.split(
+  `a an the my your our i me we you it its is am are was were be been being do does did can could should would may might will to for of on in at by with and or before after during into from about around than then this that these those what how when where which who much many some any more most very really just only also still ok okay safe fine worth better good best have has had get got need want try trying take taking taken eat eating eaten drink drinking day daily per today tomorrow morning night early late now week weeks creatine protein powder whey isolate concentrate pre workout preworkout caffeine coffee electrolyte electrolytes multivitamin vitamin vitamins fish oil supplement supplements monohydrate banana shake shakes bar snack carb carbs carbohydrate carbohydrates calorie calories macro macros bulk bulking cut cutting fat weight lose losing loss muscle muscles meal meals food breakfast lunch dinner gram grams lean gym class session sessions train training lift lifting workout workouts leg legs rest days hot light easy run running squat squats bench deadlift cardio bottle water long conditioning start front desk great little bit mild small stuffy nose throat sore tired cough congested weather down feel feeling felt skip come going keep keeping without loading post every like gatorade powerade liquid iv lmnt pedialyte bcaa bcaas schedule coach sent new oats casein prep cheat please though now your`.split(
     /\s+/,
   ),
 );
 
+const CUE_WORDS = new Set(["mg", "stack", "stacking", "stacked", "stacks", "cycle", "cycles", "script", "scripts"]);
+
+function casualWords(text: string): string {
+  return text
+    .replace(/\b(?:u|ya)\b/g, "you")
+    .replace(/\bur\b/g, "your")
+    .replace(/\bim\b/g, "i")
+    .replace(/\b(?:pls|plz)\b/g, "please")
+    .replace(/\b(?:lol|lmao|omg|haha)\b/g, " ")
+    .replace(/\brn\b/g, "now")
+    .replace(/\btho\b/g, "though")
+    .replace(/\bgonna\b/g, "going to")
+    .replace(/\bwanna\b/g, "want to")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function tokenIsNormal(token: string): boolean {
-  return NORMAL_WORDS.has(token) || /^\d+$/.test(token) || /^\d+am$/.test(token);
+  if (token.length === 1) return true;
+  return NORMAL_WORDS.has(token) || /^\d+$/.test(token) || /^\d{1,2}(?::\d{2})?(?:am|pm)$/.test(token);
 }
 
 function drugShaped(token: string): boolean {
@@ -444,19 +467,24 @@ function drugShaped(token: string): boolean {
 }
 
 /**
- * True when a take ask or a legal supplement sits next to a word that is not ordinary gym talk.
- * "Can I take creatine" stays clear. "Can I take lorazepam after pre workout" does not.
+ * True when a take, use, stack, run, or mix ask names something outside the allowlist,
+ * or when mg, stack, cycle, or script sits next to an unknown substance.
+ * "Can I take pre workout at 5pm" and "how many mg of creatine" stay clear.
+ * "Can u take tren with creatine" does not.
  */
 function outsideSupplementQuestion(text: string): boolean {
-  const takeAsk = TAKE_ASK.test(text);
-  const supplement = LEGAL_SUPPLEMENT.test(text);
-  if (!takeAsk && !supplement) return false;
-  for (const token of text.match(/[a-z0-9]+/g) ?? []) {
-    if (tokenIsNormal(token)) continue;
-    if (drugShaped(token) || /mg$/.test(token)) return true;
-    if (takeAsk || token.length >= 6) return true;
-  }
-  return false;
+  if (SHORT_PED.test(text)) return true;
+  const casual = casualWords(text);
+  if (SHORT_PED.test(casual)) return true;
+  const tokens = casual.match(/[a-z0-9]+/g) ?? [];
+  const unknowns = tokens.filter((token) => !tokenIsNormal(token) && !CUE_WORDS.has(token) && !/^\d+mg$/.test(token));
+  if (unknowns.some(drugShaped)) return true;
+  const asked = LOOSE_TAKE.test(casual);
+  if (asked && unknowns.length > 0) return true;
+  const supplement = LEGAL_SUPPLEMENT.test(casual);
+  if (supplement && unknowns.some((token) => token.length >= 6 || drugShaped(token))) return true;
+  const cue = tokens.some((token) => CUE_WORDS.has(token) || /^\d+mg$/.test(token));
+  return cue && unknowns.length > 0;
 }
 
 function asksForDrug(text: string): boolean {

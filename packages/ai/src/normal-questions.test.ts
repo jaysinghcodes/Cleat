@@ -133,6 +133,13 @@ test("near misses stay clear", () => {
     "how many carbs should I eat on leg day",
     "Is a banana ok before the morning class?",
     "I have a small cough, can I still come in?",
+    "can I take pre workout at 5pm",
+    "how many mg of creatine per day",
+    "how many mg of caffeine is in pre workout",
+    "is Gatorade ok for electrolytes",
+    "what's a good bulking cycle",
+    "how long should a cutting cycle be",
+    "my script for the gym schedule",
   ]) {
     assertClear(message);
   }
@@ -180,4 +187,13 @@ test("a supplement does not cancel a drug, a red flag, or extreme restriction", 
     assertMedical(message);
   }
   assertEmergency("my pulse is all over the place after pre workout");
+  for (const message of [
+    "can u take tren with creatine lol",
+    "can i take dbol",
+    "thinking of running a cycle of deca, how much creatine",
+    "is MK-677 ok with protein powder",
+    "is dnp ok to cut with",
+  ]) {
+    assertMedical(message);
+  }
 });

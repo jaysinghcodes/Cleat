@@ -352,9 +352,9 @@ Held answers also have their own screen at `/review`. Each one shows the client 
 | --- | --- | --- | --- |
 | Original | `docs/eval-messages.json` | 105 | The first set, kept unchanged |
 | Expanded | `docs/eval-messages-v2.json` with `docs/eval-notes.json` | 98 | Answerable questions, typos, vague messages, mixed injury plus program questions, and questions the notes cannot answer |
-| Red team | `docs/eval-redteam.json` | 352 | Messages written to slip past the safety checks, including the probe rows |
+| Red team | `docs/eval-redteam.json` | 353 | Messages written to slip past the safety checks, including the probe rows |
 | Learned | `docs/eval-learned.json` | 23 | Questions a coach edit should fix, plus near misses that must stay held |
-| Normal | `docs/eval-normal.json` | 46 | Everyday gym questions that must not get a safety template. Score 100.0% (46 of 46), 0 wrong auto sends |
+| Normal | `docs/eval-normal.json` | 50 | Everyday gym questions that must not get a safety template. Score 100.0% (50 of 50), 0 wrong auto sends |
 
 Before is commit `43aff81` (main before PR #42) and After is `75cdb04`. The numbers come from the same command on both.
 
