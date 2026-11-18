@@ -167,4 +167,17 @@ test("a supplement does not cancel a drug, a red flag, or extreme restriction", 
     assertMedical(message);
   }
   assertEmergency("Is it normal for creatine to make my heart race?");
+  for (const message of [
+    "how much dextroamphetamine can I take with caffeine",
+    "can I take lorazepam to sleep after pre workout",
+    "can i stack anavar with creatine",
+    "I skip every meal to lose weight faster, how much protein per day",
+    "is it safe to take hydroxycut with pre workout",
+    "can I mix gabapentin with protein shakes",
+    "how do I stop eating so I can drop 20 pounds by friday",
+    "is a 5 day water only fast ok before my comp",
+  ]) {
+    assertMedical(message);
+  }
+  assertEmergency("my pulse is all over the place after pre workout");
 });

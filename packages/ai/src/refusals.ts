@@ -119,6 +119,7 @@ const EMERGENCY: RegExp[] = [
   /\bheart(?:beat)?s?\b[^.]{0,40}\b(?:racing|pounding|irregular)\b/,
   /\bheart(?:beat)?s?\b[^.]{0,40}\brac(?:e|es|ing)\b/,
   /\brac(?:e|es|ing)\b[^.]{0,30}\bheart(?:beat)?s?\b/,
+  /\bpulse\b[^.]{0,40}\b(?:all over|racing|irregular|skipping|pounding|fast)\b/,
   /\bheart(?:beat)?s?\b[^.]{0,48}(?:won'?t|will not|can(?:not|'t|t)) (?:slow|settle)/,
   // Red team additions. Misspellings, plain language for the same symptoms, and signs that were missing.
   /\bche(?:a|s)st\b|\bchets\b|\bchst\b/,
@@ -205,12 +206,14 @@ const MEDICAL: RegExp[] = [
   /\bantibiotic|\bantidepress|\binsulin\b|\binhaler\b|\bprescri|\bcortisone\b|\bprednisone\b/,
   /\bsteroids?\b|\bsarms?\b|\btestosterone\b|\bfat burners?\b/,
   NAMED_DRUG,
+  /\b(?:stack(?:s|ed|ing)?|cycles?|scripts?)\b|\d+\s*mg\b/,
   /\bcrash diets?\b/,
   /\b(?:very|extremely|super|ultra|crazy) low calories?\b/,
   /\b(?:eat(?:ing)?|on|only|just|under|below|less than)\s+(?:about |around |only |just )?(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\b/,
   /\b(?:[1-9]\d{2}|1[0-2]\d{2})\s*(?:k?cals?|calories?)\s*(?:a day|per day|daily|diet|target)\b/,
   /\b(?:eat(?:ing)?|eaten)\s+(?:only |just |about |around )?(?:[5-9]\d{2}|1[0-2]\d{2})\b(?!\s*(?:g\b|grams?|lb|lbs|pounds?|kg|kilos?|reps?|sets?|mg\b))/,
-  /\bfasting\b|\bwater fast|\bfast for\b|\bjuice cleanse\b/,
+  /\bfasting\b|\bwater(?: only)? fast|\bfast for\b|\bjuice cleanse\b/,
+  /\bstop(?:ping|ped)? eating\b/,
   /\bwithout eating\b|\b(?:do not|don't|dont) eat (?:anything|at all)\b/,
   /\b(?:make|making|made) (?:myself|my self) (?:sick|throw up|puke)\b/,
   /\bguilty\b[^.]{0,40}\beat/,
@@ -221,7 +224,7 @@ const MEDICAL: RegExp[] = [
   /\b[a-z]+itis\b|\bsplints?\b|\btendon|\barthrit|\basthma|\bscolios|\bosteo|\bepilep|\bcancer\b|\bchemo|\banemi|\bthyroid|\bcholesterol|\bhypertens|\bvertigo\b/,
   /\badderall\b|\bbeta ?blockers?\b|\bstatins?\b|\bblood thinners?\b|\bxanax\b|\bopioid|\boxy(?:codone|contin)\b|\bantihistamine|\bmetformin\b|\bozempic\b|\bwegovy\b|\bsemaglutide\b/,
   /\b(?:dr|doc|docs|gp|cardiologist|physician|nurse|specialist|orthopedist|ortho)\b/,
-  /\b(?:have ?n[o']?t|havent|not|did ?n[o']?t|didnt|barely|hardly) (?:eaten|eat|ate|eating)\b|\bstarv|\bskip(?:ping|ped)? meals\b|\bpurg(?:e|ing)\b|\bbinge|\blaxative/,
+  /\b(?:have ?n[o']?t|havent|not|did ?n[o']?t|didnt|barely|hardly) (?:eaten|eat|ate|eating)\b|\bstarv|\bskip(?:ping|ped)?(?:\s+(?:every|all|my|the|each))?\s+meals?\b|\bpurg(?:e|ing)\b|\bbinge|\blaxative/,
   /\bsick to my stomach\b|\bstomach (?:ache|hurts|bug|cramps?)\b|\bqueasy\b/,
   /\bthrew (?:out )?my (?:lower |upper )?(?:back|neck|shoulder)\b|\bthrew (?:my )?(?:lower |upper )?(?:back|neck) out\b/,
   /\b(?:back|neck|spine|knees?|elbows?|wrists?|ankles?|hips?|shoulders?|joints?)\b[^.]{0,30}\bon fire\b/,
@@ -416,8 +419,9 @@ function matches(text: string, patterns: RegExp[]): boolean {
 
 /**
  * "Can I take" a named drug. A rest day ("take a", "take the", "take 2") is not this.
- * Creatine, protein, pre workout, caffeine, electrolytes, a multivitamin, and fish oil are not drugs.
- * A named drug in the same message is never cancelled by that exemption.
+ * The supplement exemption is an allowlist. It applies only when every word is ordinary
+ * gym, supplement, or nutrition talk. An unknown substance, a drug name shape, or a
+ * medication cue keeps the refusal.
  */
 const TAKE_ASK =
   /\b(?:can|should|could|may) i take\b(?! (?:a|an|the|my|this|that|time|some time|more|longer|extra|two|three|\d+)\b)/;
@@ -425,10 +429,39 @@ const TAKE_ASK =
 const LEGAL_SUPPLEMENT =
   /\b(?:creatine|protein(?: powder)?|pre-? ?work ?outs?|caffeine(?! pills?)|electrolytes?|multivitamins?|fish oils?|supplements?|vitamins?)\b/;
 
+const NORMAL_WORDS = new Set(
+  `a an the my your our i me we you it its is am are was were be been being do does did can could should would may might will to for of on in at by with and or before after during into from about around than then this that these those what how when where which who much many some any more most very really just only also still ok okay safe fine worth better good best have has had get got need want try trying take taking taken eat eating eaten drink drinking day daily per today tomorrow morning night early late now week weeks creatine protein powder whey isolate concentrate pre workout preworkout caffeine coffee electrolyte electrolytes multivitamin vitamin vitamins fish oil supplement supplements monohydrate banana shake shakes bar snack carb carbs carbohydrate carbohydrates calorie calories macro macros bulk bulking cut fat weight lose losing loss muscle muscles meal meals food breakfast lunch dinner gram grams lean gym class session sessions train training lift lifting workout workouts leg legs rest days hot light easy run running squat squats bench deadlift cardio bottle water long conditioning start front desk great little bit mild small stuffy nose throat sore tired cough congested weather down feel feeling felt skip come going keep keeping without loading post every like`.split(
+    /\s+/,
+  ),
+);
+
+function tokenIsNormal(token: string): boolean {
+  return NORMAL_WORDS.has(token) || /^\d+$/.test(token) || /^\d+am$/.test(token);
+}
+
+function drugShaped(token: string): boolean {
+  return /(?:pam|zolam|phetamine|amphetamine|codone|androlone|olone|barbital)$/.test(token);
+}
+
+/**
+ * True when a take ask or a legal supplement sits next to a word that is not ordinary gym talk.
+ * "Can I take creatine" stays clear. "Can I take lorazepam after pre workout" does not.
+ */
+function outsideSupplementQuestion(text: string): boolean {
+  const takeAsk = TAKE_ASK.test(text);
+  const supplement = LEGAL_SUPPLEMENT.test(text);
+  if (!takeAsk && !supplement) return false;
+  for (const token of text.match(/[a-z0-9]+/g) ?? []) {
+    if (tokenIsNormal(token)) continue;
+    if (drugShaped(token) || /mg$/.test(token)) return true;
+    if (takeAsk || token.length >= 6) return true;
+  }
+  return false;
+}
+
 function asksForDrug(text: string): boolean {
   if (NAMED_DRUG.test(text)) return true;
-  if (!TAKE_ASK.test(text)) return false;
-  return !LEGAL_SUPPLEMENT.test(text);
+  return outsideSupplementQuestion(text);
 }
 
 function hasHarmIntent(text: string): boolean {
